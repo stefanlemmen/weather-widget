@@ -72,9 +72,6 @@ const fileCell = (row: TestRow, sourceUrl: string | undefined) =>
     ? `[${locationOf(row)}](${sourceUrl}/${row.file}${lineAnchorOf(row.line)})`
     : locationOf(row);
 
-const testCell = (row: TestRow, sourceUrl: string | undefined) =>
-  `${fileCell(row, sourceUrl)} › ${row.title}`;
-
 export const renderTestSummary = ({
   heading,
   rows,
@@ -92,9 +89,10 @@ export const renderTestSummary = ({
     `${countsLine(rows)} of ${String(rows.length)} tests (run ${status}).`,
     "",
     markdownTable(
-      ["Test", "Result", "Duration"],
+      ["File", "Test", "Result", "Duration"],
       rows.map((row) => [
-        testCell(row, sourceUrl),
+        fileCell(row, sourceUrl),
+        row.title,
         RESULT_LABELS[row.result],
         `${String(Math.round(row.durationMs))} ms`,
       ]),
@@ -105,9 +103,10 @@ export const renderTestSummary = ({
           "### Failures",
           "",
           markdownTable(
-            ["Test", "Error"],
+            ["File", "Test", "Error"],
             failures.map((row) => [
-              testCell(row, sourceUrl),
+              fileCell(row, sourceUrl),
+              row.title,
               row.firstErrorLine ?? "",
             ]),
           ),

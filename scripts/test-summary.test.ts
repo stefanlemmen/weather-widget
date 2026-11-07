@@ -32,25 +32,25 @@ describe("a test job summary", () => {
     expect(render([row({})])).toMatch(/^## Proxy tests \(Vitest\)\n/);
   });
 
-  it("lists every test with its file name, result and duration", () => {
+  it("lists every test with its file, result and duration in their own columns", () => {
     const summary = render([row({})]);
 
     expect(summary).toContain("1 passed of 1 tests (run passed).");
-    expect(summary).toContain("| Test | Result | Duration |");
+    expect(summary).toContain("| File | Test | Result | Duration |");
     expect(summary).toContain(
-      "| forecast.test.ts - L12 › the forecast route › answers with the current temperature | ✅ passed | 136 ms |",
+      "| forecast.test.ts - L12 | the forecast route › answers with the current temperature | ✅ passed | 136 ms |",
     );
   });
 
   it("names and links the line in the source that defines each test", () => {
     expect(render([row({})], "passed", SOURCE_URL)).toContain(
-      `| [forecast.test.ts - L12](${SOURCE_URL}/${FILE}#L12) › the forecast route › answers with the current temperature | ✅ passed |`,
+      `| [forecast.test.ts - L12](${SOURCE_URL}/${FILE}#L12) | the forecast route › answers with the current temperature | ✅ passed |`,
     );
   });
 
   it("names and links only the file when the line of a test is unknown", () => {
     expect(render([row({ line: undefined })], "passed", SOURCE_URL)).toContain(
-      `| [forecast.test.ts](${SOURCE_URL}/${FILE}) › the forecast`,
+      `| [forecast.test.ts](${SOURCE_URL}/${FILE}) | the forecast`,
     );
   });
 
@@ -68,9 +68,9 @@ describe("a test job summary", () => {
     expect(summary).toContain(
       "1 passed, 1 failed, 1 flaky, 1 skipped of 4 tests (run failed).",
     );
-    expect(summary).toContain("| forecast.test.ts - L12 › b | ⏭️ skipped |");
-    expect(summary).toContain("| forecast.test.ts - L12 › c | ⚠️ flaky |");
-    expect(summary).toContain("| forecast.test.ts - L12 › d | ❌ failed |");
+    expect(summary).toContain("| forecast.test.ts - L12 | b | ⏭️ skipped |");
+    expect(summary).toContain("| forecast.test.ts - L12 | c | ⚠️ flaky |");
+    expect(summary).toContain("| forecast.test.ts - L12 | d | ❌ failed |");
   });
 
   it("lists each failure with its linked file and first error line", () => {
@@ -89,8 +89,9 @@ describe("a test job summary", () => {
     );
 
     expect(summary).toContain("### Failures");
+    expect(summary).toContain("| File | Test | Error |");
     expect(summary).toContain(
-      `| [weather-widget.test.ts - L40](${SOURCE_URL}/packages/widget/test/weather-widget.test.ts#L40) › &lt;weather-widget&gt; › shows the temperature | AssertionError: expected 5 to be 6 |`,
+      `| [weather-widget.test.ts - L40](${SOURCE_URL}/packages/widget/test/weather-widget.test.ts#L40) | &lt;weather-widget&gt; › shows the temperature | AssertionError: expected 5 to be 6 |`,
     );
   });
 
