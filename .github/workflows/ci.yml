@@ -27,9 +27,7 @@ jobs:
           node-version-file: package.json
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm format:check
+      - run: node scripts/check.ts
 
   test:
     runs-on: ubuntu-latest
