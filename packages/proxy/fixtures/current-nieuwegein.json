@@ -1,0 +1,36 @@
+{
+  "lat": 52.03,
+  "lon": 5.08,
+  "timezone": "Europe/Amsterdam",
+  "timezone_offset": 3600,
+  "data": [
+    {
+      "dt": 1794086543,
+      "sunrise": 1794033902,
+      "sunset": 1794067301,
+      "temp": 5.09,
+      "feels_like": 3.74,
+      "pressure": 1022,
+      "humidity": 94,
+      "dew_point": 4.21,
+      "uvi": 0,
+      "clouds": 100,
+      "visibility": 10000,
+      "wind_speed": 1.75,
+      "wind_deg": 152,
+      "wind_gust": 3.08,
+      "weather": [
+        {
+          "id": 804,
+          "main": "Clouds",
+          "description": "overcast clouds",
+          "icon": "04n"
+        }
+      ],
+      "alerts": [
+        "2.49.0.0.528.0.NL.20261107133156.aa746eb4-3692-485a-b73d-93ddec62c94c_1:5fa28f21c8e9979b0aed12ae9c66828d",
+        "2.49.0.0.528.0.NL.20261107161613.aa746eb4-3692-485a-b73d-93ddec62c94c_2:1415b336227d08d881cb0bd2b9c02f7e"
+      ]
+    }
+  ]
+}

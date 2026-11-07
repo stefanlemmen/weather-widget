@@ -1,4 +1,8 @@
-import { HealthResponseSchema } from "@weather-widget/forecast-contract";
+import {
+  HealthResponseSchema,
+  PROBLEM_DETAILS_MEDIA_TYPE,
+  ProblemDetailsSchema,
+} from "@weather-widget/forecast-contract";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { createProxy } from "../src/index.ts";
@@ -17,12 +21,19 @@ describe("the Proxy", () => {
     });
   });
 
-  it("answers unknown routes with 404", async () => {
+  it("answers unknown routes with 404 Problem Details that are never cached", async () => {
     const proxy = createProxy(environmentWithKey);
 
     const response = await proxy.request("/api/does-not-exist");
 
     expect(response.status).toBe(404);
+    expect(response.headers.get("content-type")).toContain(
+      PROBLEM_DETAILS_MEDIA_TYPE,
+    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(v.parse(ProblemDetailsSchema, await response.json()).status).toBe(
+      404,
+    );
   });
 
   it.each([
