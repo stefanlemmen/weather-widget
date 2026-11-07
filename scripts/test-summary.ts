@@ -62,10 +62,15 @@ export const sourceUrlFrom = ({
 const lineAnchorOf = (line: number | undefined) =>
   line === undefined ? "" : `#L${String(line)}`;
 
+const locationOf = (row: TestRow) =>
+  row.line === undefined
+    ? basename(row.file)
+    : `${basename(row.file)} - L${String(row.line)}`;
+
 const fileCell = (row: TestRow, sourceUrl: string | undefined) =>
   sourceUrl
-    ? `[${basename(row.file)}](${sourceUrl}/${row.file}${lineAnchorOf(row.line)})`
-    : basename(row.file);
+    ? `[${locationOf(row)}](${sourceUrl}/${row.file}${lineAnchorOf(row.line)})`
+    : locationOf(row);
 
 const testCell = (row: TestRow, sourceUrl: string | undefined) =>
   `${fileCell(row, sourceUrl)} › ${row.title}`;
