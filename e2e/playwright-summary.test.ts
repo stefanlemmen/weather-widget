@@ -71,4 +71,10 @@ describe("the Playwright job summary", () => {
       "No tests ran (run failed).",
     );
   });
+
+  it("ends with a blank line so the next summary on the page starts its own block", () => {
+    expect(renderPlaywrightSummary([row({})], "passed").endsWith("\n\n")).toBe(
+      true,
+    );
+  });
 });

@@ -110,4 +110,8 @@ describe("the Lighthouse job summary", () => {
     expect(summary).toContain("The budget assertions didn't run.");
     expect(summary).not.toContain("pass.");
   });
+
+  it("ends with a blank line so the next summary on the page starts its own block", () => {
+    expect(renderLighthouseSummary(passingResults).endsWith("\n\n")).toBe(true);
+  });
 });

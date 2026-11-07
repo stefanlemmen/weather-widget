@@ -108,5 +108,6 @@ export const renderLighthouseSummary = (results: LighthouseResults) => {
     "",
     ...budgetLines(results),
     "",
+    "",
   ].join("\n");
 };

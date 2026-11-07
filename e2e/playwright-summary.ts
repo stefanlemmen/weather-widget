@@ -36,7 +36,7 @@ export const renderPlaywrightSummary = (
 ) => {
   const heading = "## End-to-end tests (Playwright)";
   if (rows.length === 0) {
-    return [heading, "", `No tests ran (run ${status}).`, ""].join("\n");
+    return [heading, "", `No tests ran (run ${status}).`, "", ""].join("\n");
   }
 
   const failures = rows.filter((row) => row.outcome === "unexpected");
@@ -64,6 +64,7 @@ export const renderPlaywrightSummary = (
           ),
         ]
       : []),
+    "",
     "",
   ].join("\n");
 };
