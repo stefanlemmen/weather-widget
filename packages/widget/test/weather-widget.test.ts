@@ -64,10 +64,10 @@ describe("<weather-widget>", () => {
     expect(url?.searchParams.get("longitude")).toBe("5.08");
   });
 
-  it("asks the Proxy at the address set in api-base", async () => {
+  it("asks the Proxy at the address set in proxy-url", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastWithTemperature(5)));
 
-    renderWidget({ ...NIEUWEGEIN, "api-base": "https://proxy.example/api" });
+    renderWidget({ ...NIEUWEGEIN, "proxy-url": "https://proxy.example/api" });
 
     await expect.element(page.getByText("5°C")).toBeVisible();
     expect(requestedUrls()[0]?.href).toBe(
@@ -189,7 +189,7 @@ describe("<weather-widget>", () => {
 
     widget.latitude = 52.03;
     widget.longitude = 5.08;
-    widget.apiBase = "https://proxy.example/api";
+    widget.proxyUrl = "https://proxy.example/api";
     document.body.append(widget);
 
     await expect.element(page.getByText("5°C")).toBeVisible();

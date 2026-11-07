@@ -29,8 +29,11 @@ const temperatureFormat = new Intl.NumberFormat(LOCALE, {
   signDisplay: "negative",
 });
 
-const forecastUrl = (apiBase: string, { latitude, longitude }: Coordinates) => {
-  const url = new URL(`${apiBase}${FORECAST_PATH}`, document.baseURI);
+const forecastUrl = (
+  proxyUrl: string,
+  { latitude, longitude }: Coordinates,
+) => {
+  const url = new URL(`${proxyUrl}${FORECAST_PATH}`, document.baseURI);
   url.search = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
@@ -60,7 +63,7 @@ export class WeatherWidget extends LitElement {
   static override properties = {
     latitude: { type: Number },
     longitude: { type: Number },
-    apiBase: { type: String, attribute: "api-base" },
+    proxyUrl: { type: String, attribute: "proxy-url" },
     forecast: { state: true },
   };
 
@@ -84,14 +87,14 @@ export class WeatherWidget extends LitElement {
 
   declare latitude: number | undefined;
   declare longitude: number | undefined;
-  declare apiBase: string;
+  declare proxyUrl: string;
   declare private forecast: ForecastState;
 
   #inFlight: AbortController | undefined;
 
   constructor() {
     super();
-    this.apiBase = PROXY_BASE_PATH;
+    this.proxyUrl = PROXY_BASE_PATH;
     this.forecast = LOADING;
   }
 
@@ -104,7 +107,7 @@ export class WeatherWidget extends LitElement {
     if (
       changed.has("latitude") ||
       changed.has("longitude") ||
-      changed.has("apiBase")
+      changed.has("proxyUrl")
     ) {
       void this.#load();
     }
@@ -125,7 +128,7 @@ export class WeatherWidget extends LitElement {
     const request = new AbortController();
     this.#inFlight = request;
     const forecast = await fetchForecast(
-      forecastUrl(this.apiBase, location.output),
+      forecastUrl(this.proxyUrl, location.output),
       request.signal,
     );
     if (!request.signal.aborted) this.forecast = forecast;
