@@ -1,0 +1,11 @@
+{
+  "name": "@weather-widget/widget",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

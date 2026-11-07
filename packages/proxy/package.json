@@ -1,0 +1,26 @@
+{
+  "name": "@weather-widget/proxy",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dev-server": "./src/dev-server.ts",
+    "./build-output": "./src/build-output.ts"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../../.env src/serve.ts",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.5",
+    "@weather-widget/forecast-contract": "workspace:*",
+    "hono": "4.13.14",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.5",
+    "vitest": "4.1.12"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@weather-widget/host-vanilla",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@weather-widget/proxy": "workspace:*",
+    "vite": "8.3.5"
+  }
+}
