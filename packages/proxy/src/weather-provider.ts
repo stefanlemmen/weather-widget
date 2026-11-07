@@ -1,4 +1,4 @@
-import type { CurrentConditions } from "@weather-widget/contract";
+import type { Coordinates, CurrentConditions } from "@weather-widget/contract";
 import * as v from "valibot";
 import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
 
@@ -6,11 +6,6 @@ export const WEATHER_PROVIDER_CURRENT_URL =
   "https://api.openweathermap.org/data/4.0/onecall/current";
 export const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
 const METRIC_UNITS = "metric";
-
-export interface Coordinates {
-  readonly latitude: number;
-  readonly longitude: number;
-}
 
 const CurrentResponseSchema = v.object({
   data: v.tuple([v.object({ temp: v.number() })]),

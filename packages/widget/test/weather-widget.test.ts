@@ -198,10 +198,95 @@ describe("<weather-widget>", () => {
     );
   });
 
-  it("asks nothing of the Proxy until it has both latitude and longitude", async () => {
-    renderWidget({ latitude: "52.03" });
+  it.each([
+    ["longitude is missing", { latitude: "52.03" }],
+    ["latitude is missing", { longitude: "5.08" }],
+    ["latitude is not a number", { latitude: "north", longitude: "5.08" }],
+    ["latitude is above 90", { latitude: "90.01", longitude: "5.08" }],
+    ["latitude is below -90", { latitude: "-90.01", longitude: "5.08" }],
+    ["longitude is above 180", { latitude: "52.03", longitude: "180.01" }],
+    ["longitude is below -180", { latitude: "52.03", longitude: "-180.01" }],
+  ])(
+    'shows "Forecast unavailable" without "Try again" and asks nothing of the Proxy when %s',
+    async (_, attributes) => {
+      const widget = renderWidget(attributes);
+      await widget.updateComplete;
 
-    await expect.element(page.getByRole("status")).toBeInTheDocument();
-    expect(fakeProxy).not.toHaveBeenCalled();
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Forecast unavailable");
+      expect(
+        page.getByRole("button", { name: "Try again" }).query(),
+      ).toBeNull();
+      expect(fakeProxy).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ["-90", "180"],
+    ["90", "-180"],
+  ])(
+    "asks the Proxy for a Location at the edge of the map (%s, %s)",
+    async (latitude, longitude) => {
+      fakeProxy.mockImplementation(() =>
+        respondWith(forecastWithTemperature(-30)),
+      );
+
+      renderWidget({ latitude, longitude });
+
+      await expect.element(page.getByText("-30°C")).toBeVisible();
+    },
+  );
+
+  it("shows the Forecast once the Host page completes the Location", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWithTemperature(5)));
+    const widget = renderWidget({ latitude: "52.03" });
+    await widget.updateComplete;
+
+    widget.setAttribute("longitude", "5.08");
+
+    await expect.element(page.getByText("5°C")).toBeVisible();
+  });
+
+  it("announces the Forecast through the live region that announced loading", async () => {
+    let answer: (response: Response) => void = () => undefined;
+    fakeProxy.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    );
+    renderWidget(NIEUWEGEIN);
+    const liveRegion = page.getByRole("status");
+    await expect.element(liveRegion).toHaveTextContent("Loading forecast");
+    const regionWhileLoading = liveRegion.element();
+
+    answer(Response.json(forecastWithTemperature(5)));
+
+    await expect.element(liveRegion).toHaveTextContent("5°C");
+    expect(liveRegion.element()).toBe(regionWhileLoading);
+  });
+
+  it('announces a failure through the live region that announced loading, with "Try again" outside it', async () => {
+    let answer: (response: Response) => void = () => undefined;
+    fakeProxy.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    );
+    renderWidget(NIEUWEGEIN);
+    const liveRegion = page.getByRole("status");
+    await expect.element(liveRegion).toHaveTextContent("Loading forecast");
+    const regionWhileLoading = liveRegion.element();
+
+    answer(Response.json(unavailable, { status: 503 }));
+
+    await expect.element(liveRegion).toHaveTextContent("Forecast unavailable");
+    expect(liveRegion.element()).toBe(regionWhileLoading);
+    await expect
+      .element(page.getByRole("button", { name: "Try again" }))
+      .toBeVisible();
+    expect(liveRegion.element().querySelector("button")).toBeNull();
   });
 });

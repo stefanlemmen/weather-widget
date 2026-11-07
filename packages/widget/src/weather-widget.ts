@@ -1,9 +1,11 @@
 import {
+  CoordinatesSchema,
   FORECAST_PATH,
   ForecastResponseSchema,
   PROXY_BASE_PATH,
+  type Coordinates,
 } from "@weather-widget/contract";
-import { css, html, LitElement, type PropertyValues } from "lit";
+import { css, html, LitElement, nothing, type PropertyValues } from "lit";
 import * as v from "valibot";
 import { MESSAGES } from "./messages.ts";
 
@@ -13,10 +15,12 @@ const LOCALE = "en";
 type ForecastState =
   | { readonly status: "loading" }
   | { readonly status: "ok"; readonly temperatureCelsius: number }
-  | { readonly status: "error" };
+  | { readonly status: "error" }
+  | { readonly status: "invalid-location" };
 
 const LOADING: ForecastState = { status: "loading" };
 const FAILED: ForecastState = { status: "error" };
+const INVALID_LOCATION: ForecastState = { status: "invalid-location" };
 
 const temperatureFormat = new Intl.NumberFormat(LOCALE, {
   style: "unit",
@@ -25,7 +29,7 @@ const temperatureFormat = new Intl.NumberFormat(LOCALE, {
   signDisplay: "negative",
 });
 
-const forecastUrl = (apiBase: string, latitude: number, longitude: number) => {
+const forecastUrl = (apiBase: string, { latitude, longitude }: Coordinates) => {
   const url = new URL(`${apiBase}${FORECAST_PATH}`, document.baseURI);
   url.search = new URLSearchParams({
     latitude: String(latitude),
@@ -52,9 +56,6 @@ const fetchForecast = async (
   }
 };
 
-const isCoordinate = (value: number | undefined): value is number =>
-  value !== undefined && Number.isFinite(value);
-
 export class WeatherWidget extends LitElement {
   static override properties = {
     latitude: { type: Number },
@@ -70,8 +71,11 @@ export class WeatherWidget extends LitElement {
       font-family: system-ui, sans-serif;
     }
 
-    .temperature {
+    p {
       margin: 0;
+    }
+
+    .temperature {
       font-size: 3rem;
       font-weight: 600;
       line-height: 1;
@@ -108,32 +112,47 @@ export class WeatherWidget extends LitElement {
 
   async #load() {
     this.#inFlight?.abort();
-    this.forecast = LOADING;
-    const { latitude, longitude } = this;
-    if (!isCoordinate(latitude) || !isCoordinate(longitude)) return;
+    const location = v.safeParse(CoordinatesSchema, {
+      latitude: this.latitude,
+      longitude: this.longitude,
+    });
+    if (!location.success) {
+      this.forecast = INVALID_LOCATION;
+      return;
+    }
 
+    this.forecast = LOADING;
     const request = new AbortController();
     this.#inFlight = request;
     const forecast = await fetchForecast(
-      forecastUrl(this.apiBase, latitude, longitude),
+      forecastUrl(this.apiBase, location.output),
       request.signal,
     );
     if (!request.signal.aborted) this.forecast = forecast;
   }
 
-  protected override render() {
+  #announcement() {
     switch (this.forecast.status) {
       case "loading":
-        return html`<p role="status">${MESSAGES.loading}</p>`;
+        return MESSAGES.loading;
       case "ok":
-        return html`<p class="temperature">
+        return html`<span class="temperature">
           ${temperatureFormat.format(this.forecast.temperatureCelsius)}
-        </p>`;
+        </span>`;
       case "error":
-        return html`<p>${MESSAGES.forecastUnavailable}</p>
-          <button type="button" @click=${() => void this.#load()}>
-            ${MESSAGES.tryAgain}
-          </button>`;
+      case "invalid-location":
+        return MESSAGES.forecastUnavailable;
     }
+  }
+
+  protected override render() {
+    return html`<p role="status">${this.#announcement()}</p>
+      ${
+        this.forecast.status === "error"
+          ? html`<button type="button" @click=${() => void this.#load()}>
+              ${MESSAGES.tryAgain}
+            </button>`
+          : nothing
+      }`;
   }
 }

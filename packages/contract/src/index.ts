@@ -12,20 +12,24 @@ export const FORECAST_PATH = "/forecast";
 export const LATITUDE_RANGE = { min: -90, max: 90 } as const;
 export const LONGITUDE_RANGE = { min: -180, max: 180 } as const;
 
-const coordinate = (range: { readonly min: number; readonly max: number }) =>
-  v.pipe(
-    v.string(),
-    v.trim(),
-    v.nonEmpty(),
-    v.toNumber(),
-    v.finite(),
-    v.minValue(range.min),
-    v.maxValue(range.max),
-  );
+type CoordinateRange = Readonly<{ min: number; max: number }>;
 
-export const ForecastQuerySchema = v.object({
+const coordinate = (range: CoordinateRange) =>
+  v.pipe(v.number(), v.finite(), v.minValue(range.min), v.maxValue(range.max));
+
+const coordinateQueryParameter = (range: CoordinateRange) =>
+  v.pipe(v.string(), v.trim(), v.nonEmpty(), v.toNumber(), coordinate(range));
+
+export const CoordinatesSchema = v.object({
   latitude: coordinate(LATITUDE_RANGE),
   longitude: coordinate(LONGITUDE_RANGE),
+});
+
+export type Coordinates = v.InferOutput<typeof CoordinatesSchema>;
+
+export const ForecastQuerySchema = v.object({
+  latitude: coordinateQueryParameter(LATITUDE_RANGE),
+  longitude: coordinateQueryParameter(LONGITUDE_RANGE),
 });
 
 export type ForecastQuery = v.InferOutput<typeof ForecastQuerySchema>;
