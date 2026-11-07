@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@weather-widget/proxy": "workspace:*",
+    "@weather-widget/widget": "workspace:*",
     "vite": "8.3.5"
   }
 }
