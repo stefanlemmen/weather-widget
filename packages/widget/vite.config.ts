@@ -14,6 +14,12 @@ export default defineConfig({
     },
     outDir: `../../dist/${WIDGET_MODULE_DIRECTORY}`,
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        minify: true,
+        comments: { legal: true, annotation: false, jsdoc: false },
+      },
+    },
   },
   optimizeDeps: {
     include: ["lit", "valibot"],
