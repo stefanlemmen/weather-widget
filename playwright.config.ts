@@ -4,7 +4,9 @@ import { PREVIEW_ORIGIN } from "./scripts/preview-server.ts";
 export default defineConfig({
   testDir: "e2e",
   forbidOnly: Boolean(process.env.CI),
-  reporter: process.env.CI ? "github" : "list",
+  reporter: process.env.CI
+    ? [["github"], ["html", { open: "never" }], ["./e2e/summary-reporter.ts"]]
+    : "list",
   use: { baseURL: PREVIEW_ORIGIN },
   projects: [{ name: "chromium", use: devices["Desktop Chrome"] }],
   webServer: {
