@@ -8,10 +8,12 @@ import {
 
 const HEADING = "## Proxy tests (Vitest)";
 const FILE = "packages/proxy/test/forecast.test.ts";
-const SOURCE_URL = "https://github.com/owner/repo/blob/main";
+const SHA = "4106403736223f0c551d8502265696f6d6a31321";
+const SOURCE_URL = `https://github.com/owner/repo/blob/${SHA}`;
 
 const row = (overrides: Partial<TestRow>): TestRow => ({
   file: FILE,
+  line: 12,
   title: "the forecast route › answers with the current temperature",
   result: "passed",
   durationMs: 136.4,
@@ -30,19 +32,25 @@ describe("a test job summary", () => {
     expect(render([row({})])).toMatch(/^## Proxy tests \(Vitest\)\n/);
   });
 
-  it("lists every test with its file, result and duration", () => {
+  it("lists every test with its file name, result and duration", () => {
     const summary = render([row({})]);
 
     expect(summary).toContain("1 passed of 1 tests (run passed).");
     expect(summary).toContain("| Test | Result | Duration |");
     expect(summary).toContain(
-      `| ${FILE} &gt; the forecast route › answers with the current temperature | ✅ passed | 136 ms |`,
+      "| forecast.test.ts › the forecast route › answers with the current temperature | ✅ passed | 136 ms |",
     );
   });
 
-  it("links each test's file to its source", () => {
+  it("links each test's file name to the line in the source that defines it", () => {
     expect(render([row({})], "passed", SOURCE_URL)).toContain(
-      `| [${FILE}](${SOURCE_URL}/${FILE}) &gt; the forecast route › answers with the current temperature | ✅ passed |`,
+      `| [forecast.test.ts](${SOURCE_URL}/${FILE}#L12) › the forecast route › answers with the current temperature | ✅ passed |`,
+    );
+  });
+
+  it("links to the file when the line of a test is unknown", () => {
+    expect(render([row({ line: undefined })], "passed", SOURCE_URL)).toContain(
+      `| [forecast.test.ts](${SOURCE_URL}/${FILE}) › the forecast`,
     );
   });
 
@@ -60,9 +68,9 @@ describe("a test job summary", () => {
     expect(summary).toContain(
       "1 passed, 1 failed, 1 flaky, 1 skipped of 4 tests (run failed).",
     );
-    expect(summary).toContain(`| ${FILE} &gt; b | ⏭️ skipped |`);
-    expect(summary).toContain(`| ${FILE} &gt; c | ⚠️ flaky |`);
-    expect(summary).toContain(`| ${FILE} &gt; d | ❌ failed |`);
+    expect(summary).toContain("| forecast.test.ts › b | ⏭️ skipped |");
+    expect(summary).toContain("| forecast.test.ts › c | ⚠️ flaky |");
+    expect(summary).toContain("| forecast.test.ts › d | ❌ failed |");
   });
 
   it("lists each failure with its linked file and first error line", () => {
@@ -70,6 +78,7 @@ describe("a test job summary", () => {
       [
         row({
           file: "packages/widget/test/weather-widget.test.ts",
+          line: 40,
           title: "<weather-widget> › shows the temperature",
           result: "failed",
           firstErrorLine: "AssertionError: expected 5 to be 6",
@@ -81,7 +90,7 @@ describe("a test job summary", () => {
 
     expect(summary).toContain("### Failures");
     expect(summary).toContain(
-      `| [packages/widget/test/weather-widget.test.ts](${SOURCE_URL}/packages/widget/test/weather-widget.test.ts) &gt; &lt;weather-widget&gt; › shows the temperature | AssertionError: expected 5 to be 6 |`,
+      `| [weather-widget.test.ts](${SOURCE_URL}/packages/widget/test/weather-widget.test.ts#L40) › &lt;weather-widget&gt; › shows the temperature | AssertionError: expected 5 to be 6 |`,
     );
   });
 
@@ -101,17 +110,27 @@ describe("a test job summary", () => {
 });
 
 describe("the source URL for test files", () => {
-  it("points at the main branch of the repository the run belongs to", () => {
+  it("points at the commit the run tested", () => {
     expect(
       sourceUrlFrom({
         GITHUB_SERVER_URL: "https://github.com",
         GITHUB_REPOSITORY: "owner/repo",
+        SOURCE_SHA: SHA,
       }),
     ).toBe(SOURCE_URL);
   });
 
   it("is missing outside GitHub Actions", () => {
     expect(sourceUrlFrom({})).toBeUndefined();
+  });
+
+  it("is missing when the run doesn't say which commit it tested", () => {
+    expect(
+      sourceUrlFrom({
+        GITHUB_SERVER_URL: "https://github.com",
+        GITHUB_REPOSITORY: "owner/repo",
+      }),
+    ).toBeUndefined();
   });
 });
 

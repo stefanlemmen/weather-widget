@@ -27,6 +27,7 @@ const toRow = (test: TestCase) => {
   const result = test.result();
   return {
     file: repositoryPathOf(test.module.moduleId),
+    line: test.location?.line,
     title: test.fullName.replaceAll(" > ", " › "),
     result: RESULT_OF[result.state],
     durationMs: test.diagnostic()?.duration ?? 0,
@@ -65,7 +66,7 @@ class VitestSummaryReporter implements Reporter {
 
 export const vitestCiReporting = (
   title: string,
-): Pick<InlineConfig, "reporters"> =>
+): Pick<InlineConfig, "reporters" | "includeTaskLocation"> =>
   process.env.GITHUB_ACTIONS === "true"
     ? {
         reporters: [
@@ -73,5 +74,6 @@ export const vitestCiReporting = (
           ["github-actions", { jobSummary: { enabled: false } }],
           new VitestSummaryReporter(title),
         ],
+        includeTaskLocation: true,
       }
     : {};

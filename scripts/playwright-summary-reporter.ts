@@ -28,6 +28,7 @@ const toRow = (test: TestCase) => {
   const lastAttempt = test.results.at(-1);
   return {
     file: repositoryPathOf(test.location.file),
+    line: test.location.line,
     title: test.titlePath().slice(3).join(" › "),
     result: RESULT_OF[test.outcome()],
     durationMs: lastAttempt?.duration ?? 0,

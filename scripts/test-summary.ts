@@ -1,4 +1,4 @@
-import { relative, resolve } from "node:path";
+import { basename, relative, resolve } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { markdownTable } from "./markdown.ts";
 
@@ -8,6 +8,7 @@ export type TestResult = (typeof RESULTS)[number];
 
 export interface TestRow {
   readonly file: string;
+  readonly line: number | undefined;
   readonly title: string;
   readonly result: TestResult;
   readonly durationMs: number;
@@ -52,13 +53,22 @@ export const repositoryPathOf = (absolutePath: string) =>
 export const sourceUrlFrom = ({
   GITHUB_SERVER_URL,
   GITHUB_REPOSITORY,
+  SOURCE_SHA,
 }: Readonly<Record<string, string | undefined>>) =>
-  GITHUB_SERVER_URL && GITHUB_REPOSITORY
-    ? `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/main`
+  GITHUB_SERVER_URL && GITHUB_REPOSITORY && SOURCE_SHA
+    ? `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${SOURCE_SHA}`
     : undefined;
 
+const lineAnchorOf = (line: number | undefined) =>
+  line === undefined ? "" : `#L${String(line)}`;
+
+const fileCell = (row: TestRow, sourceUrl: string | undefined) =>
+  sourceUrl
+    ? `[${basename(row.file)}](${sourceUrl}/${row.file}${lineAnchorOf(row.line)})`
+    : basename(row.file);
+
 const testCell = (row: TestRow, sourceUrl: string | undefined) =>
-  `${sourceUrl ? `[${row.file}](${sourceUrl}/${row.file})` : row.file} > ${row.title}`;
+  `${fileCell(row, sourceUrl)} › ${row.title}`;
 
 export const renderTestSummary = ({
   heading,

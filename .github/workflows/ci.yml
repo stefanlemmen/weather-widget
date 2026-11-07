@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
 
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
