@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   firstLineOf,
   renderTestSummary,
+  sourceUrlFrom,
   type TestRow,
 } from "./test-summary.ts";
 
 const HEADING = "## Proxy tests (Vitest)";
+const FILE = "packages/proxy/test/forecast.test.ts";
+const SOURCE_URL = "https://github.com/owner/repo/blob/main";
 
 const row = (overrides: Partial<TestRow>): TestRow => ({
+  file: FILE,
   title: "the forecast route › answers with the current temperature",
   result: "passed",
   durationMs: 136.4,
@@ -15,26 +19,35 @@ const row = (overrides: Partial<TestRow>): TestRow => ({
   ...overrides,
 });
 
+const render = (
+  rows: readonly TestRow[],
+  status = "passed",
+  sourceUrl?: string,
+) => renderTestSummary({ heading: HEADING, rows, status, sourceUrl });
+
 describe("a test job summary", () => {
   it("starts with the heading it is given", () => {
-    expect(renderTestSummary(HEADING, [row({})], "passed")).toMatch(
-      /^## Proxy tests \(Vitest\)\n/,
-    );
+    expect(render([row({})])).toMatch(/^## Proxy tests \(Vitest\)\n/);
   });
 
-  it("lists every test with its result and duration", () => {
-    const summary = renderTestSummary(HEADING, [row({})], "passed");
+  it("lists every test with its file, result and duration", () => {
+    const summary = render([row({})]);
 
     expect(summary).toContain("1 passed of 1 tests (run passed).");
     expect(summary).toContain("| Test | Result | Duration |");
     expect(summary).toContain(
-      "| the forecast route › answers with the current temperature | ✅ passed | 136 ms |",
+      `| ${FILE} &gt; the forecast route › answers with the current temperature | ✅ passed | 136 ms |`,
+    );
+  });
+
+  it("links each test's file to its source", () => {
+    expect(render([row({})], "passed", SOURCE_URL)).toContain(
+      `| [${FILE}](${SOURCE_URL}/${FILE}) &gt; the forecast route › answers with the current temperature | ✅ passed |`,
     );
   });
 
   it("counts only passed tests as passed when tests were skipped, flaky or failed", () => {
-    const summary = renderTestSummary(
-      HEADING,
+    const summary = render(
       [
         row({ title: "a" }),
         row({ title: "b", result: "skipped" }),
@@ -47,46 +60,58 @@ describe("a test job summary", () => {
     expect(summary).toContain(
       "1 passed, 1 failed, 1 flaky, 1 skipped of 4 tests (run failed).",
     );
-    expect(summary).toContain("| b | ⏭️ skipped |");
-    expect(summary).toContain("| c | ⚠️ flaky |");
-    expect(summary).toContain("| d | ❌ failed |");
+    expect(summary).toContain(`| ${FILE} &gt; b | ⏭️ skipped |`);
+    expect(summary).toContain(`| ${FILE} &gt; c | ⚠️ flaky |`);
+    expect(summary).toContain(`| ${FILE} &gt; d | ❌ failed |`);
   });
 
-  it("lists each failure with its first error line", () => {
-    const summary = renderTestSummary(
-      HEADING,
+  it("lists each failure with its linked file and first error line", () => {
+    const summary = render(
       [
         row({
+          file: "packages/widget/test/weather-widget.test.ts",
           title: "<weather-widget> › shows the temperature",
           result: "failed",
           firstErrorLine: "AssertionError: expected 5 to be 6",
         }),
       ],
       "failed",
+      SOURCE_URL,
     );
 
     expect(summary).toContain("### Failures");
     expect(summary).toContain(
-      "| &lt;weather-widget&gt; › shows the temperature | AssertionError: expected 5 to be 6 |",
+      `| [packages/widget/test/weather-widget.test.ts](${SOURCE_URL}/packages/widget/test/weather-widget.test.ts) &gt; &lt;weather-widget&gt; › shows the temperature | AssertionError: expected 5 to be 6 |`,
     );
   });
 
   it("leaves out the failures section when nothing failed", () => {
-    expect(
-      renderTestSummary(HEADING, [row({ result: "flaky" })], "passed"),
-    ).not.toContain("### Failures");
+    expect(render([row({ result: "flaky" })])).not.toContain("### Failures");
   });
 
   it("says so when no tests ran", () => {
-    expect(renderTestSummary(HEADING, [], "interrupted")).toContain(
+    expect(render([], "interrupted")).toContain(
       "No tests ran (run interrupted).",
     );
   });
 
   it("ends with a blank line so the next summary on the page starts its own block", () => {
+    expect(render([row({})]).endsWith("\n\n")).toBe(true);
+  });
+});
+
+describe("the source URL for test files", () => {
+  it("points at the main branch of the repository the run belongs to", () => {
     expect(
-      renderTestSummary(HEADING, [row({})], "passed").endsWith("\n\n"),
-    ).toBe(true);
+      sourceUrlFrom({
+        GITHUB_SERVER_URL: "https://github.com",
+        GITHUB_REPOSITORY: "owner/repo",
+      }),
+    ).toBe(SOURCE_URL);
+  });
+
+  it("is missing outside GitHub Actions", () => {
+    expect(sourceUrlFrom({})).toBeUndefined();
   });
 });
 

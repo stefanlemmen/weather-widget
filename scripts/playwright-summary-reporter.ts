@@ -9,6 +9,8 @@ import type {
 import {
   firstLineOf,
   renderTestSummary,
+  repositoryPathOf,
+  sourceUrlFrom,
   type TestResult,
 } from "./test-summary.ts";
 
@@ -25,6 +27,7 @@ const RESULT_OF: Readonly<Record<ReturnType<TestCase["outcome"]>, TestResult>> =
 const toRow = (test: TestCase) => {
   const lastAttempt = test.results.at(-1);
   return {
+    file: repositoryPathOf(test.location.file),
     title: test.titlePath().slice(3).join(" › "),
     result: RESULT_OF[test.outcome()],
     durationMs: lastAttempt?.duration ?? 0,
@@ -44,11 +47,12 @@ export default class SummaryReporter implements Reporter {
     if (!summaryPath) return;
     await appendFile(
       summaryPath,
-      renderTestSummary(
-        HEADING,
-        this.#suite?.allTests().map(toRow) ?? [],
-        result.status,
-      ),
+      renderTestSummary({
+        heading: HEADING,
+        rows: this.#suite?.allTests().map(toRow) ?? [],
+        status: result.status,
+        sourceUrl: sourceUrlFrom(process.env),
+      }),
     );
   }
 

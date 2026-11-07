@@ -9,6 +9,8 @@ import type {
 import {
   firstLineOf,
   renderTestSummary,
+  repositoryPathOf,
+  sourceUrlFrom,
   type TestResult,
 } from "./test-summary.ts";
 
@@ -24,6 +26,7 @@ const RESULT_OF: Readonly<
 const toRow = (test: TestCase) => {
   const result = test.result();
   return {
+    file: repositoryPathOf(test.module.moduleId),
     title: test.fullName.replaceAll(" > ", " › "),
     result: RESULT_OF[result.state],
     durationMs: test.diagnostic()?.duration ?? 0,
@@ -50,7 +53,12 @@ class VitestSummaryReporter implements Reporter {
     );
     await appendFile(
       summaryPath,
-      renderTestSummary(`## ${this.#title} tests (Vitest)`, rows, reason),
+      renderTestSummary({
+        heading: `## ${this.#title} tests (Vitest)`,
+        rows,
+        status: reason,
+        sourceUrl: sourceUrlFrom(process.env),
+      }),
     );
   }
 }

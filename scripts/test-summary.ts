@@ -1,3 +1,4 @@
+import { relative, resolve } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import { markdownTable } from "./markdown.ts";
 
@@ -6,6 +7,7 @@ const RESULTS = ["passed", "failed", "flaky", "skipped"] as const;
 export type TestResult = (typeof RESULTS)[number];
 
 export interface TestRow {
+  readonly file: string;
   readonly title: string;
   readonly result: TestResult;
   readonly durationMs: number;
@@ -35,11 +37,35 @@ export const firstLineOf = (message: string | undefined) =>
     .map((line) => line.trim())
     .find((line) => line !== "");
 
-export const renderTestSummary = (
-  heading: string,
-  rows: readonly TestRow[],
-  status: string,
-) => {
+export interface TestSummary {
+  readonly heading: string;
+  readonly rows: readonly TestRow[];
+  readonly status: string;
+  readonly sourceUrl: string | undefined;
+}
+
+const REPOSITORY_ROOT = resolve(import.meta.dirname, "..");
+
+export const repositoryPathOf = (absolutePath: string) =>
+  relative(REPOSITORY_ROOT, absolutePath);
+
+export const sourceUrlFrom = ({
+  GITHUB_SERVER_URL,
+  GITHUB_REPOSITORY,
+}: Readonly<Record<string, string | undefined>>) =>
+  GITHUB_SERVER_URL && GITHUB_REPOSITORY
+    ? `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/main`
+    : undefined;
+
+const testCell = (row: TestRow, sourceUrl: string | undefined) =>
+  `${sourceUrl ? `[${row.file}](${sourceUrl}/${row.file})` : row.file} > ${row.title}`;
+
+export const renderTestSummary = ({
+  heading,
+  rows,
+  status,
+  sourceUrl,
+}: TestSummary) => {
   if (rows.length === 0) {
     return [heading, "", `No tests ran (run ${status}).`, "", ""].join("\n");
   }
@@ -53,7 +79,7 @@ export const renderTestSummary = (
     markdownTable(
       ["Test", "Result", "Duration"],
       rows.map((row) => [
-        row.title,
+        testCell(row, sourceUrl),
         RESULT_LABELS[row.result],
         `${String(Math.round(row.durationMs))} ms`,
       ]),
@@ -65,7 +91,10 @@ export const renderTestSummary = (
           "",
           markdownTable(
             ["Test", "Error"],
-            failures.map((row) => [row.title, row.firstErrorLine ?? ""]),
+            failures.map((row) => [
+              testCell(row, sourceUrl),
+              row.firstErrorLine ?? "",
+            ]),
           ),
         ]
       : []),
