@@ -6,7 +6,7 @@ export default defineConfig({
   testMatch: "**/*.spec.ts",
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI
-    ? [["github"], ["./e2e/summary-reporter.ts"]]
+    ? [["github"], ["./scripts/playwright-summary-reporter.ts"]]
     : "list",
   use: { baseURL: PREVIEW_ORIGIN },
   projects: [{ name: "chromium", use: devices["Desktop Chrome"] }],

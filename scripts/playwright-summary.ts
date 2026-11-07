@@ -1,5 +1,5 @@
 import type { FullResult, TestCase } from "@playwright/test/reporter";
-import { markdownTable } from "../scripts/markdown.ts";
+import { markdownTable } from "./markdown.ts";
 
 type Outcome = ReturnType<TestCase["outcome"]>;
 

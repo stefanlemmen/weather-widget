@@ -3,7 +3,7 @@ import { vitestCiReporting } from "./scripts/vitest-summary-reporter.ts";
 
 export default defineConfig({
   test: {
-    include: ["scripts/**/*.test.ts", "e2e/**/*.test.ts"],
+    include: ["scripts/**/*.test.ts"],
     ...vitestCiReporting("CI script"),
   },
 });
