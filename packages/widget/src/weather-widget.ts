@@ -2,7 +2,7 @@ import {
   FORECAST_PATH,
   ForecastResponseSchema,
   PROXY_BASE_PATH,
-} from "@weather-widget/forecast-contract";
+} from "@weather-widget/contract";
 import { css, html, LitElement, type PropertyValues } from "lit";
 import * as v from "valibot";
 import { MESSAGES } from "./messages.ts";

@@ -1,7 +1,7 @@
 import type {
   ForecastResponse,
   ProblemDetails,
-} from "@weather-widget/forecast-contract";
+} from "@weather-widget/contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import "../src/index.ts";

@@ -1,4 +1,4 @@
-import type { CurrentConditions } from "@weather-widget/forecast-contract";
+import type { CurrentConditions } from "@weather-widget/contract";
 import * as v from "valibot";
 import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
 

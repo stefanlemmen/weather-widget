@@ -2,7 +2,7 @@ import {
   HealthResponseSchema,
   PROBLEM_DETAILS_MEDIA_TYPE,
   ProblemDetailsSchema,
-} from "@weather-widget/forecast-contract";
+} from "@weather-widget/contract";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { createProxy } from "../src/index.ts";

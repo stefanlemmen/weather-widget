@@ -9,7 +9,7 @@ import {
   type ForecastResponse,
   type HealthResponse,
   type ProblemDetails,
-} from "@weather-widget/forecast-contract";
+} from "@weather-widget/contract";
 import { Hono, type Context } from "hono";
 import * as v from "valibot";
 import {
