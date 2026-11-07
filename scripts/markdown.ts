@@ -1,5 +1,10 @@
 const escapeCell = (cell: string) =>
-  cell.replaceAll("|", "\\|").replaceAll("\n", " ");
+  cell
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("|", "\\|")
+    .replaceAll(/\r?\n/g, " ");
 
 const tableRow = (cells: readonly string[]) =>
   `| ${cells.map(escapeCell).join(" | ")} |`;
