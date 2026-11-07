@@ -10,9 +10,9 @@ import {
   firstLineOf,
   renderTestSummary,
   repositoryPathOf,
-  sourceUrlFrom,
   type TestResult,
 } from "./test-summary.ts";
+import { sourceUrlFrom } from "./source-link.ts";
 
 const RESULT_OF: Readonly<
   Record<ReturnType<TestCase["result"]>["state"], TestResult>

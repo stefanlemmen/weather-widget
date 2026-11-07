@@ -50,15 +50,6 @@ const REPOSITORY_ROOT = resolve(import.meta.dirname, "..");
 export const repositoryPathOf = (absolutePath: string) =>
   relative(REPOSITORY_ROOT, absolutePath);
 
-export const sourceUrlFrom = ({
-  GITHUB_SERVER_URL,
-  GITHUB_REPOSITORY,
-  SOURCE_SHA,
-}: Readonly<Record<string, string | undefined>>) =>
-  GITHUB_SERVER_URL && GITHUB_REPOSITORY && SOURCE_SHA
-    ? `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${SOURCE_SHA}`
-    : undefined;
-
 const lineAnchorOf = (line: number | undefined) =>
   line === undefined ? "" : `#L${String(line)}`;
 

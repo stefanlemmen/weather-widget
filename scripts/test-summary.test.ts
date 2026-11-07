@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   firstLineOf,
   renderTestSummary,
-  sourceUrlFrom,
   type TestRow,
 } from "./test-summary.ts";
 
@@ -107,31 +106,6 @@ describe("a test job summary", () => {
 
   it("ends with a blank line so the next summary on the page starts its own block", () => {
     expect(render([row({})]).endsWith("\n\n")).toBe(true);
-  });
-});
-
-describe("the source URL for test files", () => {
-  it("points at the commit the run tested", () => {
-    expect(
-      sourceUrlFrom({
-        GITHUB_SERVER_URL: "https://github.com",
-        GITHUB_REPOSITORY: "owner/repo",
-        SOURCE_SHA: SHA,
-      }),
-    ).toBe(SOURCE_URL);
-  });
-
-  it("is missing outside GitHub Actions", () => {
-    expect(sourceUrlFrom({})).toBeUndefined();
-  });
-
-  it("is missing when the run doesn't say which commit it tested", () => {
-    expect(
-      sourceUrlFrom({
-        GITHUB_SERVER_URL: "https://github.com",
-        GITHUB_REPOSITORY: "owner/repo",
-      }),
-    ).toBeUndefined();
   });
 });
 
