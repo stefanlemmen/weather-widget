@@ -31,6 +31,7 @@ export interface LighthouseResults {
     v.InferOutput<typeof FailedAssertionsSchema> | undefined;
   readonly links: v.InferOutput<typeof ReportLinksSchema>;
   readonly budgetCount: number;
+  readonly sourceUrl: string | undefined;
 }
 
 const NO_VALUE = "–";
@@ -48,6 +49,16 @@ const median = (values: readonly number[]) =>
 
 const pathOf = (url: string) => new URL(url).pathname;
 
+const EXAMPLE_HOSTS_DIRECTORY = "hosts";
+const EXAMPLE_HOST_PAGE = "index.html";
+
+const urlCell = (url: string, sourceUrl: string | undefined) => {
+  const path = pathOf(url);
+  return sourceUrl
+    ? `[${path}](${sourceUrl}/${EXAMPLE_HOSTS_DIRECTORY}${path}${EXAMPLE_HOST_PAGE})`
+    : path;
+};
+
 const scoreCell = (runs: readonly LighthouseRun[], category: string) => {
   const score = median(
     runs
@@ -57,7 +68,11 @@ const scoreCell = (runs: readonly LighthouseRun[], category: string) => {
   return score === undefined ? NO_VALUE : String(Math.round(score * 100));
 };
 
-const budgetLines = ({ failedAssertions, budgetCount }: LighthouseResults) => {
+const budgetLines = ({
+  failedAssertions,
+  budgetCount,
+  sourceUrl,
+}: LighthouseResults) => {
   if (failedAssertions === undefined) {
     return ["The budget assertions didn't run."];
   }
@@ -70,7 +85,7 @@ const budgetLines = ({ failedAssertions, budgetCount }: LighthouseResults) => {
     markdownTable(
       ["URL", "Assertion", "Expected", "Actual", "Level"],
       failedAssertions.map((assertion) => [
-        pathOf(assertion.url),
+        urlCell(assertion.url, sourceUrl),
         assertion.auditId
           ? `${assertion.auditId} (${assertion.name})`
           : assertion.name,
@@ -99,7 +114,7 @@ export const renderLighthouseSummary = (results: LighthouseResults) => {
       [...runsByUrl].map(([url, runs]) => {
         const report = results.links[url];
         return [
-          pathOf(url),
+          urlCell(url, results.sourceUrl),
           ...categories.map(([id]) => scoreCell(runs, id)),
           report ? `[report](${report})` : NO_VALUE,
         ];

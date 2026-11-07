@@ -6,6 +6,7 @@ import {
   renderLighthouseSummary,
   ReportLinksSchema,
 } from "./lighthouse-summary-report.ts";
+import { sourceUrlFrom } from "./source-link.ts";
 
 const LHCI_DIRECTORY = new URL("../.lighthouseci/", import.meta.url);
 const LIGHTHOUSE_CONFIG = new URL("../lighthouserc.json", import.meta.url);
@@ -69,6 +70,7 @@ const summary = renderLighthouseSummary({
   budgetCount:
     Object.keys(config.ci.assert.assertions).length *
     config.ci.collect.url.length,
+  sourceUrl: sourceUrlFrom(process.env),
 });
 
 const summaryPath = process.env.GITHUB_STEP_SUMMARY;

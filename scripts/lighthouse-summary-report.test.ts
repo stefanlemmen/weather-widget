@@ -25,7 +25,10 @@ const passingResults = {
   failedAssertions: [],
   links: { [VANILLA]: "https://storage.example/report.html" },
   budgetCount: 7,
+  sourceUrl: undefined,
 };
+
+const SOURCE_URL = "https://github.com/owner/repo/blob/4106403";
 
 describe("the Lighthouse job summary", () => {
   it("shows each category's score per URL with a link to its report", () => {
@@ -34,6 +37,14 @@ describe("the Lighthouse job summary", () => {
     expect(summary).toContain("| URL | Performance | SEO | Report |");
     expect(summary).toContain(
       "| /vanilla/ | 98 | 100 | [report](https://storage.example/report.html) |",
+    );
+  });
+
+  it("links each URL to the source of its Example host page", () => {
+    expect(
+      renderLighthouseSummary({ ...passingResults, sourceUrl: SOURCE_URL }),
+    ).toContain(
+      `| [/vanilla/](${SOURCE_URL}/hosts/vanilla/index.html) | 98 | 100 |`,
     );
   });
 
@@ -98,6 +109,27 @@ describe("the Lighthouse job summary", () => {
     expect(summary).toContain("1 of 7 budget assertions fail:");
     expect(summary).toContain(
       "| /vanilla/ | largest-contentful-paint (maxNumericValue) | &lt;= 2500 | 3120.5 | error |",
+    );
+  });
+
+  it("links the URL of each failed budget to the source of its page", () => {
+    const summary = renderLighthouseSummary({
+      ...passingResults,
+      sourceUrl: SOURCE_URL,
+      failedAssertions: [
+        {
+          url: REACT,
+          name: "maxNumericValue",
+          level: "warn",
+          operator: "<=",
+          expected: 1,
+          actual: 2,
+        },
+      ],
+    });
+
+    expect(summary).toContain(
+      `| [/react/](${SOURCE_URL}/hosts/react/index.html) | maxNumericValue |`,
     );
   });
 
