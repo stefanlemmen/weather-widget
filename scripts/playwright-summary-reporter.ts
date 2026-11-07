@@ -1,5 +1,4 @@
 import { appendFile } from "node:fs/promises";
-import { stripVTControlCharacters } from "node:util";
 import type {
   FullConfig,
   FullResult,
@@ -8,21 +7,28 @@ import type {
   TestCase,
 } from "@playwright/test/reporter";
 import {
-  renderPlaywrightSummary,
-  type PlaywrightTestRow,
-} from "./playwright-summary.ts";
+  firstLineOf,
+  renderTestSummary,
+  type TestResult,
+} from "./test-summary.ts";
 
-const toRow = (test: TestCase): PlaywrightTestRow => {
+const HEADING = "## End-to-end tests (Playwright)";
+
+const RESULT_OF: Readonly<Record<ReturnType<TestCase["outcome"]>, TestResult>> =
+  {
+    expected: "passed",
+    unexpected: "failed",
+    flaky: "flaky",
+    skipped: "skipped",
+  };
+
+const toRow = (test: TestCase) => {
   const lastAttempt = test.results.at(-1);
   return {
-    title: test.titlePath().filter(Boolean).slice(1).join(" › "),
-    outcome: test.outcome(),
+    title: test.titlePath().slice(3).join(" › "),
+    result: RESULT_OF[test.outcome()],
     durationMs: lastAttempt?.duration ?? 0,
-    firstErrorLine: lastAttempt?.error?.message
-      ?.split("\n")
-      .map(stripVTControlCharacters)
-      .map((line) => line.trim())
-      .find((line) => line !== ""),
+    firstErrorLine: firstLineOf(lastAttempt?.error?.message),
   };
 };
 
@@ -38,7 +44,8 @@ export default class SummaryReporter implements Reporter {
     if (!summaryPath) return;
     await appendFile(
       summaryPath,
-      renderPlaywrightSummary(
+      renderTestSummary(
+        HEADING,
         this.#suite?.allTests().map(toRow) ?? [],
         result.status,
       ),

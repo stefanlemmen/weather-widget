@@ -1,24 +1,33 @@
 import { appendFile } from "node:fs/promises";
-import { stripVTControlCharacters } from "node:util";
-import type { InlineConfig, Reporter, TestCase, TestModule } from "vitest/node";
+import type {
+  InlineConfig,
+  Reporter,
+  TestCase,
+  TestModule,
+  TestRunEndReason,
+} from "vitest/node";
 import {
-  renderVitestSummary,
-  type VitestRunEndReason,
-  type VitestTestRow,
-} from "./vitest-summary.ts";
+  firstLineOf,
+  renderTestSummary,
+  type TestResult,
+} from "./test-summary.ts";
 
-const toRow = (test: TestCase): VitestTestRow => {
+const RESULT_OF: Readonly<
+  Record<ReturnType<TestCase["result"]>["state"], TestResult>
+> = {
+  passed: "passed",
+  failed: "failed",
+  skipped: "skipped",
+  pending: "skipped",
+};
+
+const toRow = (test: TestCase) => {
   const result = test.result();
   return {
-    file: test.module.relativeModuleId,
-    name: test.fullName.replaceAll(" > ", " › "),
-    state: result.state,
+    title: test.fullName.replaceAll(" > ", " › "),
+    result: RESULT_OF[result.state],
     durationMs: test.diagnostic()?.duration ?? 0,
-    firstErrorLine: result.errors?.[0]?.message
-      .split("\n")
-      .map(stripVTControlCharacters)
-      .map((line) => line.trim())
-      .find((line) => line !== ""),
+    firstErrorLine: firstLineOf(result.errors?.[0]?.message),
   };
 };
 
@@ -32,7 +41,7 @@ class VitestSummaryReporter implements Reporter {
   async onTestRunEnd(
     testModules: readonly TestModule[],
     _unhandledErrors: unknown,
-    reason: VitestRunEndReason,
+    reason: TestRunEndReason,
   ) {
     const summaryPath = process.env.GITHUB_STEP_SUMMARY;
     if (!summaryPath) return;
@@ -41,7 +50,7 @@ class VitestSummaryReporter implements Reporter {
     );
     await appendFile(
       summaryPath,
-      renderVitestSummary(this.#title, rows, reason),
+      renderTestSummary(`## ${this.#title} tests (Vitest)`, rows, reason),
     );
   }
 }
