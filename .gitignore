@@ -4,3 +4,7 @@ dist
 .lighthouseci
 .env*
 !.env.example
+__screenshots__
+test-results
+playwright-report
+.vitest-attachments

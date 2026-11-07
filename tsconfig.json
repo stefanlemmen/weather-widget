@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["scripts", "eslint.config.ts"]
+  "include": ["scripts", "e2e", "eslint.config.ts", "playwright.config.ts"]
 }

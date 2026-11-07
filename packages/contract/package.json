@@ -1,5 +1,5 @@
 {
-  "name": "@weather-widget/forecast-contract",
+  "name": "@weather-widget/contract",
   "private": true,
   "type": "module",
   "exports": {

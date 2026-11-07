@@ -1,8 +1,9 @@
 {
   "ci": {
     "collect": {
-      "staticDistDir": "./.vercel/output/static",
-      "url": ["http://localhost/vanilla/"],
+      "startServerCommand": "WEATHER_PROVIDER_MODE=fixtures pnpm preview",
+      "startServerReadyPattern": "Preview listening",
+      "url": ["http://localhost:4173/vanilla/"],
       "numberOfRuns": 3
     },
     "assert": {
