@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - hosts/*
+
+minimumReleaseAge: 10080
+strictDepBuilds: true
+saveExact: true

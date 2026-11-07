@@ -1,0 +1,14 @@
+{
+  "name": "@weather-widget/forecast-contract",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "valibot": "1.5.0"
+  }
+}
