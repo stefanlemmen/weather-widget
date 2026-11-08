@@ -5,8 +5,8 @@ import type {
 import * as v from "valibot";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
-import "../src/location-picker.ts";
-import type { LocationSelectDetail } from "../src/location-picker.ts";
+import "../src/index.ts";
+import type { LocationSelectDetail } from "../src/index.ts";
 import {
   fakeProxy,
   requestedUrls,

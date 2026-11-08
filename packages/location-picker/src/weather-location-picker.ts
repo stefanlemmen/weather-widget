@@ -14,8 +14,8 @@ import {
   PICKER_MESSAGES,
   type LocationError,
   type PickerMessages,
-} from "./picker-messages.ts";
-import { pickerStyles } from "./picker-styles.ts";
+} from "./messages.ts";
+import { pickerStyles } from "./styles.ts";
 
 export const WEATHER_LOCATION_PICKER_TAG = "weather-location-picker";
 export const LOCATION_SELECT_EVENT = "location-select";

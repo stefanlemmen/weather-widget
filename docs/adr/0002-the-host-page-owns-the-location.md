@@ -11,4 +11,5 @@ The Widget has no location UI: it shows the Forecast for the coordinates its Hos
 
 - The Location picker and the Widget don't know about each other: the picker emits a `location-select` event and the Host page sets the Widget's Location.
 - The Location picker is kept minimal (a form, results as buttons, no autocomplete), so it can be dropped without touching the Widget.
+- The Location picker ships as its own package, `@weather-widget/location-picker`, served from `/location-picker/weather-location-picker.js`. A Host page without a picker never loads its code. The picker keeps its own copy of the theme styles it uses, and an e2e test checks that its fallbacks match the Widget's.
 - Location search goes through the Proxy to the Search provider, Open-Meteo, whose free tier allows only non-commercial use and requires CC BY 4.0 credit.

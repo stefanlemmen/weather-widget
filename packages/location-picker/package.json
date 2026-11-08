@@ -1,0 +1,24 @@
+{
+  "name": "@weather-widget/location-picker",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./build-output": "./src/build-output.ts"
+  },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@weather-widget/contract": "workspace:*",
+    "lit": "3.3.3",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@vitest/browser-playwright": "4.1.12",
+    "vite": "8.3.5",
+    "vitest": "4.1.12"
+  }
+}

@@ -16,7 +16,6 @@ export const tokens = css`
     --_ink-muted: color-mix(in oklab, var(--_ink) 66%, var(--_ground));
     --_band: color-mix(in oklab, var(--_ink) 6%, var(--_ground));
     --_track: color-mix(in oklab, var(--_ink) 16%, var(--_ground));
-    --_field-border: color-mix(in oklab, var(--_ink) 55%, var(--_ground));
     --_rain: color-mix(in oklab, #3b82f0 65%, var(--_ink));
 
     --_size-display: clamp(3.5rem, 26.5cqi, 6.5rem);

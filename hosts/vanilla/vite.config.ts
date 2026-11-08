@@ -1,10 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { PROXY_BASE_PATH } from "@weather-widget/proxy";
 import { PROXY_DEV_ORIGIN } from "@weather-widget/proxy/dev-server";
-import {
-  LOCATION_PICKER_MODULE_PATH,
-  WIDGET_MODULE_PATH,
-} from "@weather-widget/widget/build-output";
+import { LOCATION_PICKER_MODULE_PATH } from "@weather-widget/location-picker/build-output";
+import { WIDGET_MODULE_PATH } from "@weather-widget/widget/build-output";
 import { defineConfig, type Plugin } from "vite";
 
 const VANILLA_HOST_BASE = "/vanilla/";
@@ -12,10 +10,7 @@ const sourceOf = (entryPoint: string) =>
   fileURLToPath(import.meta.resolve(entryPoint));
 const STANDALONE_MODULE_SOURCES = new Map([
   [WIDGET_MODULE_PATH, sourceOf("@weather-widget/widget")],
-  [
-    LOCATION_PICKER_MODULE_PATH,
-    sourceOf("@weather-widget/widget/location-picker"),
-  ],
+  [LOCATION_PICKER_MODULE_PATH, sourceOf("@weather-widget/location-picker")],
 ]);
 
 const serveStandaloneModulesFromSource = (): Plugin => ({

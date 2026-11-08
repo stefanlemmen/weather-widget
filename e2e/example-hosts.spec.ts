@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const RECORDED_NIEUWEGEIN_TEMPERATURE = "9°";
 const RECORDED_NIEUWEGEIN_NAME = "Nieuwegein";
@@ -18,6 +18,21 @@ const ZOOM_LEVELS = [
   { zoom: "200%", width: DESKTOP_WIDTH / 2 },
   { zoom: "400%", width: DESKTOP_WIDTH / 4 },
 ];
+
+const PICKER_MODULE_PATH = "/location-picker/weather-location-picker.js";
+
+const themeOf = (component: Locator) =>
+  component.evaluate((host) => {
+    const style = getComputedStyle(host);
+    const link = host.shadowRoot?.querySelector("a");
+    return {
+      font: style.fontFamily,
+      background: style.backgroundColor,
+      ink: style.color,
+      accent: link ? getComputedStyle(link).color : null,
+      radius: style.borderTopLeftRadius,
+    };
+  });
 
 const showEveryWidget = async (page: Page) => {
   await page.goto("/vanilla/");
@@ -386,27 +401,34 @@ test.describe("the vanilla Example host", () => {
       ).toBe("2.35");
     });
 
-    test("loads as its own standalone ES module, which the Widget's module leaves out", async ({
+    test("loads as its own standalone ES module from its own path", async ({
       page,
-      request,
     }) => {
-      const pickerModule = page.waitForResponse(
-        "**/widget/weather-location-picker.js",
-      );
+      const pickerModule = page.waitForResponse(PICKER_MODULE_PATH);
 
       await page.goto("/vanilla/");
 
       expect((await pickerModule).status()).toBe(200);
-      const widgetModule = await request.get("/widget/weather-widget.js");
-      expect(await widgetModule.text()).not.toContain(
-        "weather-location-picker",
-      );
     });
 
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`falls back to the same theme as the Widget in the ${colorScheme} scheme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await page.goto("/vanilla/");
+        const widget = page.locator("#chosen-location");
+        await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+
+        const widgetTheme = await themeOf(widget);
+
+        expect(widgetTheme.accent).not.toBeNull();
+        expect(await themeOf(picker(page))).toEqual(widgetTheme);
+      });
+    }
+
     test("ships the Lucide licence inside its module", async ({ request }) => {
-      const pickerModule = await request.get(
-        "/widget/weather-location-picker.js",
-      );
+      const pickerModule = await request.get(PICKER_MODULE_PATH);
 
       expect(await pickerModule.text()).toContain(
         "Lucide Icons and Contributors",

@@ -1,0 +1,3 @@
+export const LOCATION_PICKER_MODULE_DIRECTORY = "location-picker";
+export const LOCATION_PICKER_MODULE_FILE = "weather-location-picker.js";
+export const LOCATION_PICKER_MODULE_PATH = `/${LOCATION_PICKER_MODULE_DIRECTORY}/${LOCATION_PICKER_MODULE_FILE}`;
