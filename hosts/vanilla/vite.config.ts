@@ -1,21 +1,31 @@
 import { fileURLToPath } from "node:url";
 import { PROXY_BASE_PATH } from "@weather-widget/proxy";
 import { PROXY_DEV_ORIGIN } from "@weather-widget/proxy/dev-server";
-import { WIDGET_MODULE_PATH } from "@weather-widget/widget/build-output";
+import {
+  LOCATION_PICKER_MODULE_PATH,
+  WIDGET_MODULE_PATH,
+} from "@weather-widget/widget/build-output";
 import { defineConfig, type Plugin } from "vite";
 
 const VANILLA_HOST_BASE = "/vanilla/";
-const WIDGET_SOURCE = fileURLToPath(
-  import.meta.resolve("@weather-widget/widget"),
-);
+const sourceOf = (entryPoint: string) =>
+  fileURLToPath(import.meta.resolve(entryPoint));
+const STANDALONE_MODULE_SOURCES = new Map([
+  [WIDGET_MODULE_PATH, sourceOf("@weather-widget/widget")],
+  [
+    LOCATION_PICKER_MODULE_PATH,
+    sourceOf("@weather-widget/widget/location-picker"),
+  ],
+]);
 
-const serveWidgetModuleFromSource = (): Plugin => ({
-  name: "serve-widget-module-from-source",
+const serveStandaloneModulesFromSource = (): Plugin => ({
+  name: "serve-standalone-modules-from-source",
   apply: "serve",
   configureServer(server) {
     server.middlewares.use((request, _response, next) => {
-      if (request.url === WIDGET_MODULE_PATH) {
-        request.url = `${VANILLA_HOST_BASE}@fs${WIDGET_SOURCE}`;
+      const source = STANDALONE_MODULE_SOURCES.get(request.url ?? "");
+      if (source !== undefined) {
+        request.url = `${VANILLA_HOST_BASE}@fs${source}`;
       }
       next();
     });
@@ -24,7 +34,7 @@ const serveWidgetModuleFromSource = (): Plugin => ({
 
 export default defineConfig({
   base: VANILLA_HOST_BASE,
-  plugins: [serveWidgetModuleFromSource()],
+  plugins: [serveStandaloneModulesFromSource()],
   build: {
     outDir: `../../dist${VANILLA_HOST_BASE}`,
     emptyOutDir: true,
