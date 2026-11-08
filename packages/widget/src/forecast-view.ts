@@ -15,6 +15,7 @@ import {
 } from "./condition-icon.ts";
 import type { Formatter, Spoken } from "./format.ts";
 import type { Forecast } from "./forecast-client.ts";
+import type { ForecastState, ShownForecast } from "./forecast-loader.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";
 import type { Motion } from "./motion-preference.ts";
 
@@ -217,18 +218,9 @@ export const forecastView = (
     ${footer(context.format, forecast)}`;
 };
 
-type AnnouncedForecast = Forecast & {
-  readonly status: "ok";
-  readonly nameTakesFocus: boolean;
-};
-
-type Announced =
-  | { readonly status: "loading" | "retrying" | "error" | "invalid-location" }
-  | AnnouncedForecast;
-
 const shownForecastAnnouncement = (
   format: Formatter,
-  forecast: AnnouncedForecast,
+  forecast: ShownForecast,
   name: Spoken | string,
 ) => {
   const observed = observedAt(forecast);
@@ -248,7 +240,7 @@ const shownForecastAnnouncement = (
 
 export const forecastAnnouncement = (
   format: Formatter,
-  announced: Announced,
+  announced: ForecastState,
   nameOf: (forecast: Forecast) => Spoken | string,
 ) => {
   switch (announced.status) {

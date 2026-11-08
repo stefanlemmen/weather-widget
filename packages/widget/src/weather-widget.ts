@@ -1,14 +1,8 @@
-import { CoordinatesSchema, PROXY_BASE_PATH } from "@weather-widget/contract";
+import { PROXY_BASE_PATH } from "@weather-widget/contract";
 import { html, LitElement, type PropertyValues } from "lit";
-import * as v from "valibot";
 import { formatterFor, type Formatter, type Spoken } from "./format.ts";
-import {
-  fetchForecast,
-  keepsShownParts,
-  refreshedForecast,
-  requestedParts,
-  type Forecast,
-} from "./forecast-client.ts";
+import { requestedParts, type Forecast } from "./forecast-client.ts";
+import { ForecastLoader, type ForecastState } from "./forecast-loader.ts";
 import { forecastAnnouncement, forecastView } from "./forecast-view.ts";
 import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
 import { MotionPreference, STILL } from "./motion-preference.ts";
@@ -17,32 +11,11 @@ import { DEFAULT_UNITS, parseUnits } from "./units.ts";
 import { widgetStyles } from "./widget-styles.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
-type ShownForecast = Forecast & {
-  readonly status: "ok";
-  readonly nameTakesFocus: boolean;
-  readonly receivedAt: number;
-};
-
-type FetchingState =
-  { readonly status: "loading" } | { readonly status: "retrying" };
-
-type ForecastState =
-  | FetchingState
-  | ShownForecast
-  | { readonly status: "error" }
-  | { readonly status: "invalid-location" };
-
-const LOADING: FetchingState = { status: "loading" };
-const RETRYING: FetchingState = { status: "retrying" };
-const INVALID_LOCATION: ForecastState = { status: "invalid-location" };
 
 const nonBlank = (text: string | undefined) => {
   const trimmed = text?.trim();
   return trimmed === "" ? undefined : trimmed;
 };
-
-const NEAR_VIEWPORT_MARGIN = "200px";
-const FORECAST_MAX_AGE_MILLISECONDS = 10 * 60 * 1000;
 
 export class WeatherWidget extends LitElement {
   static override properties = {
@@ -53,7 +26,6 @@ export class WeatherWidget extends LitElement {
     parts: { type: String },
     locale: { type: String },
     units: { type: String },
-    forecast: { state: true },
   };
 
   static override styles = widgetStyles;
@@ -65,62 +37,15 @@ export class WeatherWidget extends LitElement {
   declare parts: string | undefined;
   declare locale: string | undefined;
   declare units: string | undefined;
-  declare private forecast: ForecastState;
 
-  #inFlight: AbortController | undefined;
-  #viewport: IntersectionObserver | undefined;
-  #nearViewport = false;
-  #requestChanged = false;
   #format: Formatter = formatterFor(DEFAULT_LOCALE, DEFAULT_UNITS);
+  #rendered: ForecastState | undefined;
   readonly #motionPreference = new MotionPreference(this);
+  readonly #loader = new ForecastLoader(this);
 
   constructor() {
     super();
     this.proxyUrl = PROXY_BASE_PATH;
-    this.forecast = LOADING;
-  }
-
-  override connectedCallback() {
-    super.connectedCallback();
-    document.addEventListener("visibilitychange", this.#refreshWhenStale);
-    if (!this.#nearViewport) this.#waitUntilNearViewport();
-    if (this.#requestChanged) this.requestUpdate();
-  }
-
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    document.removeEventListener("visibilitychange", this.#refreshWhenStale);
-    if (this.#inFlight && this.forecast.status !== "ok") {
-      this.#requestChanged = true;
-    }
-    this.#inFlight?.abort();
-    this.#inFlight = undefined;
-    this.#viewport?.disconnect();
-  }
-
-  readonly #refreshWhenStale = () => {
-    const shown = this.forecast;
-    if (
-      document.visibilityState === "visible" &&
-      this.#inFlight === undefined &&
-      shown.status === "ok" &&
-      Date.now() - shown.receivedAt > FORECAST_MAX_AGE_MILLISECONDS
-    ) {
-      void this.#refresh(shown);
-    }
-  };
-
-  #waitUntilNearViewport() {
-    this.#viewport = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        this.#viewport?.disconnect();
-        this.#nearViewport = true;
-        this.requestUpdate();
-      },
-      { rootMargin: NEAR_VIEWPORT_MARGIN },
-    );
-    this.#viewport.observe(this);
   }
 
   protected override willUpdate(changed: PropertyValues<this>) {
@@ -130,96 +55,23 @@ export class WeatherWidget extends LitElement {
         parseUnits(this.units),
       );
     }
-    if (
-      changed.has("latitude") ||
-      changed.has("longitude") ||
-      changed.has("proxyUrl") ||
-      changed.has("parts")
-    ) {
-      this.#requestChanged = true;
-    }
-    if (this.#nearViewport && this.#requestChanged) {
-      this.#requestChanged = false;
-      void this.#load(this.forecast.status === "retrying" ? RETRYING : LOADING);
-    }
   }
 
-  #request() {
-    this.#inFlight?.abort();
-    this.#inFlight = undefined;
-    const location = v.safeParse(CoordinatesSchema, {
-      latitude: this.latitude,
-      longitude: this.longitude,
-    });
-    if (!location.success) return undefined;
-
-    const request = new AbortController();
-    this.#inFlight = request;
-    return fetchForecast(
-      this.proxyUrl,
-      location.output,
-      requestedParts(this.parts),
-      request.signal,
-    ).then((forecast) => {
-      if (request.signal.aborted) return undefined;
-      this.#inFlight = undefined;
-      return forecast;
-    });
-  }
-
-  async #load(fetching: FetchingState = LOADING) {
-    const answer = this.#request();
-    if (!answer) {
-      this.forecast = INVALID_LOCATION;
-      return;
-    }
-
-    this.forecast = fetching;
-    const forecast = await answer;
-    if (!forecast) return;
-    this.forecast =
-      forecast.status === "ok"
-        ? {
-            ...forecast,
-            nameTakesFocus:
-              fetching.status === "retrying" &&
-              this.shadowRoot?.activeElement != null,
-            receivedAt: Date.now(),
-          }
-        : forecast;
-  }
-
-  async #refresh(shown: ShownForecast) {
-    const forecast = await this.#request();
-    if (forecast?.status !== "ok") return;
-    this.forecast = {
-      ...refreshedForecast(shown, forecast),
-      status: "ok",
-      nameTakesFocus: false,
-      receivedAt: keepsShownParts(shown, forecast)
-        ? shown.receivedAt
-        : Date.now(),
-    };
-  }
-
-  protected override updated(changed: PropertyValues) {
-    if (this.forecast.status === "loading") {
+  protected override updated() {
+    const forecast = this.#loader.state;
+    if (forecast.status === "loading") {
       this.setAttribute("aria-busy", "true");
     } else {
       this.removeAttribute("aria-busy");
     }
     if (
-      changed.has("forecast") &&
-      this.forecast.status === "ok" &&
-      this.forecast.nameTakesFocus
+      forecast !== this.#rendered &&
+      forecast.status === "ok" &&
+      forecast.nameTakesFocus
     ) {
       this.renderRoot.querySelector("h2")?.focus();
     }
-  }
-
-  #retry() {
-    if (this.forecast.status === "retrying") return;
-    void this.#load(RETRYING);
+    this.#rendered = forecast;
   }
 
   #locationName({ coordinates, location }: Forecast): Spoken | string {
@@ -244,24 +96,24 @@ export class WeatherWidget extends LitElement {
     </div>`;
   }
 
-  #content() {
-    switch (this.forecast.status) {
+  #content(forecast: ForecastState) {
+    switch (forecast.status) {
       case "loading":
         return this.#skeleton();
       case "ok":
         return forecastView(
           { format: this.#format, motion: this.#motionPreference.motion },
-          this.forecast,
-          this.#locationName(this.forecast),
+          forecast,
+          this.#locationName(forecast),
         );
       case "error":
       case "retrying":
         return html`<p>${this.#format.messages.forecastUnavailable}</p>
           <button
             type="button"
-            aria-disabled=${this.forecast.status === "retrying"}
+            aria-disabled=${forecast.status === "retrying"}
             @click=${() => {
-              this.#retry();
+              this.#loader.retry();
             }}
           >
             ${this.#format.messages.tryAgain}
@@ -272,14 +124,13 @@ export class WeatherWidget extends LitElement {
   }
 
   protected override render() {
-    const announcement = forecastAnnouncement(
-      this.#format,
-      this.forecast,
-      (forecast) => this.#locationName(forecast),
+    const forecast = this.#loader.state;
+    const announcement = forecastAnnouncement(this.#format, forecast, (shown) =>
+      this.#locationName(shown),
     );
     return html`<div lang=${this.#format.locale}>
       <div role="status" class="visually-hidden">${announcement}</div>
-      ${this.#content()}
+      ${this.#content(forecast)}
     </div>`;
   }
 }
