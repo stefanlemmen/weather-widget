@@ -316,21 +316,14 @@ const recordedFetch = recordedFetchFor([
 const optionsFor = (
   environment: Environment,
   dependencies: WeatherProviderDependencies,
-): WeatherProviderOptions =>
-  environment.mode === PROVIDER_MODES.fixtures
-    ? {
-        provider: WEATHER_PROVIDER,
-        key: FIXTURE_KEY,
-        fetch: recordedFetch,
-        timeoutMs: WEATHER_PROVIDER_TIMEOUT_MS,
-      }
-    : {
-        provider: WEATHER_PROVIDER,
-        key: environment.weatherProviderKey,
-        fetch: dependencies.fetch,
-        timeoutMs:
-          dependencies.weatherProviderTimeoutMs ?? WEATHER_PROVIDER_TIMEOUT_MS,
-      };
+): WeatherProviderOptions => ({
+  provider: WEATHER_PROVIDER,
+  timeoutMs:
+    dependencies.weatherProviderTimeoutMs ?? WEATHER_PROVIDER_TIMEOUT_MS,
+  ...(environment.mode === PROVIDER_MODES.fixtures
+    ? { key: FIXTURE_KEY, fetch: recordedFetch }
+    : { key: environment.weatherProviderKey, fetch: dependencies.fetch }),
+});
 
 export const createWeatherProvider = (
   environment: Environment,
