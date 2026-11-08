@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { base, tokens } from "./shared-styles.ts";
+import { base, tokens } from "./theme-styles.ts";
 
 const frame = css`
   .widget,
