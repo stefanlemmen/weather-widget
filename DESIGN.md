@@ -444,4 +444,4 @@ Build requirements the reference sheet can't show, for #6 to #12.
 - **Minus sign:** `Intl.NumberFormat` outputs a hyphen-minus, so replace it with U+2212 when formatting (#9).
 - **Accessible names:** hour and day icons carry the Condition as their accessible name. Icons next to a visible label (Current conditions, facts, N/A) are hidden. "chance of rain", "low" and "high" are visually hidden prefixes, and temperatures and wind are announced in full ("12 degrees Celsius", "24 kilometres per hour from the south-west").
 - **Skeleton:** render the loading state from the same template as the Forecast, with placeholder values wrapped in bones, so the two can't drift apart in size.
-- **Licenses:** ship `docs/design/icons/meteocons-LICENSE` and `lucide-LICENSE` with the icons.
+- **Licenses:** the Widget's build puts the licence from the `@meteocons/svg` package in a comment at the top of the Widget's module, so the notice always matches the icons it ships. Ship `docs/design/icons/lucide-LICENSE` with the Lucide icon.
