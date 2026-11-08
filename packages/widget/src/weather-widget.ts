@@ -1,8 +1,4 @@
-import {
-  CoordinatesSchema,
-  FORECAST_PARTS,
-  PROXY_BASE_PATH,
-} from "@weather-widget/contract";
+import { CoordinatesSchema, PROXY_BASE_PATH } from "@weather-widget/contract";
 import { html, LitElement, type PropertyValues } from "lit";
 import * as v from "valibot";
 import { formatterFor, type Formatter, type Spoken } from "./format.ts";
@@ -13,7 +9,7 @@ import {
   requestedParts,
   type Forecast,
 } from "./forecast-client.ts";
-import { forecastView, heard, observedAt } from "./forecast-view.ts";
+import { forecastAnnouncement, forecastView } from "./forecast-view.ts";
 import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
 import { MotionPreference, STILL } from "./motion-preference.ts";
 import { placeholderForecast } from "./skeleton.ts";
@@ -45,7 +41,6 @@ const nonBlank = (text: string | undefined) => {
   return trimmed === "" ? undefined : trimmed;
 };
 
-const ANNOUNCEMENT_SEPARATOR = ". ";
 const NEAR_VIEWPORT_MARGIN = "200px";
 const FORECAST_MAX_AGE_MILLISECONDS = 10 * 60 * 1000;
 
@@ -235,37 +230,6 @@ export class WeatherWidget extends LitElement {
     );
   }
 
-  #forecastAnnouncement(forecast: ShownForecast) {
-    const observed = observedAt(forecast);
-    const name = heard(this.#locationName(forecast));
-    const headline = observed
-      ? this.#format.messages.forecastForUpdatedAt(
-          name,
-          this.#format.time(observed, forecast.location.timeZone),
-        )
-      : this.#format.messages.forecastFor(name);
-    const failedParts = FORECAST_PARTS.filter(
-      (part) => forecast[part]?.status === "error",
-    ).map((part) => this.#format.messages.partUnavailable[part]);
-    return [
-      ...(forecast.nameTakesFocus ? [] : [headline]),
-      ...failedParts,
-    ].join(ANNOUNCEMENT_SEPARATOR);
-  }
-
-  #announcement() {
-    switch (this.forecast.status) {
-      case "loading":
-      case "retrying":
-        return this.#format.messages.loading;
-      case "ok":
-        return this.#forecastAnnouncement(this.forecast);
-      case "error":
-      case "invalid-location":
-        return this.#format.messages.forecastUnavailable;
-    }
-  }
-
   #skeleton() {
     const placeholder = placeholderForecast(
       requestedParts(this.parts),
@@ -308,8 +272,13 @@ export class WeatherWidget extends LitElement {
   }
 
   protected override render() {
+    const announcement = forecastAnnouncement(
+      this.#format,
+      this.forecast,
+      (forecast) => this.#locationName(forecast),
+    );
     return html`<div lang=${this.#format.locale}>
-      <div role="status" class="visually-hidden">${this.#announcement()}</div>
+      <div role="status" class="visually-hidden">${announcement}</div>
       ${this.#content()}
     </div>`;
   }
