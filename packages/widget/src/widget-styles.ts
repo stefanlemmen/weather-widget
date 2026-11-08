@@ -96,6 +96,7 @@ const currentConditions = css`
     font-weight: 500;
     text-align: center;
     text-wrap: balance;
+    hyphens: auto;
   }
 
   .condition .icon {
@@ -124,6 +125,7 @@ const currentConditions = css`
     justify-items: center;
     color: var(--_ink-muted);
     font-size: var(--_size-label);
+    hyphens: auto;
   }
 
   .fact .icon {

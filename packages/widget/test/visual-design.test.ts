@@ -42,9 +42,13 @@ const computed = (property: "color" | "backgroundColor", cssColor: string) => {
 
 const colorOf = (cssColor: string) => computed("color", cssColor);
 
-const renderAt = async (inlineSize: string, forecast = fullForecast()) => {
+const renderAt = async (
+  inlineSize: string,
+  forecast = fullForecast(),
+  attributes: Readonly<Record<string, string>> = NIEUWEGEIN,
+) => {
   fakeProxy.mockImplementation(() => respondWith(forecast));
-  const widget = renderWidget(NIEUWEGEIN);
+  const widget = renderWidget(attributes);
   widget.style.inlineSize = inlineSize;
   await expect.element(locationName()).toBeVisible();
   return widget;
@@ -315,6 +319,23 @@ describe("layout by the Widget's own width", () => {
           temperature.getBoundingClientRect().right,
         );
       }
+    });
+
+    it("hyphenates long fact and Condition labels, but not the Location's name", async () => {
+      const widget = await renderAt(COLUMN, fullForecast(), {
+        ...NIEUWEGEIN,
+        locale: "nl",
+      });
+
+      const hyphensOf = (element: Element | null | undefined) =>
+        element ? getComputedStyle(element).hyphens : undefined;
+      expect(hyphensOf(page.getByText("Gevoelstemperatuur").element())).toBe(
+        "auto",
+      );
+      expect(hyphensOf(widget.shadowRoot?.querySelector(".condition"))).toBe(
+        "auto",
+      );
+      expect(hyphensOf(locationName().element())).toBe("manual");
     });
 
     it("draws an icon beside each fact that screen readers skip", async () => {

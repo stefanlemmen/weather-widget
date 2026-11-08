@@ -309,7 +309,7 @@ Each Widget has one visually hidden `role="status"` element, outside the Forecas
 
 ### Facts
 
-Feels like (thermometer), Wind (compass) and Chance of precipitation (raindrop): an icon, a label in ink muted and a value at 600. The Chance of precipitation value is rain blue.
+Feels like (thermometer), Wind (compass) and Chance of precipitation (raindrop): an icon, a label in ink muted and a value at 600. The Chance of precipitation value is rain blue. Fact labels and the Condition label hyphenate (`hyphens: auto`), so a long Dutch word such as "Gevoelstemperatuur" breaks with a hyphen in a narrow column. The Location's name never hyphenates.
 
 ### Hour
 
