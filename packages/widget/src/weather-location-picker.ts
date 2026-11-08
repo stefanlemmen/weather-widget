@@ -1,5 +1,6 @@
 import {
   DEFAULT_LOCALE,
+  parseLocale,
   PROXY_BASE_PATH,
   roundCoordinates,
   type Coordinates,
@@ -8,7 +9,6 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import { html, LitElement, nothing, type PropertyValues } from "lit";
-import { parseLocale } from "./locale.ts";
 import { findLocations } from "./location-search.ts";
 import {
   PICKER_MESSAGES,
