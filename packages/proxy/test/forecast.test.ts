@@ -5,7 +5,7 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RECORDED_RESPONSES } from "../fixtures/recorded-responses.ts";
+import { RECORDED_RESPONSES, urlOf } from "../fixtures/recorded-responses.ts";
 import { createProxy } from "../src/index.ts";
 import {
   RECORDED_NIEUWEGEIN_DAYS,
@@ -49,7 +49,7 @@ type Respond = (url: URL) => Promise<Response>;
 const recordingFetch = (respond: Respond) => {
   const requestedUrls: URL[] = [];
   const fetch: typeof globalThis.fetch = (input) => {
-    const url = new URL(input instanceof Request ? input.url : input);
+    const url = urlOf(input);
     requestedUrls.push(url);
     return respond(url);
   };
@@ -416,7 +416,7 @@ describe("the forecast route", () => {
   const timingOut =
     (pathname: string): typeof globalThis.fetch =>
     (input, init) => {
-      const url = new URL(input instanceof Request ? input.url : input);
+      const url = urlOf(input);
       if (url.pathname !== pathname) return answerFromRecordings(url);
       return new Promise((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => {

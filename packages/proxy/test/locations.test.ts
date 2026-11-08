@@ -5,7 +5,7 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RECORDED_SEARCHES } from "../fixtures/recorded-responses.ts";
+import { RECORDED_SEARCHES, urlOf } from "../fixtures/recorded-responses.ts";
 import { createProxy } from "../src/index.ts";
 
 const liveEnvironment = { OPENWEATHER_API_KEY: "test-key" };
@@ -58,7 +58,7 @@ const jsonResponse = (body: unknown, status = 200) =>
 const proxyAnswering = (respond: Respond) => {
   const requestedUrls: URL[] = [];
   const fetch: typeof globalThis.fetch = (input) => {
-    const url = new URL(input instanceof Request ? input.url : input);
+    const url = urlOf(input);
     requestedUrls.push(url);
     return respond(url);
   };

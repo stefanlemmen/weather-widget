@@ -21,6 +21,9 @@ export const RECORDED_SEARCHES = {
 
 const NOT_RECORDED_STATUS = 404;
 
+export const urlOf = (input: Parameters<typeof globalThis.fetch>[0]): URL =>
+  new URL(input instanceof Request ? input.url : input);
+
 export const recordedFetchFor = (
   recordedByUrl: Iterable<readonly [url: string, recorded: unknown]>,
 ): typeof globalThis.fetch => {
@@ -31,7 +34,7 @@ export const recordedFetchFor = (
     ]),
   );
   return (input) => {
-    const url = new URL(input instanceof Request ? input.url : input);
+    const url = urlOf(input);
     const recorded = recordedByPath.get(url.pathname);
     return Promise.resolve(
       recorded === undefined
@@ -47,7 +50,7 @@ const RECORDED_SEARCHES_BY_TERM = new Map<string, unknown>([
 ]);
 
 export const recordedSearch: typeof globalThis.fetch = (input) => {
-  const url = new URL(input instanceof Request ? input.url : input);
+  const url = urlOf(input);
   const term = url.searchParams.get("name")?.toLocaleLowerCase() ?? "";
   return Promise.resolve(
     Response.json(
