@@ -68,9 +68,21 @@ export const CONDITIONS = [
 
 export type Condition = (typeof CONDITIONS)[number];
 
+export const DAYLIGHTS = ["day", "night"] as const;
+
+export type Daylight = (typeof DAYLIGHTS)[number];
+
+export const DAY: Daylight = "day";
+export const NIGHT: Daylight = "night";
+
+const ConditionSchema = v.picklist(CONDITIONS);
+const DaylightSchema = v.picklist(DAYLIGHTS);
+
 const ChanceSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
 export const CurrentConditionsSchema = v.object({
+  condition: ConditionSchema,
+  daylight: DaylightSchema,
   temperatureCelsius: v.number(),
   feelsLikeCelsius: v.number(),
   windSpeedMetresPerSecond: v.pipe(v.number(), v.minValue(0)),
@@ -83,7 +95,8 @@ export type CurrentConditions = v.InferOutput<typeof CurrentConditionsSchema>;
 
 export const HourSchema = v.object({
   startsAt: v.pipe(v.string(), v.isoTimestamp()),
-  condition: v.picklist(CONDITIONS),
+  condition: ConditionSchema,
+  daylight: DaylightSchema,
   temperatureCelsius: v.number(),
   precipitationChance: ChanceSchema,
 });
@@ -97,7 +110,7 @@ export type HourlyForecast = v.InferOutput<typeof HourlyForecastSchema>;
 export const DaySchema = v.pipe(
   v.object({
     date: v.pipe(v.string(), v.isoDate()),
-    condition: v.picklist(CONDITIONS),
+    condition: ConditionSchema,
     lowCelsius: v.number(),
     highCelsius: v.number(),
     precipitationChance: ChanceSchema,

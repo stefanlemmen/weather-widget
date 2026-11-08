@@ -29,6 +29,8 @@ const RECORDED_NIEUWEGEIN_FORECAST = {
     current: {
       status: "ok",
       data: {
+        condition: "overcast",
+        daylight: "day",
         temperatureCelsius: 8.85,
         feelsLikeCelsius: 6.93,
         windSpeedMetresPerSecond: 3.35,
@@ -751,6 +753,82 @@ describe("Conditions", () => {
       );
     },
   );
+});
+
+describe("day or night", () => {
+  const { sunrise, sunset } = recordedCurrentConditions.data[0] ?? {
+    sunrise: 0,
+    sunset: 0,
+  };
+  const ONE_HOUR_IN_SECONDS = 60 * 60;
+
+  const AROUND_SUNRISE_AND_SUNSET = [
+    ["before sunrise", sunrise - ONE_HOUR_IN_SECONDS, "04n", "night"],
+    ["at sunrise", sunrise, "04d", "day"],
+    ["before sunset", sunset - ONE_HOUR_IN_SECONDS, "04d", "day"],
+    ["at sunset", sunset, "04n", "night"],
+  ] as const;
+
+  const withWeatherAt = <TRecord extends { readonly weather: unknown[] }>(
+    record: TRecord,
+    dt: number,
+    icon: string,
+  ) => ({
+    ...record,
+    dt,
+    weather: [{ id: 804, main: "Clouds", description: "", icon }],
+  });
+
+  const forecastAnswering = async (pathname: string, body: unknown) => {
+    const { proxy } = proxyAnswering(
+      answerFromRecordingsExcept(pathname, () =>
+        Promise.resolve(jsonResponse(body)),
+      ),
+    );
+    const response = await proxy.request(
+      "/api/forecast?latitude=52.03&longitude=5.08",
+    );
+    return v.parse(ForecastResponseSchema, await response.json()).parts;
+  };
+
+  it.each(AROUND_SUNRISE_AND_SUNSET)(
+    "takes an hour %s as %s from the Weather provider's icon",
+    async (_, dt, icon, daylight) => {
+      const [first, ...rest] = recordedHourlyForecast.data;
+      const { hourly } = await forecastAnswering(HOURLY_PATH, {
+        ...recordedHourlyForecast,
+        data: [...(first ? [withWeatherAt(first, dt, icon)] : []), ...rest],
+      });
+
+      expect(hourly?.status === "ok" && hourly.data[0]?.daylight).toBe(
+        daylight,
+      );
+    },
+  );
+
+  it.each(AROUND_SUNRISE_AND_SUNSET)(
+    "takes Current conditions observed %s as %s from the Weather provider's icon",
+    async (_, dt, icon, daylight) => {
+      const [now] = recordedCurrentConditions.data;
+      const { current } = await forecastAnswering(CURRENT_PATH, {
+        ...recordedCurrentConditions,
+        data: now ? [withWeatherAt(now, dt, icon)] : [],
+      });
+
+      expect(current?.status === "ok" && current.data.daylight).toBe(daylight);
+    },
+  );
+  it("takes the Daily forecast's Conditions without the Weather provider's day or night", async () => {
+    const { daily } = await forecastAnswering(DAILY_PATH, {
+      ...recordedDailyForecast,
+      data: recordedDailyForecast.data.map((day) => ({
+        ...day,
+        weather: [{ id: 800 }],
+      })),
+    });
+
+    expect(daily?.status === "ok" && daily.data[0]?.condition).toBe("clear");
+  });
 });
 
 describe("the Proxy in fixture mode", () => {

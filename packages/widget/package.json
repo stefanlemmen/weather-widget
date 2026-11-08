@@ -12,6 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@meteocons/svg": "3.0.0-next.10",
+    "@meteocons/svg-static": "3.0.0-next.10",
     "@weather-widget/contract": "workspace:*",
     "lit": "3.3.3",
     "valibot": "1.5.0"

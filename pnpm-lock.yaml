@@ -93,6 +93,12 @@ importers:
 
   packages/widget:
     dependencies:
+      '@meteocons/svg':
+        specifier: 3.0.0-next.10
+        version: 3.0.0-next.10
+      '@meteocons/svg-static':
+        specifier: 3.0.0-next.10
+        version: 3.0.0-next.10
       '@weather-widget/contract':
         specifier: workspace:*
         version: link:../contract
@@ -239,6 +245,12 @@ packages:
 
   '@lit/reactive-element@2.1.2':
     resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
+
+  '@meteocons/svg-static@3.0.0-next.10':
+    resolution: {integrity: sha512-pVxx678gRenHjdDozzrT+fVNdGtoej5c3rNU3pnjZ2Za5j8H3ISNfS3mC75X+nVR+fvdSYbBsxbFLlhe1UU8ZQ==}
+
+  '@meteocons/svg@3.0.0-next.10':
+    resolution: {integrity: sha512-2vXbig1GFmL5jhXp3F4fbPdoS6rC2dLndLPVocorLQt7rIFZu97yuIY6QvpoP3g7oOdjUH+uOLdp/+Or7++mUg==}
 
   '@opentelemetry/api@1.10.0':
     resolution: {integrity: sha512-lMkyes8iHrG+mk6WH7X70MdCLI2RS0FwNBY1PyQ8UemaijE2m5mv5A0Niy3HtbYTFrgkUEQjFMXmSAk2hQDuPQ==}
@@ -2409,6 +2421,10 @@ snapshots:
   '@lit/reactive-element@2.1.2':
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.6.0
+
+  '@meteocons/svg-static@3.0.0-next.10': {}
+
+  '@meteocons/svg@3.0.0-next.10': {}
 
   '@opentelemetry/api@1.10.0': {}
 

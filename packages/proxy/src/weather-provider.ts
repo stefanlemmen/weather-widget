@@ -1,5 +1,7 @@
 import {
   CurrentConditionsSchema,
+  DAY,
+  NIGHT,
   DailyForecastSchema,
   HourlyForecastSchema,
   type Coordinates,
@@ -36,9 +38,28 @@ const isoTimestamp = (secondsSinceEpoch: number) =>
 
 const TimeZoneSchema = v.pipe(v.string(), v.nonEmpty());
 
+const DAY_OR_NIGHT_ICON = /^\d{2}[dn]$/;
+const NIGHT_ICON_SUFFIX = "n";
+
 const ConditionSchema = v.pipe(
   v.tupleWithRest([v.object({ id: v.number() })], v.unknown()),
   v.transform(([{ id }]) => conditionFor(id)),
+);
+
+const ConditionAndDaylightSchema = v.pipe(
+  v.tupleWithRest(
+    [
+      v.object({
+        id: v.number(),
+        icon: v.pipe(v.string(), v.regex(DAY_OR_NIGHT_ICON)),
+      }),
+    ],
+    v.unknown(),
+  ),
+  v.transform(([{ id, icon }]) => ({
+    condition: conditionFor(id),
+    daylight: icon.endsWith(NIGHT_ICON_SUFFIX) ? NIGHT : DAY,
+  })),
 );
 
 const CurrentResponseSchema = v.pipe(
@@ -51,12 +72,14 @@ const CurrentResponseSchema = v.pipe(
         feels_like: v.number(),
         wind_speed: v.number(),
         wind_deg: v.number(),
+        weather: ConditionAndDaylightSchema,
       }),
     ]),
   }),
   v.transform(({ timezone, data: [now] }) => ({
     timeZone: timezone,
     conditions: {
+      ...now.weather,
       temperatureCelsius: now.temp,
       feelsLikeCelsius: now.feels_like,
       windSpeedMetresPerSecond: now.wind_speed,
@@ -75,11 +98,11 @@ const HourRecordSchema = v.pipe(
     dt: v.number(),
     temp: v.number(),
     pop: v.number(),
-    weather: ConditionSchema,
+    weather: ConditionAndDaylightSchema,
   }),
   v.transform((hour) => ({
     startsAt: isoTimestamp(hour.dt),
-    condition: hour.weather,
+    ...hour.weather,
     temperatureCelsius: hour.temp,
     precipitationChance: hour.pop,
   })),

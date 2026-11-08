@@ -15,6 +15,7 @@ import {
 } from "./forecast-client.ts";
 import { forecastView, heard, observedAt } from "./forecast-view.ts";
 import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
+import { MotionPreference, STILL } from "./motion-preference.ts";
 import { placeholderForecast } from "./skeleton.ts";
 import { DEFAULT_UNITS, parseUnits } from "./units.ts";
 
@@ -61,7 +62,15 @@ export class WeatherWidget extends LitElement {
 
   static override styles = css`
     :host {
+      --_ground: light-dark(#eef3f9, #16263b);
+      --_ink: light-dark(#13243a, #f2f5f9);
+      --_accent: light-dark(#17703f, #6fdc9b);
+      --_track: color-mix(in oklab, var(--_ink) 16%, var(--_ground));
+      color-scheme: light dark;
+      background-color: var(--_ground);
+      color: var(--_ink);
       display: block;
+      container-type: inline-size;
       min-block-size: 6rem;
       font-family: system-ui, sans-serif;
     }
@@ -75,6 +84,10 @@ export class WeatherWidget extends LitElement {
 
     h2 {
       font-size: 1.25rem;
+    }
+
+    a {
+      color: var(--_accent);
     }
 
     .visually-hidden {
@@ -92,10 +105,14 @@ export class WeatherWidget extends LitElement {
       text-decoration: none;
     }
 
-    .skeleton :is(h2, h3, p, dt, dd, li > *) {
+    .skeleton :is(h2, h3, p, dt, dd, li > *, .condition > *) {
       inline-size: fit-content;
       border-radius: 4px;
-      background-color: color-mix(in srgb, CanvasText 12%, Canvas);
+      background-color: var(--_track);
+    }
+
+    .skeleton .condition {
+      background-color: transparent;
     }
 
     @media (prefers-reduced-motion: no-preference) {
@@ -108,6 +125,41 @@ export class WeatherWidget extends LitElement {
       to {
         opacity: 0.55;
       }
+    }
+
+    .icon {
+      display: inline-block;
+      inline-size: var(--_icon-size, 40px);
+      block-size: var(--_icon-size, 40px);
+      vertical-align: middle;
+    }
+
+    .icon svg {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+    }
+
+    .condition {
+      --_icon-size: 160px;
+    }
+
+    .daily {
+      --_icon-size: 36px;
+    }
+
+    @container (width < 24rem) {
+      .daily {
+        --_icon-size: 32px;
+      }
+    }
+
+    .skeleton .icon {
+      border-radius: 50%;
+    }
+
+    .skeleton .icon svg {
+      visibility: hidden;
     }
 
     .temperature {
@@ -131,6 +183,7 @@ export class WeatherWidget extends LitElement {
   #nearViewport = false;
   #requestChanged = false;
   #format: Formatter = formatterFor(DEFAULT_LOCALE, DEFAULT_UNITS);
+  readonly #motionPreference = new MotionPreference(this);
 
   constructor() {
     super();
@@ -325,7 +378,11 @@ export class WeatherWidget extends LitElement {
       new Date(),
     );
     return html`<div class="skeleton" aria-hidden="true" inert>
-      ${forecastView(this.#format, placeholder, this.#locationName(placeholder))}
+      ${forecastView(
+        { format: this.#format, motion: STILL },
+        placeholder,
+        this.#locationName(placeholder),
+      )}
     </div>`;
   }
 
@@ -335,7 +392,7 @@ export class WeatherWidget extends LitElement {
         return this.#skeleton();
       case "ok":
         return forecastView(
-          this.#format,
+          { format: this.#format, motion: this.#motionPreference.motion },
           this.forecast,
           this.#locationName(this.forecast),
         );
