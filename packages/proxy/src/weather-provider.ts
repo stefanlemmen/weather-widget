@@ -2,12 +2,12 @@ import {
   CurrentConditionsSchema,
   DailyForecastSchema,
   HourlyForecastSchema,
-  type Condition,
   type Coordinates,
   type ForecastPart,
   type Location,
 } from "@weather-widget/contract";
 import * as v from "valibot";
+import { conditionFor } from "./conditions.ts";
 import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
 import recordedDailyForecast from "../fixtures/daily-nieuwegein.json" with { type: "json" };
 import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { type: "json" };
@@ -23,35 +23,6 @@ const METRIC_UNITS = "metric";
 const NAMES_WANTED = "1";
 const MILLISECONDS_PER_SECOND = 1000;
 const ISO_DATE_LENGTH = "YYYY-MM-DD".length;
-
-const CONDITIONS_BY_CODE_RANGE: readonly (readonly [
-  from: number,
-  to: number,
-  condition: Condition,
-])[] = [
-  [200, 232, "thunderstorm"],
-  [300, 321, "drizzle"],
-  [500, 504, "rain"],
-  [511, 511, "sleet"],
-  [520, 531, "rain"],
-  [600, 602, "snow"],
-  [611, 616, "sleet"],
-  [620, 622, "snow"],
-  [701, 701, "fog"],
-  [711, 731, "haze"],
-  [741, 741, "fog"],
-  [751, 762, "haze"],
-  [771, 781, "thunderstorm"],
-  [800, 800, "clear"],
-  [801, 802, "partly-cloudy"],
-  [803, 803, "mostly-cloudy"],
-  [804, 804, "overcast"],
-];
-
-const conditionFor = (code: number): Condition =>
-  CONDITIONS_BY_CODE_RANGE.find(
-    ([from, to]) => code >= from && code <= to,
-  )?.[2] ?? "unknown";
 
 const isoTimestamp = (secondsSinceEpoch: number) =>
   new Date(secondsSinceEpoch * MILLISECONDS_PER_SECOND).toISOString();
