@@ -40,10 +40,17 @@ import { MESSAGES } from "./messages.ts";
 export const WEATHER_WIDGET_TAG = "weather-widget";
 type ForecastState =
   | { readonly status: "loading" }
+  | { readonly status: "retrying" }
   | ForecastResult
   | { readonly status: "invalid-location" };
 
-const LOADING: ForecastState = { status: "loading" };
+type FetchingState = Extract<
+  ForecastState,
+  { readonly status: "loading" | "retrying" }
+>;
+
+const LOADING: FetchingState = { status: "loading" };
+const RETRYING: FetchingState = { status: "retrying" };
 const INVALID_LOCATION: ForecastState = { status: "invalid-location" };
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
@@ -274,7 +281,7 @@ export class WeatherWidget extends LitElement {
     }
   }
 
-  async #load() {
+  async #load(fetching: FetchingState = LOADING) {
     this.#inFlight?.abort();
     const location = v.safeParse(CoordinatesSchema, {
       latitude: this.latitude,
@@ -285,7 +292,7 @@ export class WeatherWidget extends LitElement {
       return;
     }
 
-    this.forecast = LOADING;
+    this.forecast = fetching;
     const request = new AbortController();
     this.#inFlight = request;
     const forecast = await fetchForecast(
@@ -295,6 +302,16 @@ export class WeatherWidget extends LitElement {
       request.signal,
     );
     if (!request.signal.aborted) this.forecast = forecast;
+  }
+
+  async #retry() {
+    if (this.forecast.status === "retrying") return;
+    await this.#load(RETRYING);
+    await this.updateComplete;
+    const focusLeftWithTryAgain = document.activeElement === document.body;
+    if (this.forecast.status === "ok" && focusLeftWithTryAgain) {
+      this.renderRoot.querySelector("h2")?.focus();
+    }
   }
 
   #locationName({ coordinates, location }: Forecast): Spoken | string {
@@ -308,7 +325,7 @@ export class WeatherWidget extends LitElement {
   #forecast(forecast: Forecast) {
     const { current, hourly, daily, location } = forecast;
     const now = new Date();
-    return html`<h2>${spoken(this.#locationName(forecast))}</h2>
+    return html`<h2 tabindex="-1">${spoken(this.#locationName(forecast))}</h2>
       ${current ? currentConditions(current) : nothing}
       ${hourly ? hourlyForecast(hourly, location, now) : nothing}
       ${daily ? dailyForecast(daily, location, now) : nothing}
@@ -333,6 +350,7 @@ export class WeatherWidget extends LitElement {
   #announcement() {
     switch (this.forecast.status) {
       case "loading":
+      case "retrying":
         return MESSAGES.loading;
       case "ok":
         return this.#forecastAnnouncement(this.forecast);
@@ -349,8 +367,13 @@ export class WeatherWidget extends LitElement {
       case "ok":
         return this.#forecast(this.forecast);
       case "error":
+      case "retrying":
         return html`<p>${MESSAGES.forecastUnavailable}</p>
-          <button type="button" @click=${() => void this.#load()}>
+          <button
+            type="button"
+            aria-disabled=${this.forecast.status === "retrying"}
+            @click=${() => void this.#retry()}
+          >
             ${MESSAGES.tryAgain}
           </button>`;
       case "invalid-location":

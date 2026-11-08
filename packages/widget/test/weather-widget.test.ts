@@ -9,7 +9,7 @@ import type {
   ProblemDetails,
 } from "@weather-widget/contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import "../src/index.ts";
 
 const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
@@ -232,6 +232,97 @@ describe("<weather-widget>", () => {
 
     await expect.element(page.getByText("11°C")).toBeVisible();
     expect(fakeProxy).toHaveBeenCalledTimes(2);
+  });
+
+  describe("focus after Try again", () => {
+    const focusedIn = (widget: HTMLElement) =>
+      widget.shadowRoot?.activeElement ?? null;
+
+    const answerLater = () => {
+      let answer: (response: Response) => void = () => undefined;
+      fakeProxy.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      );
+      return (response: Response) => {
+        answer(response);
+      };
+    };
+
+    const pressTryAgain = async (widget: HTMLElement) => {
+      const tryAgain = page.getByRole("button", { name: "Try again" });
+      await tryAgain.click();
+      expect(focusedIn(widget)).toBe(tryAgain.element());
+      return tryAgain.element();
+    };
+
+    it("stays on Try again while the Widget fetches again and when it fails again", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      const widget = renderWidget(NIEUWEGEIN);
+      const answer = answerLater();
+      const tryAgain = await pressTryAgain(widget);
+
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Loading forecast");
+      expect(focusedIn(widget)).toBe(tryAgain);
+
+      answer(Response.json(unavailable, { status: 503 }));
+
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Forecast unavailable");
+      expect(focusedIn(widget)).toBe(tryAgain);
+    });
+
+    it("moves to the Location's name when the Forecast arrives", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      const widget = renderWidget(NIEUWEGEIN);
+      const answer = answerLater();
+      await pressTryAgain(widget);
+
+      answer(Response.json(fullForecast()));
+
+      const name = page.getByRole("heading", { level: 2 });
+      await expect.element(name).toBeVisible();
+      await vi.waitFor(() => {
+        expect(focusedIn(widget)).toBe(name.element());
+      });
+    });
+
+    it("stays where the visitor moved it while the Widget fetched", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      const widget = renderWidget(NIEUWEGEIN);
+      const answer = answerLater();
+      await pressTryAgain(widget);
+      const elsewhere = document.createElement("input");
+      document.body.append(elsewhere);
+      elsewhere.focus();
+
+      answer(Response.json(fullForecast()));
+
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toBeVisible();
+      await widget.updateComplete;
+      expect(document.activeElement).toBe(elsewhere);
+    });
+
+    it("fetches only once when the visitor presses Try again while it fetches", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      renderWidget(NIEUWEGEIN);
+      answerLater();
+      await page.getByRole("button", { name: "Try again" }).click();
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Loading forecast");
+
+      await userEvent.keyboard("{Enter}");
+
+      expect(fakeProxy).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("shows the Forecast for the new Location when the Host page changes it", async () => {
