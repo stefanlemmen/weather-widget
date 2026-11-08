@@ -66,6 +66,19 @@ export const formatTime = (isoTimestamp: string, timeZone: string) =>
     new Date(isoTimestamp),
   );
 
+export const formatHour = (isoTimestamp: string, timeZone: string) =>
+  new Intl.DateTimeFormat(LOCALE, { timeZone, hour: "numeric" }).format(
+    new Date(isoTimestamp),
+  );
+
+const CALENDAR_TIME_ZONE = "UTC";
+
+export const formatWeekday = (isoDate: string, weekday: "short" | "long") =>
+  new Intl.DateTimeFormat(LOCALE, {
+    timeZone: CALENDAR_TIME_ZONE,
+    weekday,
+  }).format(new Date(`${isoDate}T00:00:00Z`));
+
 const formatCoordinate = (
   value: number,
   positive: CompassPoint,
