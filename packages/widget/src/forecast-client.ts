@@ -91,3 +91,23 @@ export const fetchForecast = async (
     return FAILED;
   }
 };
+
+const keptPart = <TData>(
+  shown: Result<TData> | undefined,
+  fresh: Result<TData> | undefined,
+) => (fresh?.status === "error" && shown?.status === "ok" ? shown : fresh);
+
+export const refreshedForecast = (
+  shown: Forecast,
+  fresh: Forecast,
+): Forecast => {
+  const current = keptPart(shown.current, fresh.current);
+  const hourly = keptPart(shown.hourly, fresh.hourly);
+  const daily = keptPart(shown.daily, fresh.daily);
+  return {
+    ...fresh,
+    ...(current && { current }),
+    ...(hourly && { hourly }),
+    ...(daily && { daily }),
+  };
+};

@@ -10,7 +10,7 @@ import type {
 } from "@weather-widget/contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
-import "../src/index.ts";
+import { WeatherWidget } from "../src/index.ts";
 
 const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
 
@@ -125,7 +125,74 @@ const urlOf = (input: RequestInfo | URL) =>
 
 const requestedUrls = () => fakeProxy.mock.calls.map(([input]) => urlOf(input));
 
-const renderWidget = (attributes: Readonly<Record<string, string>>) => {
+const observers = new Set<FakeIntersectionObserver>();
+const RealIntersectionObserver = IntersectionObserver;
+
+class FakeIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin: string;
+  readonly scrollMargin = "0px";
+  readonly thresholds = [0];
+  readonly observed = new Set<Element>();
+  readonly #callback: IntersectionObserverCallback;
+  readonly #real: IntersectionObserver;
+
+  constructor(
+    callback: IntersectionObserverCallback,
+    options: IntersectionObserverInit = {},
+  ) {
+    this.#callback = callback;
+    this.#real = new RealIntersectionObserver(callback, options);
+    this.rootMargin = options.rootMargin ?? "0px";
+    observers.add(this);
+  }
+
+  observe(target: Element) {
+    if (target instanceof WeatherWidget) this.observed.add(target);
+    else this.#real.observe(target);
+  }
+
+  unobserve(target: Element) {
+    this.observed.delete(target);
+    this.#real.unobserve(target);
+  }
+
+  disconnect() {
+    this.observed.clear();
+    this.#real.disconnect();
+  }
+
+  takeRecords() {
+    return this.#real.takeRecords();
+  }
+
+  intersect(target: Element) {
+    if (!this.observed.has(target)) return;
+    const bounds = target.getBoundingClientRect();
+    this.#callback(
+      [
+        {
+          target,
+          isIntersecting: true,
+          intersectionRatio: 1,
+          boundingClientRect: bounds,
+          intersectionRect: bounds,
+          rootBounds: null,
+          time: performance.now(),
+        },
+      ],
+      this,
+    );
+  }
+}
+
+const nearViewport = (widget: Element) => {
+  for (const observer of observers) observer.intersect(widget);
+};
+
+const renderFarFromViewport = (
+  attributes: Readonly<Record<string, string>>,
+) => {
   const widget = document.createElement("weather-widget");
   for (const [name, value] of Object.entries(attributes)) {
     widget.setAttribute(name, value);
@@ -134,11 +201,30 @@ const renderWidget = (attributes: Readonly<Record<string, string>>) => {
   return widget;
 };
 
+const renderWidget = (attributes: Readonly<Record<string, string>>) => {
+  const widget = renderFarFromViewport(attributes);
+  nearViewport(widget);
+  return widget;
+};
+
+let visibility: DocumentVisibilityState = "visible";
+
+const setVisibility = (state: DocumentVisibilityState) => {
+  visibility = state;
+  document.dispatchEvent(new Event("visibilitychange"));
+};
+
 const ALL_PARTS = "current,hourly,daily";
 
 beforeEach(() => {
   fakeProxy.mockReset();
   vi.stubGlobal("fetch", fakeProxy);
+  observers.clear();
+  vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+  visibility = "visible";
+  vi.spyOn(document, "visibilityState", "get").mockImplementation(
+    () => visibility,
+  );
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(RECORDED_AT);
 });
@@ -146,6 +232,7 @@ beforeEach(() => {
 afterEach(() => {
   document.body.replaceChildren();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -340,6 +427,15 @@ describe("<weather-widget>", () => {
         .toHaveTextContent("Forecast for Nieuwegein, updated at 10:41 AM");
     });
 
+    it("stays on Try again when the Host page changes the Location while it fetches", async () => {
+      const { widget, tryAgain } = await retryingAfterFailure();
+
+      widget.setAttribute("latitude", "35.68");
+      await widget.updateComplete;
+
+      expect(focusedIn(widget)).toBe(tryAgain);
+    });
+
     it("fetches only once when the visitor presses Try again while it fetches", async () => {
       await retryingAfterFailure();
       await expect
@@ -408,6 +504,7 @@ describe("<weather-widget>", () => {
     widget.locationName = "Home";
     widget.parts = "current hourly daily";
     document.body.append(widget);
+    nearViewport(widget);
 
     await expect.element(page.getByText("5°C")).toBeVisible();
     await expect.element(locationName()).toHaveTextContent("Home");
@@ -520,14 +617,14 @@ describe("<weather-widget>", () => {
 
       renderWidget(NIEUWEGEIN);
 
-      await expect.element(page.getByText("Feels like")).toBeVisible();
+      await expect.element(locationName()).toBeVisible();
       expect(page.getByText("Chance of precipitation").query()).toBeNull();
     });
 
     it("shows the feels-like temperature, wind and chance of precipitation", async () => {
       renderWidget(NIEUWEGEIN);
 
-      await expect.element(page.getByText("Feels like")).toBeVisible();
+      await expect.element(locationName()).toBeVisible();
       expect(
         page.getByText("Feels like").element().nextElementSibling,
       ).toHaveTextContent("7°C");
@@ -623,9 +720,7 @@ describe("<weather-widget>", () => {
 
         renderWidget(NIEUWEGEIN);
 
-        await expect
-          .element(page.getByText("Wind", { exact: true }))
-          .toBeVisible();
+        await expect.element(locationName()).toBeVisible();
         expect(
           page.getByText("Wind", { exact: true }).element().nextElementSibling,
         ).toHaveTextContent(/^\s*Calm\s*$/);
@@ -1003,6 +1098,7 @@ describe("Forecast parts", () => {
     widget.longitude = 5.08;
     widget.parts = "daily";
     document.body.append(widget);
+    nearViewport(widget);
 
     await expect.element(dailyForecast()).toBeVisible();
     expect(requestedUrls()[0]?.searchParams.get("parts")).toBe("daily");
@@ -1117,5 +1213,239 @@ describe("Forecast parts", () => {
     await expect
       .element(page.getByRole("link", { name: "OpenWeather" }))
       .toBeVisible();
+  });
+});
+
+describe("loading", () => {
+  it("fetches only once the Widget nears the viewport", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastWithTemperature(15)),
+    );
+    const widget = renderFarFromViewport(NIEUWEGEIN);
+    await widget.updateComplete;
+
+    expect(fakeProxy).not.toHaveBeenCalled();
+
+    nearViewport(widget);
+
+    await expect.element(page.getByText("15°C")).toBeVisible();
+    expect(fakeProxy).toHaveBeenCalledTimes(1);
+  });
+
+  describe("skeleton", () => {
+    const answerLater = () => {
+      let answer: (response: Response) => void = () => undefined;
+      fakeProxy.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answer = resolve;
+          }),
+      );
+      return (response: Response) => {
+        answer(response);
+      };
+    };
+
+    const heightOf = (element: Element) =>
+      element.getBoundingClientRect().height;
+
+    it("takes the Forecast's size while loading, so nothing shifts when it arrives", async () => {
+      const answer = answerLater();
+      const widget = renderWidget(NIEUWEGEIN);
+      await widget.updateComplete;
+      const loadingHeight = heightOf(widget);
+
+      answer(Response.json(fullForecast()));
+
+      await expect.element(locationName()).toBeVisible();
+      expect(heightOf(widget)).toBe(loadingHeight);
+    });
+
+    it("leaves out the Forecast parts the Host page didn't ask for", async () => {
+      const answer = answerLater();
+      const widget = renderWidget({ ...NIEUWEGEIN, parts: "current" });
+      await widget.updateComplete;
+      const loadingHeight = heightOf(widget);
+
+      answer(Response.json(fullForecast()));
+
+      await expect.element(locationName()).toBeVisible();
+      expect(heightOf(widget)).toBe(loadingHeight);
+    });
+
+    it("marks the Widget busy and hides the placeholder from screen readers", async () => {
+      const answer = answerLater();
+      const widget = renderWidget(NIEUWEGEIN);
+      await widget.updateComplete;
+
+      expect(widget).toHaveAttribute("aria-busy", "true");
+      await expect.element(locationName()).not.toBeInTheDocument();
+      await expect.element(page.getByRole("link")).not.toBeInTheDocument();
+
+      answer(Response.json(fullForecast()));
+
+      await expect.element(locationName()).toBeVisible();
+      expect(widget).not.toHaveAttribute("aria-busy");
+    });
+  });
+
+  it("fetches the Location the Host page set last once it nears the viewport", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastWithTemperature(15)),
+    );
+    const widget = renderFarFromViewport(NIEUWEGEIN);
+    widget.setAttribute("latitude", "35.68");
+    await widget.updateComplete;
+
+    nearViewport(widget);
+
+    await expect.element(page.getByText("15°C")).toBeVisible();
+    expect(
+      requestedUrls().map((url) => url.searchParams.get("latitude")),
+    ).toEqual(["35.68"]);
+  });
+
+  it("fetches again when the Host page moves it while it was loading", async () => {
+    fakeProxy.mockImplementationOnce(() => new Promise(() => undefined));
+    const widget = renderWidget(NIEUWEGEIN);
+    await widget.updateComplete;
+    fakeProxy.mockImplementationOnce(() =>
+      respondWith(forecastWithTemperature(15)),
+    );
+
+    widget.remove();
+    document.body.append(widget);
+
+    await expect.element(page.getByText("15°C")).toBeVisible();
+  });
+
+  it("lets several Widgets on one page load and fail independently", async () => {
+    const TOKYO = { latitude: "35.68", longitude: "139.69" };
+    fakeProxy.mockImplementation((input) =>
+      urlOf(input).searchParams.get("latitude") === TOKYO.latitude
+        ? respondWith(unavailable, 503)
+        : respondWith(fullForecast()),
+    );
+    const nieuwegein = renderWidget({ ...NIEUWEGEIN, parts: "daily" });
+    const tokyo = renderFarFromViewport({ ...TOKYO, "location-name": "Tokyo" });
+    const inNieuwegein = page.elementLocator(nieuwegein);
+    const inTokyo = page.elementLocator(tokyo);
+
+    await expect
+      .element(inNieuwegein.getByRole("list", { name: "Next 5 days" }))
+      .toBeVisible();
+    expect(requestedUrls()).toHaveLength(1);
+
+    nearViewport(tokyo);
+
+    await expect
+      .element(inTokyo.getByRole("button", { name: "Try again" }))
+      .toBeVisible();
+    await expect
+      .element(inNieuwegein.getByRole("list", { name: "Next 5 days" }))
+      .toBeVisible();
+    expect(requestedUrls().map((url) => url.searchParams.get("parts"))).toEqual(
+      ["daily", ALL_PARTS],
+    );
+  });
+
+  describe("when the page becomes visible again", () => {
+    const MILLISECONDS_PER_MINUTE = 60 * 1000;
+
+    const minutesLater = (minutes: number) => {
+      vi.setSystemTime(
+        Date.parse(RECORDED_AT) + minutes * MILLISECONDS_PER_MINUTE,
+      );
+    };
+
+    const comeBackAfter = (minutes: number) => {
+      setVisibility("hidden");
+      minutesLater(minutes);
+      setVisibility("visible");
+    };
+
+    const showingFiveDegrees = async () => {
+      fakeProxy.mockImplementationOnce(() =>
+        respondWith(forecastWithTemperature(5)),
+      );
+      const widget = renderWidget(NIEUWEGEIN);
+      await expect.element(page.getByText("5°C")).toBeVisible();
+      return widget;
+    };
+
+    it("fetches again when the Forecast is more than 10 minutes old", async () => {
+      await showingFiveDegrees();
+      fakeProxy.mockImplementationOnce(() =>
+        respondWith(forecastWithTemperature(9)),
+      );
+
+      comeBackAfter(11);
+
+      await expect.element(page.getByText("9°C")).toBeVisible();
+      expect(fakeProxy).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the Forecast and its update time when the refresh fails, and tries again next time", async () => {
+      await showingFiveDegrees();
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+
+      comeBackAfter(11);
+
+      await vi.waitFor(() => {
+        expect(fakeProxy).toHaveBeenCalledTimes(2);
+      });
+      await expect.element(page.getByText("5°C")).toBeVisible();
+      await expect
+        .element(shownMessage("Updated at"))
+        .toHaveTextContent("Updated at 10:41 AM");
+      await expect
+        .element(announcement())
+        .toHaveTextContent(/^Forecast for Nieuwegein, updated at 10:41 AM$/);
+
+      fakeProxy.mockImplementationOnce(() =>
+        respondWith(forecastWithTemperature(9)),
+      );
+      comeBackAfter(12);
+
+      await expect.element(page.getByText("9°C")).toBeVisible();
+    });
+
+    it("keeps a part on screen when the refresh couldn't get it", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(fullForecast()));
+      renderWidget(NIEUWEGEIN);
+      const days = page.getByRole("list", { name: "Next 5 days" });
+      await expect.element(days).toBeVisible();
+      const failing = forecastFailing("daily");
+      fakeProxy.mockImplementationOnce(() =>
+        respondWith({
+          ...failing,
+          parts: {
+            ...failing.parts,
+            current: {
+              status: "ok",
+              data: { ...RECORDED_CONDITIONS, temperatureCelsius: 15 },
+            },
+          },
+        }),
+      );
+
+      comeBackAfter(11);
+
+      await expect.element(page.getByText("15°C")).toBeVisible();
+      await expect.element(days).toBeVisible();
+      await expect
+        .element(shownMessage("Daily forecast unavailable"))
+        .not.toBeInTheDocument();
+    });
+
+    it("keeps the Forecast without fetching when it is 10 minutes old or less", async () => {
+      const widget = await showingFiveDegrees();
+
+      comeBackAfter(10);
+      await widget.updateComplete;
+
+      expect(fakeProxy).toHaveBeenCalledTimes(1);
+      await expect.element(page.getByText("5°C")).toBeVisible();
+    });
   });
 });
