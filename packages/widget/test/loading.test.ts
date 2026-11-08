@@ -34,7 +34,7 @@ describe("loading", () => {
 
     nearViewport(widget);
 
-    await expect.element(page.getByText("15°C")).toBeVisible();
+    await expect.element(page.getByText("15°")).toBeVisible();
     expect(fakeProxy).toHaveBeenCalledTimes(1);
   });
 
@@ -105,7 +105,7 @@ describe("loading", () => {
 
     nearViewport(widget);
 
-    await expect.element(page.getByText("15°C")).toBeVisible();
+    await expect.element(page.getByText("15°")).toBeVisible();
     expect(
       requestedUrls().map((url) => url.searchParams.get("latitude")),
     ).toEqual(["35.68"]);
@@ -122,7 +122,7 @@ describe("loading", () => {
     widget.remove();
     document.body.append(widget);
 
-    await expect.element(page.getByText("15°C")).toBeVisible();
+    await expect.element(page.getByText("15°")).toBeVisible();
   });
 
   it("lets several Widgets on one page load and fail independently", async () => {
@@ -189,7 +189,7 @@ describe("loading", () => {
         respondWith(forecastWithTemperature(5)),
       );
       const widget = renderWidget(NIEUWEGEIN);
-      await expect.element(page.getByText("5°C")).toBeVisible();
+      await expect.element(page.getByText("5°")).toBeVisible();
       return widget;
     };
 
@@ -201,7 +201,7 @@ describe("loading", () => {
 
       comeBackAfter(11);
 
-      await expect.element(page.getByText("9°C")).toBeVisible();
+      await expect.element(page.getByText("9°")).toBeVisible();
       expect(fakeProxy).toHaveBeenCalledTimes(2);
     });
 
@@ -214,7 +214,7 @@ describe("loading", () => {
       await vi.waitFor(() => {
         expect(fakeProxy).toHaveBeenCalledTimes(2);
       });
-      await expect.element(page.getByText("5°C")).toBeVisible();
+      await expect.element(page.getByText("5°")).toBeVisible();
       await expect
         .element(shownMessage("Updated at"))
         .toHaveTextContent("Updated at 10:41 AM");
@@ -227,7 +227,7 @@ describe("loading", () => {
       );
       comeBackAfter(12);
 
-      await expect.element(page.getByText("9°C")).toBeVisible();
+      await expect.element(page.getByText("9°")).toBeVisible();
     });
 
     it("keeps a part on screen when the refresh couldn't get it", async () => {
@@ -241,7 +241,7 @@ describe("loading", () => {
 
       comeBackAfter(11);
 
-      await expect.element(page.getByText("15°C")).toBeVisible();
+      await expect.element(page.getByText("15°")).toBeVisible();
       await expect.element(days).toBeVisible();
       await expect
         .element(shownMessage("Daily forecast unavailable"))
@@ -256,7 +256,7 @@ describe("loading", () => {
         respondWith(fifteenDegreesWithoutDailyForecast()),
       );
       comeBackAfter(11);
-      await expect.element(page.getByText("15°C")).toBeVisible();
+      await expect.element(page.getByText("15°")).toBeVisible();
       fakeProxy.mockImplementationOnce(() => respondWith(fullForecast()));
 
       comeBackAfter(13);
@@ -273,7 +273,7 @@ describe("loading", () => {
       await widget.updateComplete;
 
       expect(fakeProxy).toHaveBeenCalledTimes(1);
-      await expect.element(page.getByText("5°C")).toBeVisible();
+      await expect.element(page.getByText("5°")).toBeVisible();
     });
   });
 });

@@ -32,13 +32,16 @@ describe("<weather-widget>", () => {
 
       await expect.element(locationName()).toBeVisible();
       expect(
-        page.getByText("Feels like").element().nextElementSibling,
-      ).toHaveTextContent("7°C");
+        page.getByText("Feels like").element().closest("dt")
+          ?.nextElementSibling,
+      ).toHaveTextContent("7°");
       expect(
-        page.getByText("Wind", { exact: true }).element().nextElementSibling,
+        page.getByText("Wind", { exact: true }).element().closest("dt")
+          ?.nextElementSibling,
       ).toHaveTextContent("12 km/h SSW");
       expect(
-        page.getByText("Chance of precipitation").element().nextElementSibling,
+        page.getByText("Chance of precipitation").element().closest("dt")
+          ?.nextElementSibling,
       ).toHaveTextContent("85%");
     });
 
@@ -66,7 +69,7 @@ describe("<weather-widget>", () => {
       await expect
         .element(page.getByText("9 degrees Celsius"))
         .toBeInTheDocument();
-      expect(page.getByText("9°C").element()).toHaveAttribute(
+      expect(page.getByText("9°").element()).toHaveAttribute(
         "aria-hidden",
         "true",
       );
@@ -128,7 +131,8 @@ describe("<weather-widget>", () => {
 
         await expect.element(locationName()).toBeVisible();
         expect(
-          page.getByText("Wind", { exact: true }).element().nextElementSibling,
+          page.getByText("Wind", { exact: true }).element().closest("dt")
+            ?.nextElementSibling,
         ).toHaveTextContent(/^\s*Calm\s*$/);
       },
     );

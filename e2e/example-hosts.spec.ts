@@ -1,9 +1,26 @@
-import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
 
-const RECORDED_NIEUWEGEIN_TEMPERATURE = "9°C";
+const RECORDED_NIEUWEGEIN_TEMPERATURE = "9°";
 const RECORDED_NIEUWEGEIN_NAME = "Nieuwegein";
 const RECORDED_AT = new Date("2026-11-08T09:41:44Z");
-const RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT = "48°F";
+const RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT = "48°";
+const WCAG_AA_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+const DESKTOP_WIDTH = 1280;
+const SHOWN_PARTS = "h2, h3, p, li, dt, dd, a, button, .icon";
+const VIEWPORT_HEIGHT = 800;
+const ZOOM_LEVELS = [
+  { zoom: "200%", width: DESKTOP_WIDTH / 2 },
+  { zoom: "400%", width: DESKTOP_WIDTH / 4 },
+];
+
+const showEveryWidget = async (page: Page) => {
+  await page.goto("/vanilla/");
+  for (const widget of await page.locator("weather-widget").all()) {
+    await widget.scrollIntoViewIfNeeded();
+    await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+  }
+};
 
 test.describe("the vanilla Example host", () => {
   test("shows the Current conditions for the Widget's Location", async ({
@@ -71,7 +88,7 @@ test.describe("the vanilla Example host", () => {
 
     await page.goto("/vanilla/");
     const widgets = page.locator("weather-widget");
-    await expect(widgets).toHaveCount(3);
+    await expect(widgets).toHaveCount(4);
     for (const widget of await widgets.all()) {
       await widget.scrollIntoViewIfNeeded();
     }
@@ -135,4 +152,79 @@ test.describe("the vanilla Example host", () => {
 
     expect(widgetModule.headers()["content-encoding"]).toBe("gzip");
   });
+
+  test("shows one Widget themed through its style attribute", async ({
+    page,
+  }) => {
+    await page.goto("/vanilla/");
+    const themed = page.locator("weather-widget[style]");
+    await themed.scrollIntoViewIfNeeded();
+
+    await expect(themed.getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(themed).toHaveCSS("background-color", "rgb(255, 250, 242)");
+    await expect(themed).toHaveCSS("color", "rgb(43, 29, 22)");
+    await expect(themed.getByRole("link", { name: "OpenWeather" })).toHaveCSS(
+      "color",
+      "rgb(156, 52, 18)",
+    );
+  });
+
+  test("draws its Widgets in the self-hosted Lexend", async ({ page }) => {
+    const font = page.waitForResponse(
+      "**/vanilla/fonts/lexend-latin-wght.woff2",
+    );
+
+    await page.goto("/vanilla/");
+
+    expect((await font).status()).toBe(200);
+    await expect(page.locator("weather-widget").first()).toHaveCSS(
+      "font-family",
+      /^Lexend/,
+    );
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`passes axe in the ${colorScheme} scheme, the themed Widget included`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await showEveryWidget(page);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(WCAG_AA_TAGS)
+        .analyze();
+
+      expect(results.violations).toEqual([]);
+    });
+  }
+
+  for (const { zoom, width } of ZOOM_LEVELS) {
+    test(`keeps everything inside each Widget at ${zoom} zoom`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
+      await showEveryWidget(page);
+
+      const cutOff: string[] = [];
+      for (const widget of await page.locator("weather-widget").all()) {
+        const bounds = await widget.boundingBox();
+        expect(bounds).not.toBeNull();
+        if (!bounds) continue;
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        for (const part of await widget.locator(SHOWN_PARTS).all()) {
+          const box = await part.boundingBox();
+          if (
+            box &&
+            box.width > 1 &&
+            (box.x < Math.floor(bounds.x) ||
+              box.x + box.width > Math.ceil(bounds.x + bounds.width))
+          ) {
+            cutOff.push(await part.innerText());
+          }
+        }
+      }
+
+      expect(cutOff).toEqual([]);
+    });
+  }
 });

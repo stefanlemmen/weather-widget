@@ -22,20 +22,39 @@ describe("units", () => {
 
     renderWidget(IMPERIAL);
 
-    await expect.element(page.getByText("48°F")).toBeVisible();
+    await expect.element(page.getByText("48°")).toBeVisible();
     expect(
-      page.getByText("Feels like").element().nextElementSibling,
-    ).toHaveTextContent("44°F");
+      page.getByText("Feels like").element().closest("dt")?.nextElementSibling,
+    ).toHaveTextContent("44°");
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("7 mph SSW");
     expect(
       hourlyForecast().getByRole("listitem").elements()[0],
-    ).toHaveTextContent(/10 AM.*87°F/);
+    ).toHaveTextContent(/10 AM.*87°/);
     expect(
       dailyForecast().getByRole("listitem").elements()[0],
-    ).toHaveTextContent(/Low\s*69°F.*High\s*123°F/);
+    ).toHaveTextContent(/Low\s*69°.*High\s*123°/);
   });
+
+  it.each([
+    ["metric", NIEUWEGEIN, "9°", "9 degrees Celsius"],
+    ["imperial", IMPERIAL, "48°", "48 degrees Fahrenheit"],
+  ])(
+    "shows %s temperatures with the degree sign alone and names the unit only to screen readers",
+    async (_, attributes, shown, heard) => {
+      fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+      renderWidget(attributes);
+
+      await expect
+        .element(page.getByText(shown, { exact: true }))
+        .toHaveAttribute("aria-hidden", "true");
+      expect(page.getByText(heard, { exact: true }).query()).not.toBeNull();
+      expect(page.getByText(/°[CF]/).query()).toBeNull();
+    },
+  );
 
   it("writes negative temperatures with a true minus sign in either unit", async () => {
     fakeProxy.mockImplementation(() =>
@@ -44,8 +63,8 @@ describe("units", () => {
 
     renderWidget(IMPERIAL);
 
-    await expect.element(page.getByText("−5°F")).toBeVisible();
-    expect(page.getByText("-5°F").query()).toBeNull();
+    await expect.element(page.getByText("−5°")).toBeVisible();
+    expect(page.getByText("-5°").query()).toBeNull();
   });
 
   it("tells screen readers the imperial units in full", async () => {
@@ -73,7 +92,8 @@ describe("units", () => {
 
     await expect.element(locationName()).toBeVisible();
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent(shown);
   });
 
@@ -86,7 +106,8 @@ describe("units", () => {
       .element(page.getByText("48 graden Fahrenheit"))
       .toBeInTheDocument();
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("7 mi/h ZZW");
   });
 
@@ -100,17 +121,17 @@ describe("units", () => {
 
     renderWidget({ ...NIEUWEGEIN, ...attributes });
 
-    await expect.element(page.getByText("9°C")).toBeVisible();
+    await expect.element(page.getByText("9°")).toBeVisible();
   });
 
   it("converts without asking the Proxy again when the Host page changes the units", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastWith()));
     const widget = renderWidget(NIEUWEGEIN);
-    await expect.element(page.getByText("9°C")).toBeVisible();
+    await expect.element(page.getByText("9°")).toBeVisible();
 
     widget.setAttribute("units", "imperial");
 
-    await expect.element(page.getByText("48°F")).toBeVisible();
+    await expect.element(page.getByText("48°")).toBeVisible();
     expect(fakeProxy).toHaveBeenCalledOnce();
   });
 });

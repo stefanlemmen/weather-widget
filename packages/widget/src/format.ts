@@ -14,6 +14,7 @@ const COORDINATE_DECIMALS = 2;
 const CALENDAR_TIME_ZONE = "UTC";
 const HYPHEN_MINUS = "-";
 const MINUS_SIGN = "\u2212";
+const DEGREE_SIGN = "°";
 
 const HOUR_FORMATS: Readonly<Record<Locale, Intl.DateTimeFormatOptions>> = {
   en: { hour: "numeric" },
@@ -58,14 +59,17 @@ export const formatterFor = (locale: Locale, units: Units): Formatter => {
       signDisplay: "negative",
     });
 
-  const temperatureFormat = (unitDisplay: "short" | "long") => {
-    const format = unitFormat(temperature.unit, unitDisplay);
-    return (value: number) =>
-      format.format(value).replace(HYPHEN_MINUS, MINUS_SIGN);
-  };
+  const withMinusSign = (format: Intl.NumberFormat) => (value: number) =>
+    format.format(value).replace(HYPHEN_MINUS, MINUS_SIGN);
 
-  const temperatureShort = temperatureFormat("short");
-  const temperatureLong = temperatureFormat("long");
+  const degrees = withMinusSign(
+    new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0,
+      signDisplay: "negative",
+    }),
+  );
+  const temperatureShown = (value: number) => `${degrees(value)}${DEGREE_SIGN}`;
+  const temperatureHeard = withMinusSign(unitFormat(temperature.unit, "long"));
   const speedShort = unitFormat(speed.unit, "short");
   const speedLong = unitFormat(speed.unit, "long");
   const percentFormat = new Intl.NumberFormat(locale, { style: "percent" });
@@ -93,8 +97,8 @@ export const formatterFor = (locale: Locale, units: Units): Formatter => {
     temperature: (celsius) => {
       const shownTemperature = temperature.fromMetric(celsius);
       return {
-        shown: temperatureShort(shownTemperature),
-        heard: temperatureLong(shownTemperature),
+        shown: temperatureShown(shownTemperature),
+        heard: temperatureHeard(shownTemperature),
       };
     },
     wind: (metresPerSecond, directionDegrees) => {

@@ -1,9 +1,14 @@
-import { PROXY_BASE_PATH } from "@weather-widget/contract";
+import { CoordinatesSchema, PROXY_BASE_PATH } from "@weather-widget/contract";
 import { html, LitElement, type PropertyValues } from "lit";
+import * as v from "valibot";
 import { formatterFor, type Formatter, type Spoken } from "./format.ts";
 import { requestedParts, type Forecast } from "./forecast-client.ts";
 import { ForecastLoader, type ForecastState } from "./forecast-loader.ts";
-import { forecastAnnouncement, forecastView } from "./forecast-view.ts";
+import {
+  errorView,
+  forecastAnnouncement,
+  forecastView,
+} from "./forecast-view.ts";
 import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
 import { MotionPreference, STILL } from "./motion-preference.ts";
 import { placeholderForecast } from "./skeleton.ts";
@@ -82,6 +87,19 @@ export class WeatherWidget extends LitElement {
     );
   }
 
+  #requestedName(): Spoken | string | undefined {
+    const coordinates = v.safeParse(CoordinatesSchema, {
+      latitude: this.latitude,
+      longitude: this.longitude,
+    });
+    return (
+      nonBlank(this.locationName) ??
+      (coordinates.success
+        ? this.#format.coordinates(coordinates.output)
+        : undefined)
+    );
+  }
+
   #skeleton() {
     const placeholder = placeholderForecast(
       requestedParts(this.parts),
@@ -108,18 +126,22 @@ export class WeatherWidget extends LitElement {
         );
       case "error":
       case "retrying":
-        return html`<p>${this.#format.messages.forecastUnavailable}</p>
-          <button
+        return errorView(
+          this.#format,
+          this.#requestedName(),
+          html`<button
             type="button"
+            class="button"
             aria-disabled=${forecast.status === "retrying"}
             @click=${() => {
               this.#loader.retry();
             }}
           >
             ${this.#format.messages.tryAgain}
-          </button>`;
+          </button>`,
+        );
       case "invalid-location":
-        return html`<p>${this.#format.messages.forecastUnavailable}</p>`;
+        return errorView(this.#format, nonBlank(this.locationName));
     }
   }
 
@@ -128,7 +150,7 @@ export class WeatherWidget extends LitElement {
     const announcement = forecastAnnouncement(this.#format, forecast, (shown) =>
       this.#locationName(shown),
     );
-    return html`<div lang=${this.#format.locale}>
+    return html`<div class="widget" lang=${this.#format.locale}>
       <div role="status" class="visually-hidden">${announcement}</div>
       ${this.#content(forecast)}
     </div>`;

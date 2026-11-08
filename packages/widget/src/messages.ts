@@ -39,6 +39,8 @@ export const parseLocale = (locale: unknown): Locale =>
 export interface Messages {
   readonly loading: string;
   readonly forecastUnavailable: string;
+  readonly forecastUnavailableExplanation: string;
+  readonly currentConditions: string;
   readonly partUnavailable: Readonly<Record<ForecastPart, string>>;
   readonly forecastFor: (name: string) => string;
   readonly forecastForUpdatedAt: (name: string, time: string) => string;
@@ -91,6 +93,9 @@ const DUTCH_LATITUDES_AND_LONGITUDES: Readonly<Record<CardinalPoint, string>> =
 const en: Messages = {
   loading: "Loading forecast",
   forecastUnavailable: "Forecast unavailable",
+  forecastUnavailableExplanation:
+    "The weather service isn't available right now. Try again in a moment.",
+  currentConditions: "Current conditions",
   partUnavailable: {
     current: "Current conditions unavailable",
     hourly: "Hourly forecast unavailable",
@@ -152,6 +157,9 @@ const en: Messages = {
 const nl: Messages = {
   loading: "Weersverwachting laden",
   forecastUnavailable: "Weersverwachting niet beschikbaar",
+  forecastUnavailableExplanation:
+    "De weerdienst is nu niet beschikbaar. Probeer het zo opnieuw.",
+  currentConditions: "Huidig weer",
   partUnavailable: {
     current: "Huidig weer niet beschikbaar",
     hourly: "Verwachting per uur niet beschikbaar",

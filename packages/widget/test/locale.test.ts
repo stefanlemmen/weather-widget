@@ -6,6 +6,7 @@ import {
   fullForecast,
   unavailable,
   shownMessage,
+  errorHeading,
   announcement,
   locationName,
   respondWith,
@@ -29,13 +30,16 @@ describe("locale", () => {
         "Weersverwachting voor Nieuwegein, bijgewerkt om 10:41",
       );
     expect(
-      page.getByText("Gevoelstemperatuur").element().nextElementSibling,
-    ).toHaveTextContent("7°C");
+      page.getByText("Gevoelstemperatuur").element().closest("dt")
+        ?.nextElementSibling,
+    ).toHaveTextContent("7°");
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("12 km/u ZZW");
     expect(
-      page.getByText("Kans op neerslag").element().nextElementSibling,
+      page.getByText("Kans op neerslag").element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("85%");
     await expect
       .element(shownMessage("Bijgewerkt om"))
@@ -55,7 +59,7 @@ describe("locale", () => {
     const days = page.getByRole("list", { name: "Komende 5 dagen" });
     await expect.element(hours).toBeVisible();
     expect(hours.getByRole("listitem").elements()[0]).toHaveTextContent(
-      /10:00.*31°C.*Kans op neerslag\s*85%/,
+      /10:00.*31°.*Kans op neerslag\s*85%/,
     );
     expect(conditionsShownIn(hours)[0]).toBe("Regen");
     expect(conditionsShownIn(days)[0]).toBe("Regen");
@@ -66,7 +70,7 @@ describe("locale", () => {
     ]);
     const firstDay = days.getByRole("listitem").first();
     expect(firstDay.element()).toHaveTextContent(
-      /zo.*Laagste\s*21°C.*Hoogste\s*50°C/,
+      /zo.*Laagste\s*21°.*Hoogste\s*50°/,
     );
     expect(firstDay.element().querySelector("abbr")?.title).toBe("zondag");
   });
@@ -113,7 +117,7 @@ describe("locale", () => {
       .element(page.getByRole("button", { name: "Opnieuw proberen" }))
       .toBeVisible();
     expect(
-      shownMessage("Weersverwachting niet beschikbaar").query(),
+      errorHeading("Weersverwachting niet beschikbaar").query(),
     ).not.toBeNull();
   });
 

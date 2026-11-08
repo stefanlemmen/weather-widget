@@ -239,11 +239,11 @@ Every number that lines up with others uses tabular figures (set on the Widget).
 
 The Widget fills the width its Host page gives it. It is a size container (`container: weather / inline-size`), and three layouts follow from its own width. The smallest width it is designed for is 240px.
 
-| Width          | Name           | Current conditions                                                     | Hourly forecast          | Daily forecast             |
-| -------------- | -------------- | ---------------------------------------------------------------------- | ------------------------ | -------------------------- |
-| under 20rem    | narrow sidebar | Temperature and icon side by side; facts as a list, one row per fact   | 4 per row, 3 rows        | No range bar (below 24rem) |
-| 20rem to 35rem | column         | Temperature left, icon and Condition right; facts in 3 centred columns | 6 per row, 2 rows        | Range bar from 24rem       |
-| 35rem and up   | wide column    | Temperature, icon and Condition, then the facts as a list on the right | 6 per row; 12 from 45rem | Range bar capped at 14rem  |
+| Width          | Name           | Current conditions                                                     | Hourly forecast          | Daily forecast                                   |
+| -------------- | -------------- | ---------------------------------------------------------------------- | ------------------------ | ------------------------------------------------ |
+| under 20rem    | narrow sidebar | Temperature and icon side by side; facts as a list, one row per fact   | 4 per row, 3 rows        | No range bar (below 24rem); two-letter day names |
+| 20rem to 35rem | column         | Temperature left, icon and Condition right; facts in 3 centred columns | 6 per row, 2 rows        | Range bar from 24rem                             |
+| 35rem and up   | wide column    | Temperature, icon and Condition, then the facts as a list on the right | 6 per row; 12 from 45rem | Range bar capped at 14rem; full day names        |
 
 **Order, top to bottom.** The Location's name, Current conditions, Hourly forecast, Daily forecast, footer. The order never changes.
 
@@ -261,15 +261,15 @@ The temperature fills the left column. The Condition icon sits to its right, up 
 
 ### Hourly forecast
 
-Twelve hours, all visible, in a grid of equal columns: 4, 6 or 12 per row, always a divisor of 12, so no row is ragged. Each hour is a stack of time, 40px icon, temperature and chance of rain with 6px gaps. There is no horizontal scrolling and no hidden overflow. The Weather provider's remaining hours are not shown.
+Twelve hours, all visible, in a grid of equal columns: 4, 6 or 12 per row, always a divisor of 12, so no row is ragged. Each hour is a stack of time, 40px icon, temperature and chance of rain with 6px gaps. When the hours take more than one row, a 1px track line separates the rows, with 12px above and below it, the same as the gap under the title. There is no horizontal scrolling and no hidden overflow. The Weather provider's remaining hours are not shown.
 
 ### Daily forecast
 
-Five rows inside the tinted band, which runs to the Widget's edges (it cancels the inline padding and puts it back as its own padding). Each row is a fixed grid:
+Five rows inside the tinted band, which runs to the Widget's edges (it cancels the inline padding and puts it back as its own padding). The list sets the columns and each row uses them as a subgrid, so the columns line up across the five days and the name and temperature columns are as wide as their widest value:
 
-- **Column:** day (3.5rem), icon (36px), low (2.5rem, right-aligned), range bar (flexible), high (2.5rem, right-aligned), chance of rain (2.75rem, right-aligned), with 10px gaps and 8px vertical padding.
-- **Wide column:** the same, but the day column takes the spare width and the range bar stays between 4rem and 14rem, so lows and highs don't drift apart.
-- **Below 24rem:** day (flexible), icon (32px), low (2.5rem), high (2.5rem), chance (2.5rem), with 6px gaps. The range bar is dropped, and lows and highs drop to 1rem, so "−12°" and "104°" still fit at 240px. The Daily forecast has its own breakpoint because at 20rem the fixed columns would leave the range bar only a few pixels wide.
+- **Column:** day, icon (36px), low (right-aligned), range bar (flexible), high (right-aligned), chance of rain (right-aligned), with 10px gaps and 8px vertical padding. The range bar takes the spare width.
+- **Wide column:** day (at least 3.5rem, takes the spare width), icon (36px), low (2.5rem), range bar (4rem to 14rem), high (2.5rem), chance (2.75rem), so lows and highs don't drift apart.
+- **Below 24rem:** day, icon (32px), low, high and chance, with the spare width spread evenly over the gaps (at least 6px). The range bar is dropped, and lows and highs drop to 1rem, so "−12°" and "104°" still fit at 240px. The Daily forecast has its own breakpoint because at 20rem the range bar would be only a few pixels wide.
 
 The range bar shows the day's low to high as a filled segment on a scale shared by the five days.
 
@@ -317,7 +317,7 @@ Time (ink muted, label size, proportional figures, in the Location's local time)
 
 ### Day
 
-Day name (600, short form in an `abbr` with the full name, without the dotted underline), a 36px Condition icon, low (ink muted), range bar, high (value), chance of rain.
+Day name (600, without the dotted underline) in three lengths that follow the Widget's width: two letters below 20rem ("Mo"), the short name up to 35rem ("Mon"), and the full name from 35rem ("Monday"). The two shorter forms sit in an `abbr` with the full name. Then a 36px Condition icon, low (ink muted), range bar, high (value), chance of rain.
 
 ### Footer
 
@@ -352,7 +352,7 @@ When every requested part fails, or the request itself fails, the name stays and
 
 ### Loading skeleton
 
-The skeleton is the real layout filled with placeholder text ("Nieuwegein", "12°", "3 PM" and so on) drawn in transparent ink on a track-colored background with a 4px radius, and every icon replaced by a track-colored circle of its size. Because the bones are real text, every line box matches the Forecast, and the skeleton measures exactly the same height (1154px at 390px wide in the reference sheet). Nothing moves when the Forecast arrives. Under `prefers-reduced-motion: no-preference` the bones pulse to 55% opacity (1.4s, alternate); otherwise they stay still. The skeleton content is `aria-hidden`, and the Widget has `aria-busy="true"` while loading.
+The skeleton is the real layout filled with placeholder text ("Nieuwegein", "12°", "3 PM" and so on) drawn in transparent ink on a track-colored background with a 4px radius, and every icon replaced by a track-colored circle of its size. Because the bones are real text, every line box matches the Forecast, and the skeleton measures exactly the same height (1159px at 390px wide in the reference sheet). Nothing moves when the Forecast arrives. Under `prefers-reduced-motion: no-preference` the bones pulse to 55% opacity (1.4s, alternate); otherwise they stay still. The skeleton content is `aria-hidden`, and the Widget has `aria-busy="true"` while loading.
 
 ### Location picker
 
@@ -443,5 +443,7 @@ Build requirements the reference sheet can't show, for #6 to #12.
 - **Wind direction:** the compass needle sits in a `rotate(0 64 64)` group, pointing north-east at 0 degrees. Rotate it by the wind direction plus 135 degrees, so a south-west wind (225) points north-east and every needle points where the wind blows to. Drop the needle's sway animation under reduced motion.
 - **Minus sign:** `Intl.NumberFormat` outputs a hyphen-minus, so replace it with U+2212 when formatting (#9).
 - **Accessible names:** hour and day icons carry the Condition as their accessible name. Icons next to a visible label (Current conditions, facts, N/A) are hidden. "chance of rain", "low" and "high" are visually hidden prefixes, and temperatures and wind are announced in full ("12 degrees Celsius", "24 kilometres per hour from the south-west").
+- **Day names:** render the three lengths from `Intl.DateTimeFormat` (the first two letters of `weekday: "short"`, `"short"` and `"long"`) and show one per width with container queries. Screen readers get the full name as visually hidden text, because an `abbr` title isn't read out reliably. The reference sheet hides letters of one word instead, which only works because every English short name is the start of the full one.
+- **Hour row lines:** select the rows after the first with `:nth-child` per column count (`n + 5` for 4 columns, `n + 7` for 6), because a selector can't read the column count. At 12 columns there is one row and no line.
 - **Skeleton:** render the loading state from the same template as the Forecast, with placeholder values wrapped in bones, so the two can't drift apart in size.
 - **Licenses:** the Widget's build puts the licence from the `@meteocons/svg` package in a comment at the top of the Widget's module, so the notice always matches the icons it ships. Ship `docs/design/icons/lucide-LICENSE` with the Lucide icon.

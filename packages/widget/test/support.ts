@@ -114,6 +114,9 @@ export const forecastFailing = (...failed: readonly ForecastPart[]) => {
 export const shownMessage = (text: string) =>
   page.getByRole("paragraph").filter({ hasText: text });
 
+export const errorHeading = (text: string) =>
+  page.getByRole("heading", { level: 3, name: text });
+
 export const announcement = () => page.getByRole("status");
 
 export const locationName = () => page.getByRole("heading", { level: 2 });
