@@ -1,14 +1,8 @@
 import {
   CoordinatesSchema,
-  FORECAST_PARTS_SEPARATOR,
-  FORECAST_PATH,
-  ForecastResponseSchema,
   PROXY_BASE_PATH,
-  type Coordinates,
   type CurrentConditions,
   type DailyForecast,
-  type ForecastPart,
-  type ForecastPartResult,
   type HourlyForecast,
   type Location,
 } from "@weather-widget/contract";
@@ -25,43 +19,22 @@ import {
   type Spoken,
 } from "./format.ts";
 import {
+  fetchForecast,
   requestedParts,
-  upcomingDays,
-  upcomingHours,
-} from "./forecast-window.ts";
+  type Forecast,
+  type ForecastResult,
+} from "./forecast-client.ts";
+import { upcomingDays, upcomingHours } from "./forecast-window.ts";
 import { MESSAGES } from "./messages.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
 type ForecastState =
   | { readonly status: "loading" }
-  | {
-      readonly status: "ok";
-      readonly coordinates: Coordinates;
-      readonly location: Location;
-      readonly current?: CurrentConditions;
-      readonly hourly?: HourlyForecast;
-      readonly daily?: DailyForecast;
-    }
-  | { readonly status: "error" }
+  | ForecastResult
   | { readonly status: "invalid-location" };
 
 const LOADING: ForecastState = { status: "loading" };
-const FAILED: ForecastState = { status: "error" };
 const INVALID_LOCATION: ForecastState = { status: "invalid-location" };
-
-const forecastUrl = (
-  proxyUrl: string,
-  { latitude, longitude }: Coordinates,
-  parts: readonly ForecastPart[],
-) => {
-  const url = new URL(`${proxyUrl}${FORECAST_PATH}`, document.baseURI);
-  url.search = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    parts: parts.join(FORECAST_PARTS_SEPARATOR),
-  }).toString();
-  return url;
-};
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
 
@@ -75,8 +48,6 @@ const nonBlank = (text: string | undefined) => {
   const trimmed = text?.trim();
   return trimmed === "" ? undefined : trimmed;
 };
-
-type ShownForecast = Extract<ForecastState, { readonly status: "ok" }>;
 
 const chance = (precipitationChance: number) =>
   html`<span class="visually-hidden">${MESSAGES.chanceOfPrecipitation}</span>
@@ -156,7 +127,7 @@ const dailyForecast = (
     </ol>
   </section>`;
 
-const footer = ({ current, location }: ShownForecast) =>
+const footer = ({ current, location }: Forecast) =>
   html`${
       current
         ? html`<p>
@@ -171,42 +142,6 @@ const footer = ({ current, location }: ShownForecast) =>
       ${MESSAGES.weatherDataFrom}
       <a href=${OPENWEATHER_URL}>${MESSAGES.weatherProviderName}</a>
     </p>`;
-
-const fetchForecast = async (
-  proxyUrl: string,
-  coordinates: Coordinates,
-  parts: readonly ForecastPart[],
-  signal: AbortSignal,
-): Promise<ForecastState> => {
-  try {
-    const response = await fetch(forecastUrl(proxyUrl, coordinates, parts), {
-      signal,
-    });
-    if (!response.ok) return FAILED;
-    const forecast = v.safeParse(ForecastResponseSchema, await response.json());
-    if (!forecast.success) return FAILED;
-    const received = forecast.output.parts;
-    if (parts.some((part) => received[part]?.status !== "ok")) return FAILED;
-    const requested = <TData>(
-      part: ForecastPart,
-      result: ForecastPartResult<TData> | undefined,
-    ) =>
-      parts.includes(part) && result?.status === "ok" ? result.data : undefined;
-    const current = requested("current", received.current);
-    const hourly = requested("hourly", received.hourly);
-    const daily = requested("daily", received.daily);
-    return {
-      status: "ok",
-      coordinates,
-      location: forecast.output.location,
-      ...(current && { current }),
-      ...(hourly && { hourly }),
-      ...(daily && { daily }),
-    };
-  } catch {
-    return FAILED;
-  }
-};
 
 export class WeatherWidget extends LitElement {
   static override properties = {
@@ -306,7 +241,7 @@ export class WeatherWidget extends LitElement {
     if (!request.signal.aborted) this.forecast = forecast;
   }
 
-  #locationName({ coordinates, location }: ShownForecast) {
+  #locationName({ coordinates, location }: Forecast) {
     return (
       nonBlank(this.locationName) ??
       location.name ??
