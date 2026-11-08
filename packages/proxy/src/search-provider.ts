@@ -6,7 +6,7 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
-import { RECORDED_SEARCHES } from "../fixtures/recorded-responses.ts";
+import { recordedSearch } from "../fixtures/recorded-responses.ts";
 import { PROVIDER_MODES, type Environment } from "./environment.ts";
 import { fetchParsedWith, type ProviderCall } from "./provider-call.ts";
 
@@ -59,21 +59,6 @@ export interface SearchProviderDependencies {
   readonly fetch: typeof globalThis.fetch;
   readonly searchProviderTimeoutMs?: number;
 }
-
-const RECORDED_SEARCHES_BY_TERM = new Map<string, unknown>([
-  ["paris", RECORDED_SEARCHES.paris],
-  ["parijs", RECORDED_SEARCHES.parijs],
-]);
-
-const recordedSearch: typeof globalThis.fetch = (input) => {
-  const url = new URL(input instanceof Request ? input.url : input);
-  const term = url.searchParams.get("name")?.toLocaleLowerCase() ?? "";
-  return Promise.resolve(
-    Response.json(
-      RECORDED_SEARCHES_BY_TERM.get(term) ?? RECORDED_SEARCHES.noResults,
-    ),
-  );
-};
 
 export const createSearchProvider = (
   environment: Environment,

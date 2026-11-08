@@ -40,3 +40,18 @@ export const recordedFetchFor = (
     );
   };
 };
+
+const RECORDED_SEARCHES_BY_TERM = new Map<string, unknown>([
+  ["paris", RECORDED_SEARCHES.paris],
+  ["parijs", RECORDED_SEARCHES.parijs],
+]);
+
+export const recordedSearch: typeof globalThis.fetch = (input) => {
+  const url = new URL(input instanceof Request ? input.url : input);
+  const term = url.searchParams.get("name")?.toLocaleLowerCase() ?? "";
+  return Promise.resolve(
+    Response.json(
+      RECORDED_SEARCHES_BY_TERM.get(term) ?? RECORDED_SEARCHES.noResults,
+    ),
+  );
+};
