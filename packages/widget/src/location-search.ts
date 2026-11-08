@@ -1,0 +1,36 @@
+import {
+  LOCATIONS_PATH,
+  LocationsResponseSchema,
+  type FoundLocation,
+  type Locale,
+  type Result,
+} from "@weather-widget/contract";
+import * as v from "valibot";
+
+const FAILED = { status: "error" } as const;
+
+const locationsUrl = (proxyUrl: string, name: string, locale: Locale) => {
+  const url = new URL(`${proxyUrl}${LOCATIONS_PATH}`, document.baseURI);
+  url.search = new URLSearchParams({ name, locale }).toString();
+  return url;
+};
+
+export const findLocations = async (
+  proxyUrl: string,
+  name: string,
+  locale: Locale,
+  signal: AbortSignal,
+): Promise<Result<readonly FoundLocation[]>> => {
+  try {
+    const response = await fetch(locationsUrl(proxyUrl, name, locale), {
+      signal,
+    });
+    if (!response.ok) return FAILED;
+    const found = v.safeParse(LocationsResponseSchema, await response.json());
+    return found.success
+      ? { status: "ok", data: found.output.locations }
+      : FAILED;
+  } catch {
+    return FAILED;
+  }
+};
