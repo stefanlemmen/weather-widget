@@ -13,10 +13,11 @@ test.describe("the vanilla Example host", () => {
     await expect(
       page.getByRole("heading", { level: 2, name: RECORDED_NIEUWEGEIN_NAME }),
     ).toBeVisible();
+    await expect(page.getByRole("status")).toContainText(
+      `Forecast for ${RECORDED_NIEUWEGEIN_NAME}`,
+    );
     await expect(
-      page
-        .getByRole("status")
-        .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE, { exact: true }),
+      page.getByText(RECORDED_NIEUWEGEIN_TEMPERATURE, { exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByText("Feels like")).toBeVisible();
     await expect(page.getByRole("link", { name: "OpenWeather" })).toBeVisible();

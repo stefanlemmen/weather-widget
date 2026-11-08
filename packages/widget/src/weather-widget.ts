@@ -1,12 +1,22 @@
 import {
   CoordinatesSchema,
+  FORECAST_PARTS,
   PROXY_BASE_PATH,
   type CurrentConditions,
   type DailyForecast,
+  type ForecastPart,
+  type ForecastPartResult,
   type HourlyForecast,
   type Location,
 } from "@weather-widget/contract";
-import { css, html, LitElement, nothing, type PropertyValues } from "lit";
+import {
+  css,
+  html,
+  LitElement,
+  nothing,
+  type PropertyValues,
+  type TemplateResult,
+} from "lit";
 import * as v from "valibot";
 import {
   formatChance,
@@ -53,6 +63,15 @@ const chance = (precipitationChance: number) =>
   html`<span class="visually-hidden">${MESSAGES.chanceOfPrecipitation}</span>
     ${formatChance(precipitationChance)}`;
 
+const shownOrUnavailable = <TData>(
+  part: ForecastPart,
+  result: ForecastPartResult<TData>,
+  show: (data: TData) => TemplateResult,
+) =>
+  result.status === "ok"
+    ? show(result.data)
+    : html`<p>${MESSAGES.partUnavailable[part]}</p>`;
+
 const currentConditionsDetails = (current: CurrentConditions) =>
   html`<dl>
     <div>
@@ -70,70 +89,101 @@ const currentConditionsDetails = (current: CurrentConditions) =>
         )}
       </dd>
     </div>
-    <div>
-      <dt>${MESSAGES.chanceOfPrecipitation}</dt>
-      <dd>${formatChance(current.precipitationChance)}</dd>
-    </div>
+    ${
+      current.precipitationChance === null
+        ? nothing
+        : html`<div>
+            <dt>${MESSAGES.chanceOfPrecipitation}</dt>
+            <dd>${formatChance(current.precipitationChance)}</dd>
+          </div>`
+    }
   </dl>`;
 
+const currentConditions = (current: ForecastPartResult<CurrentConditions>) =>
+  shownOrUnavailable(
+    "current",
+    current,
+    (conditions) =>
+      html`<p class="temperature">
+          ${spoken(formatTemperature(conditions.temperatureCelsius))}
+        </p>
+        ${currentConditionsDetails(conditions)}`,
+  );
+
 const hourlyForecast = (
-  hourly: HourlyForecast,
+  hourly: ForecastPartResult<HourlyForecast>,
   { timeZone }: Location,
   now: Date,
 ) =>
   html`<section>
     <h3 id="hourly-heading">${MESSAGES.nextHours}</h3>
-    <ol aria-labelledby="hourly-heading">
-      ${upcomingHours(hourly, now).map(
-        (hour) =>
-          html`<li>
-            <time datetime=${hour.startsAt}
-              >${formatHour(hour.startsAt, timeZone)}</time
-            >
-            <span>${MESSAGES.conditions[hour.condition]}</span>
-            <span>${spoken(formatTemperature(hour.temperatureCelsius))}</span>
-            <span>${chance(hour.precipitationChance)}</span>
-          </li>`,
-      )}
-    </ol>
+    ${shownOrUnavailable(
+      "hourly",
+      hourly,
+      (hours) =>
+        html`<ol aria-labelledby="hourly-heading">
+          ${upcomingHours(hours, now).map(
+            (hour) =>
+              html`<li>
+                <time datetime=${hour.startsAt}
+                  >${formatHour(hour.startsAt, timeZone)}</time
+                >
+                <span>${MESSAGES.conditions[hour.condition]}</span>
+                <span
+                  >${spoken(formatTemperature(hour.temperatureCelsius))}</span
+                >
+                <span>${chance(hour.precipitationChance)}</span>
+              </li>`,
+          )}
+        </ol>`,
+    )}
   </section>`;
 
 const dailyForecast = (
-  daily: DailyForecast,
+  daily: ForecastPartResult<DailyForecast>,
   { timeZone }: Location,
   now: Date,
 ) =>
   html`<section>
     <h3 id="daily-heading">${MESSAGES.nextDays}</h3>
-    <ol aria-labelledby="daily-heading">
-      ${upcomingDays(daily, timeZone, now).map(
-        (day) =>
-          html`<li>
-            <abbr title=${formatWeekday(day.date, "long")}
-              >${formatWeekday(day.date, "short")}</abbr
-            >
-            <span>${MESSAGES.conditions[day.condition]}</span>
-            <span
-              ><span class="visually-hidden">${MESSAGES.low}</span>
-              ${spoken(formatTemperature(day.lowCelsius))}</span
-            >
-            <span
-              ><span class="visually-hidden">${MESSAGES.high}</span>
-              ${spoken(formatTemperature(day.highCelsius))}</span
-            >
-            <span>${chance(day.precipitationChance)}</span>
-          </li>`,
-      )}
-    </ol>
+    ${shownOrUnavailable(
+      "daily",
+      daily,
+      (days) =>
+        html`<ol aria-labelledby="daily-heading">
+          ${upcomingDays(days, timeZone, now).map(
+            (day) =>
+              html`<li>
+                <abbr title=${formatWeekday(day.date, "long")}
+                  >${formatWeekday(day.date, "short")}</abbr
+                >
+                <span>${MESSAGES.conditions[day.condition]}</span>
+                <span
+                  ><span class="visually-hidden">${MESSAGES.low}</span>
+                  ${spoken(formatTemperature(day.lowCelsius))}</span
+                >
+                <span
+                  ><span class="visually-hidden">${MESSAGES.high}</span>
+                  ${spoken(formatTemperature(day.highCelsius))}</span
+                >
+                <span>${chance(day.precipitationChance)}</span>
+              </li>`,
+          )}
+        </ol>`,
+    )}
   </section>`;
 
-const footer = ({ current, location }: Forecast) =>
-  html`${
-      current
+const observedAt = ({ current }: Forecast) =>
+  current?.status === "ok" ? current.data.observedAt : undefined;
+
+const footer = (forecast: Forecast) => {
+  const observed = observedAt(forecast);
+  return html`${
+      observed
         ? html`<p>
             ${MESSAGES.updatedAt}
-            <time datetime=${current.observedAt}
-              >${formatTime(current.observedAt, location.timeZone)}</time
+            <time datetime=${observed}
+              >${formatTime(observed, forecast.location.timeZone)}</time
             >
           </p>`
         : nothing
@@ -142,6 +192,12 @@ const footer = ({ current, location }: Forecast) =>
       ${MESSAGES.weatherDataFrom}
       <a href=${OPENWEATHER_URL}>${MESSAGES.weatherProviderName}</a>
     </p>`;
+};
+
+const heard = (text: Spoken | string) =>
+  typeof text === "string" ? text : text.heard;
+
+const ANNOUNCEMENT_SEPARATOR = ". ";
 
 export class WeatherWidget extends LitElement {
   static override properties = {
@@ -241,22 +297,37 @@ export class WeatherWidget extends LitElement {
     if (!request.signal.aborted) this.forecast = forecast;
   }
 
-  #locationName({ coordinates, location }: Forecast) {
+  #locationName({ coordinates, location }: Forecast): Spoken | string {
     return (
       nonBlank(this.locationName) ??
       location.name ??
-      spoken(formatCoordinates(coordinates))
+      formatCoordinates(coordinates)
     );
   }
 
-  #forecastParts() {
-    if (this.forecast.status !== "ok") return nothing;
-    const { current, hourly, daily, location } = this.forecast;
+  #forecast(forecast: Forecast) {
+    const { current, hourly, daily, location } = forecast;
     const now = new Date();
-    return html`${current ? currentConditionsDetails(current) : nothing}
-    ${hourly ? hourlyForecast(hourly, location, now) : nothing}
-    ${daily ? dailyForecast(daily, location, now) : nothing}
-    ${footer(this.forecast)}`;
+    return html`<h2>${spoken(this.#locationName(forecast))}</h2>
+      ${current ? currentConditions(current) : nothing}
+      ${hourly ? hourlyForecast(hourly, location, now) : nothing}
+      ${daily ? dailyForecast(daily, location, now) : nothing}
+      ${footer(forecast)}`;
+  }
+
+  #forecastAnnouncement(forecast: Forecast) {
+    const observed = observedAt(forecast);
+    const name = heard(this.#locationName(forecast));
+    const headline = observed
+      ? MESSAGES.forecastForUpdatedAt(
+          name,
+          formatTime(observed, forecast.location.timeZone),
+        )
+      : MESSAGES.forecastFor(name);
+    const failedParts = FORECAST_PARTS.filter(
+      (part) => forecast[part]?.status === "error",
+    ).map((part) => MESSAGES.partUnavailable[part]);
+    return [headline, ...failedParts].join(ANNOUNCEMENT_SEPARATOR);
   }
 
   #announcement() {
@@ -264,31 +335,33 @@ export class WeatherWidget extends LitElement {
       case "loading":
         return MESSAGES.loading;
       case "ok":
-        return html`<h2>${this.#locationName(this.forecast)}</h2>
-          ${
-            this.forecast.current
-              ? html`<p class="temperature">
-                  ${spoken(
-                    formatTemperature(this.forecast.current.temperatureCelsius),
-                  )}
-                </p>`
-              : nothing
-          }`;
+        return this.#forecastAnnouncement(this.forecast);
       case "error":
       case "invalid-location":
         return MESSAGES.forecastUnavailable;
     }
   }
 
+  #content() {
+    switch (this.forecast.status) {
+      case "loading":
+        return nothing;
+      case "ok":
+        return this.#forecast(this.forecast);
+      case "error":
+        return html`<p>${MESSAGES.forecastUnavailable}</p>
+          <button type="button" @click=${() => void this.#load()}>
+            ${MESSAGES.tryAgain}
+          </button>`;
+      case "invalid-location":
+        return html`<p>${MESSAGES.forecastUnavailable}</p>`;
+    }
+  }
+
   protected override render() {
-    return html`<div role="status">${this.#announcement()}</div>
-      ${this.#forecastParts()}
-      ${
-        this.forecast.status === "error"
-          ? html`<button type="button" @click=${() => void this.#load()}>
-              ${MESSAGES.tryAgain}
-            </button>`
-          : nothing
-      }`;
+    return html`<div role="status" class="visually-hidden">
+        ${this.#announcement()}
+      </div>
+      ${this.#content()}`;
   }
 }

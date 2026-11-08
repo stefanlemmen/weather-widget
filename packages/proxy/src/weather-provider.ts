@@ -4,7 +4,7 @@ import {
   HourlyForecastSchema,
   type Coordinates,
   type ForecastPart,
-  type Location,
+  type ForecastResponse,
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { conditionFor } from "./conditions.ts";
@@ -19,6 +19,24 @@ export const WEATHER_PROVIDER_HOURLY_URL = `${WEATHER_PROVIDER_ORIGIN}/data/4.0/
 export const WEATHER_PROVIDER_DAILY_URL = `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/timeline/1day`;
 export const WEATHER_PROVIDER_REVERSE_GEOCODING_URL = `${WEATHER_PROVIDER_ORIGIN}/geo/1.0/reverse`;
 export const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
+const WEATHER_PROVIDER_CALLS = {
+  current: "current",
+  hourly: "hourly",
+  daily: "daily",
+  reverseGeocoding: "reverse geocoding",
+} as const;
+type WeatherProviderCall =
+  (typeof WEATHER_PROVIDER_CALLS)[keyof typeof WEATHER_PROVIDER_CALLS];
+const TIMEOUT_ERROR = "TimeoutError";
+const FAILURE_REASONS = {
+  timedOut: "timed out",
+  unreachable: "unreachable",
+  unexpectedResponse: "unexpected response",
+} as const;
+type FailureReason =
+  (typeof FAILURE_REASONS)[keyof typeof FAILURE_REASONS] | `HTTP ${string}`;
+const httpStatusReason = (status: number): FailureReason =>
+  `HTTP ${String(status)}`;
 const METRIC_UNITS = "metric";
 const NAMES_WANTED = "1";
 const MILLISECONDS_PER_SECOND = 1000;
@@ -49,12 +67,18 @@ const CurrentResponseSchema = v.pipe(
   }),
   v.transform(({ timezone, data: [now] }) => ({
     timeZone: timezone,
-    temperatureCelsius: now.temp,
-    feelsLikeCelsius: now.feels_like,
-    windSpeedMetresPerSecond: now.wind_speed,
-    windDirectionDegrees: now.wind_deg,
-    observedAt: isoTimestamp(now.dt),
+    conditions: {
+      temperatureCelsius: now.temp,
+      feelsLikeCelsius: now.feels_like,
+      windSpeedMetresPerSecond: now.wind_speed,
+      windDirectionDegrees: now.wind_deg,
+      observedAt: isoTimestamp(now.dt),
+    },
   })),
+  v.object({
+    timeZone: v.string(),
+    conditions: v.omit(CurrentConditionsSchema, ["precipitationChance"]),
+  }),
 );
 
 const HourRecordSchema = v.pipe(
@@ -75,13 +99,13 @@ const HourRecordSchema = v.pipe(
 const HourlyResponseSchema = v.pipe(
   v.object({
     timezone: TimeZoneSchema,
-    data: v.tupleWithRest([HourRecordSchema], HourRecordSchema),
+    data: v.pipe(v.array(HourRecordSchema), v.nonEmpty()),
   }),
   v.transform(({ timezone, data }) => ({
     timeZone: timezone,
-    comingHourPrecipitationChance: data[0].precipitationChance,
     hours: data,
   })),
+  v.object({ timeZone: v.string(), hours: HourlyForecastSchema }),
 );
 
 const DailyResponseSchema = v.pipe(
@@ -106,42 +130,59 @@ const DailyResponseSchema = v.pipe(
       precipitationChance: day.pop,
     })),
   })),
+  v.object({ timeZone: v.string(), days: DailyForecastSchema }),
 );
 
-const ForecastPartsSchema = v.object({
-  current: v.optional(CurrentConditionsSchema),
-  hourly: v.optional(HourlyForecastSchema),
-  daily: v.optional(DailyForecastSchema),
-});
-
-const ReverseGeocodingResponseSchema = v.pipe(
-  v.tupleWithRest(
-    [v.object({ name: v.pipe(v.string(), v.trim(), v.nonEmpty()) })],
-    v.unknown(),
+const ReverseGeocodingResponseSchema = v.union([
+  v.pipe(
+    v.strictTuple([]),
+    v.transform(() => null),
   ),
-  v.transform(([place]) => place.name),
-);
+  v.pipe(
+    v.tupleWithRest(
+      [v.object({ name: v.pipe(v.string(), v.trim(), v.nonEmpty()) })],
+      v.unknown(),
+    ),
+    v.transform(([place]) => place.name),
+  ),
+]);
 
 export type WeatherProviderResult<TData> =
   | { readonly status: "ok"; readonly data: TData }
   | { readonly status: "error" };
 
-export type WeatherProviderForecastParts = v.InferOutput<
-  typeof ForecastPartsSchema
->;
-
-export interface WeatherProviderForecast {
-  readonly location: Location;
-  readonly parts: WeatherProviderForecastParts;
-}
-
 export type FetchForecast = (
   coordinates: Coordinates,
   parts: readonly ForecastPart[],
-) => Promise<WeatherProviderResult<WeatherProviderForecast>>;
+) => Promise<WeatherProviderResult<ForecastResponse>>;
 
 const FAILED = { status: "error" } as const;
 const SKIPPED = Promise.resolve(undefined);
+
+const failureReason = (error: unknown): FailureReason => {
+  if (error instanceof DOMException && error.name === TIMEOUT_ERROR) {
+    return FAILURE_REASONS.timedOut;
+  }
+  if (error instanceof SyntaxError) return FAILURE_REASONS.unexpectedResponse;
+  return FAILURE_REASONS.unreachable;
+};
+
+const callFailed = (call: WeatherProviderCall, reason: FailureReason) => {
+  console.error(`Weather provider ${call} call failed: ${reason}`);
+  return FAILED;
+};
+
+const partFrom = <TResponse, TPart>(
+  response: WeatherProviderResult<TResponse>,
+  toPart: (data: TResponse) => TPart,
+): WeatherProviderResult<TPart> =>
+  response.status === "ok"
+    ? { status: "ok", data: toPart(response.data) }
+    : FAILED;
+
+const timeZoneOf = (
+  response: WeatherProviderResult<{ readonly timeZone: string }> | undefined,
+) => (response?.status === "ok" ? response.data.timeZone : undefined);
 
 export interface WeatherProviderOptions {
   readonly key: string;
@@ -153,6 +194,7 @@ export const createLiveWeatherProvider = (
   options: WeatherProviderOptions,
 ): FetchForecast => {
   const fetchParsed = async <TSchema extends v.GenericSchema>(
+    call: WeatherProviderCall,
     endpoint: string,
     parameters: Readonly<Record<string, string>>,
     schema: TSchema,
@@ -166,11 +208,15 @@ export const createLiveWeatherProvider = (
       const response = await options.fetch(url, {
         signal: AbortSignal.timeout(options.timeoutMs),
       });
-      if (!response.ok) return FAILED;
+      if (!response.ok) {
+        return callFailed(call, httpStatusReason(response.status));
+      }
       const parsed = v.safeParse(schema, await response.json());
-      return parsed.success ? { status: "ok", data: parsed.output } : FAILED;
-    } catch {
-      return FAILED;
+      return parsed.success
+        ? { status: "ok", data: parsed.output }
+        : callFailed(call, FAILURE_REASONS.unexpectedResponse);
+    } catch (error) {
+      return callFailed(call, failureReason(error));
     }
   };
 
@@ -181,6 +227,7 @@ export const createLiveWeatherProvider = (
     const [current, hourly, daily, name] = await Promise.all([
       wants("current")
         ? fetchParsed(
+            WEATHER_PROVIDER_CALLS.current,
             WEATHER_PROVIDER_CURRENT_URL,
             metricAt,
             CurrentResponseSchema,
@@ -188,53 +235,56 @@ export const createLiveWeatherProvider = (
         : SKIPPED,
       wants("current") || wants("hourly")
         ? fetchParsed(
+            WEATHER_PROVIDER_CALLS.hourly,
             WEATHER_PROVIDER_HOURLY_URL,
             metricAt,
             HourlyResponseSchema,
           )
         : SKIPPED,
       wants("daily")
-        ? fetchParsed(WEATHER_PROVIDER_DAILY_URL, metricAt, DailyResponseSchema)
+        ? fetchParsed(
+            WEATHER_PROVIDER_CALLS.daily,
+            WEATHER_PROVIDER_DAILY_URL,
+            metricAt,
+            DailyResponseSchema,
+          )
         : SKIPPED,
       fetchParsed(
+        WEATHER_PROVIDER_CALLS.reverseGeocoding,
         WEATHER_PROVIDER_REVERSE_GEOCODING_URL,
         { ...at, limit: NAMES_WANTED },
         ReverseGeocodingResponseSchema,
       ),
     ]);
-    if (
-      current?.status === "error" ||
-      hourly?.status === "error" ||
-      daily?.status === "error"
-    ) {
-      return FAILED;
-    }
+    const timeZoneOfASucceededPart =
+      timeZoneOf(current) ??
+      (wants("hourly") ? timeZoneOf(hourly) : undefined) ??
+      timeZoneOf(daily);
+    if (timeZoneOfASucceededPart === undefined) return FAILED;
 
-    const timeZone =
-      current?.data.timeZone ?? hourly?.data.timeZone ?? daily?.data.timeZone;
-    if (timeZone === undefined) return FAILED;
-
-    const partsInRange = v.safeParse(ForecastPartsSchema, {
-      ...(current &&
-        hourly && {
-          current: {
-            ...current.data,
-            precipitationChance: hourly.data.comingHourPrecipitationChance,
-          },
-        }),
-      ...(wants("hourly") && hourly && { hourly: hourly.data.hours }),
-      ...(daily && { daily: daily.data.days }),
-    });
-    if (!partsInRange.success) return FAILED;
+    const comingHourPrecipitationChance =
+      hourly?.status === "ok"
+        ? (hourly.data.hours[0]?.precipitationChance ?? null)
+        : null;
 
     return {
       status: "ok",
       data: {
         location: {
           name: name.status === "ok" ? name.data : null,
-          timeZone,
+          timeZone: timeZoneOfASucceededPart,
         },
-        parts: partsInRange.output,
+        parts: {
+          ...(current && {
+            current: partFrom(current, ({ conditions }) => ({
+              ...conditions,
+              precipitationChance: comingHourPrecipitationChance,
+            })),
+          }),
+          ...(wants("hourly") &&
+            hourly && { hourly: partFrom(hourly, ({ hours }) => hours) }),
+          ...(daily && { daily: partFrom(daily, ({ days }) => days) }),
+        },
       },
     };
   };

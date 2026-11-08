@@ -75,7 +75,7 @@ export const CurrentConditionsSchema = v.object({
   feelsLikeCelsius: v.number(),
   windSpeedMetresPerSecond: v.pipe(v.number(), v.minValue(0)),
   windDirectionDegrees: v.pipe(v.number(), v.minValue(0), v.maxValue(360)),
-  precipitationChance: ChanceSchema,
+  precipitationChance: v.nullable(ChanceSchema),
   observedAt: v.pipe(v.string(), v.isoTimestamp()),
 });
 

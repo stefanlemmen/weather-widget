@@ -25,7 +25,6 @@ import {
   createLiveWeatherProvider,
   fixtureFetch,
   WEATHER_PROVIDER_TIMEOUT_MS,
-  type WeatherProviderForecast,
   type WeatherProviderOptions,
 } from "./weather-provider.ts";
 
@@ -33,6 +32,8 @@ export { PROXY_BASE_PATH };
 
 export const FORECAST_CACHE_CONTROL =
   "public, max-age=0, s-maxage=600, stale-while-revalidate=600, stale-if-error=3600";
+export const PARTIAL_FORECAST_CACHE_CONTROL =
+  "public, max-age=0, s-maxage=60, stale-if-error=3600";
 const NO_STORE = "no-store";
 const FIXTURE_KEY = "fixtures";
 const COORDINATE_DECIMALS = 2;
@@ -106,17 +107,8 @@ const weatherProviderOptions = (
           dependencies.weatherProviderTimeoutMs ?? WEATHER_PROVIDER_TIMEOUT_MS,
       };
 
-const forecastResponse = ({
-  location,
-  parts: { current, hourly, daily },
-}: WeatherProviderForecast): ForecastResponse => ({
-  location,
-  parts: {
-    ...(current && { current: { status: "ok", data: current } }),
-    ...(hourly && { hourly: { status: "ok", data: hourly } }),
-    ...(daily && { daily: { status: "ok", data: daily } }),
-  },
-});
+const isPartial = ({ parts }: ForecastResponse) =>
+  Object.values(parts).some((part) => part?.status === "error");
 
 export const createProxy = (
   rawEnvironment: RawEnvironment,
@@ -145,7 +137,12 @@ export const createProxy = (
         return problem(context, FORECAST_UNAVAILABLE);
       }
 
-      context.header("cache-control", FORECAST_CACHE_CONTROL);
-      return context.json(forecastResponse(forecast.data));
+      context.header(
+        "cache-control",
+        isPartial(forecast.data)
+          ? PARTIAL_FORECAST_CACHE_CONTROL
+          : FORECAST_CACHE_CONTROL,
+      );
+      return context.json(forecast.data);
     });
 };

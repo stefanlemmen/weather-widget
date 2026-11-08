@@ -2,6 +2,7 @@ import type {
   Condition,
   CurrentConditions,
   Day,
+  ForecastPart,
   ForecastResponse,
   Hour,
   Location,
@@ -93,6 +94,22 @@ const unavailable: ProblemDetails = {
   title: "Forecast unavailable",
   status: 503,
 };
+
+const FAILED_PART = { status: "error" } as const;
+
+const forecastFailing = (...failed: readonly ForecastPart[]) => {
+  const forecast = fullForecast();
+  return {
+    ...forecast,
+    parts: {
+      ...forecast.parts,
+      ...Object.fromEntries(failed.map((part) => [part, FAILED_PART])),
+    },
+  };
+};
+
+const shownMessage = (text: string) =>
+  page.getByRole("paragraph").filter({ hasText: text });
 
 const respondWith = (body: unknown, status = 200) =>
   Promise.resolve(Response.json(body, { status }));
@@ -191,15 +208,15 @@ describe("<weather-widget>", () => {
     ["the response doesn't parse", () => respondWith({ temperature: 5 })],
     ["the response isn't JSON", () => Promise.resolve(new Response("<html>"))],
     [
-      "Current conditions failed",
-      () => respondWith({ parts: { current: { status: "error" } } }),
+      "every Forecast part failed",
+      () => respondWith(forecastFailing("current", "hourly", "daily")),
     ],
   ])('shows "Forecast unavailable" when %s', async (_, respond) => {
     fakeProxy.mockImplementation(respond);
 
     renderWidget(NIEUWEGEIN);
 
-    await expect.element(page.getByText("Forecast unavailable")).toBeVisible();
+    await expect.element(shownMessage("Forecast unavailable")).toBeVisible();
     await expect
       .element(page.getByRole("button", { name: "Try again" }))
       .toBeVisible();
@@ -348,7 +365,7 @@ describe("<weather-widget>", () => {
 
     answer(Response.json(forecastWithTemperature(5)));
 
-    await expect.element(liveRegion).toHaveTextContent("5°C");
+    await expect.element(liveRegion).toHaveTextContent("Forecast for");
     expect(liveRegion.element()).toBe(regionWhileLoading);
   });
 
@@ -380,6 +397,17 @@ describe("<weather-widget>", () => {
       fakeProxy.mockImplementation(() => respondWith(forecastWith()));
     });
 
+    it("shows them without a chance of precipitation when the Proxy has none", async () => {
+      fakeProxy.mockImplementation(() =>
+        respondWith(forecastWith({ precipitationChance: null })),
+      );
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect.element(page.getByText("Feels like")).toBeVisible();
+      expect(page.getByText("Chance of precipitation").query()).toBeNull();
+    });
+
     it("shows the feels-like temperature, wind and chance of precipitation", async () => {
       renderWidget(NIEUWEGEIN);
 
@@ -398,7 +426,7 @@ describe("<weather-widget>", () => {
     it("shows when the Weather provider observed them, in the Location's local time", async () => {
       renderWidget(NIEUWEGEIN);
 
-      const updated = page.getByText("Updated at");
+      const updated = shownMessage("Updated at");
       await expect.element(updated).toHaveTextContent("Updated at 10:41 AM");
       expect(updated.element().querySelector("time")?.dateTime).toBe(
         "2026-11-08T09:41:44.000Z",
@@ -582,17 +610,28 @@ describe("<weather-widget>", () => {
       },
     );
 
-    it("announces the Location's name with its temperature", async () => {
+    it("announces the Forecast for the Location and when it was updated", async () => {
       fakeProxy.mockImplementation(() => respondWith(forecastWith()));
 
       renderWidget(NIEUWEGEIN);
 
       await expect
         .element(page.getByRole("status"))
-        .toHaveTextContent(/Nieuwegein.*9 degrees Celsius/);
-      expect(page.getByRole("status").element()).not.toHaveTextContent(
-        "Feels like",
+        .toHaveTextContent("Forecast for Nieuwegein, updated at 10:41 AM");
+    });
+
+    it("announces the Forecast for the Location's coordinates in full when the Proxy found no name", async () => {
+      fakeProxy.mockImplementation(() =>
+        respondWith(forecastWith({}, { name: null })),
       );
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent(
+          "Forecast for 52.03 degrees north, 5.08 degrees east, updated at 10:41 AM",
+        );
     });
   });
 });
@@ -887,6 +926,82 @@ describe("Forecast parts", () => {
 
     renderWidget({ ...NIEUWEGEIN, parts: "current daily" });
 
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent("Forecast unavailable");
+  });
+
+  it.each([
+    ["current", "Current conditions unavailable", "hourly,daily"],
+    ["hourly", "Hourly forecast unavailable", "current,daily"],
+    ["daily", "Daily forecast unavailable", "current,hourly"],
+  ] as const)(
+    "replaces only a failed %s part with a short message",
+    async (failed, message, stillShown) => {
+      fakeProxy.mockImplementation(() => respondWith(forecastFailing(failed)));
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect.element(shownMessage(message)).toBeVisible();
+      expect(shownParts()).toBe(stillShown);
+      expect(
+        page.getByRole("button", { name: "Try again" }).query(),
+      ).toBeNull();
+    },
+  );
+
+  it.each([
+    ["hourly", "Next 12 hours"],
+    ["daily", "Next 5 days"],
+  ] as const)(
+    "keeps the heading of a failed %s part",
+    async (failed, heading) => {
+      fakeProxy.mockImplementation(() => respondWith(forecastFailing(failed)));
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByRole("heading", { name: heading }))
+        .toBeVisible();
+    },
+  );
+
+  it("announces each failed part with the Forecast", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastFailing("hourly", "daily")),
+    );
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent(
+        "Forecast for Nieuwegein, updated at 10:41 AM. Hourly forecast unavailable. Daily forecast unavailable",
+      );
+  });
+
+  it("announces the Forecast without an update time when Current conditions failed", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastFailing("current")));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent(
+        /^Forecast for Nieuwegein\. Current conditions unavailable$/,
+      );
+  });
+
+  it('shows "Forecast unavailable" and "Try again" when every requested part failed', async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastFailing("hourly", "daily")),
+    );
+
+    renderWidget({ ...NIEUWEGEIN, parts: "hourly daily" });
+
+    await expect
+      .element(page.getByRole("button", { name: "Try again" }))
+      .toBeVisible();
     await expect
       .element(page.getByRole("status"))
       .toHaveTextContent("Forecast unavailable");

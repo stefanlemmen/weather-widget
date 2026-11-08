@@ -18,9 +18,9 @@ const PARTS_ATTRIBUTE_SEPARATOR = /\s+/;
 export interface Forecast {
   readonly coordinates: Coordinates;
   readonly location: Location;
-  readonly current?: CurrentConditions;
-  readonly hourly?: HourlyForecast;
-  readonly daily?: DailyForecast;
+  readonly current?: ForecastPartResult<CurrentConditions>;
+  readonly hourly?: ForecastPartResult<HourlyForecast>;
+  readonly daily?: ForecastPartResult<DailyForecast>;
 }
 
 export type ForecastResult =
@@ -50,8 +50,16 @@ const forecastUrl = (
   return url;
 };
 
-const dataOf = <TData>(result: ForecastPartResult<TData> | undefined) =>
-  result?.status === "ok" ? result.data : undefined;
+const forecastResponseFor = (parts: readonly ForecastPart[]) =>
+  v.pipe(
+    ForecastResponseSchema,
+    v.check(({ parts: received }) =>
+      parts.every((part) => received[part] !== undefined),
+    ),
+    v.check(({ parts: received }) =>
+      parts.some((part) => received[part]?.status === "ok"),
+    ),
+  );
 
 export const fetchForecast = async (
   proxyUrl: string,
@@ -64,23 +72,20 @@ export const fetchForecast = async (
       signal,
     });
     if (!response.ok) return FAILED;
-    const forecast = v.safeParse(ForecastResponseSchema, await response.json());
+    const forecast = v.safeParse(
+      forecastResponseFor(parts),
+      await response.json(),
+    );
     if (!forecast.success) return FAILED;
 
-    const received = forecast.output.parts;
-    if (parts.some((part) => received[part]?.status !== "ok")) {
-      return FAILED;
-    }
-    const current = parts.includes("current") && dataOf(received.current);
-    const hourly = parts.includes("hourly") && dataOf(received.hourly);
-    const daily = parts.includes("daily") && dataOf(received.daily);
+    const { current, hourly, daily } = forecast.output.parts;
     return {
       status: "ok",
       coordinates,
       location: forecast.output.location,
-      ...(current && { current }),
-      ...(hourly && { hourly }),
-      ...(daily && { daily }),
+      ...(parts.includes("current") && current && { current }),
+      ...(parts.includes("hourly") && hourly && { hourly }),
+      ...(parts.includes("daily") && daily && { daily }),
     };
   } catch {
     return FAILED;

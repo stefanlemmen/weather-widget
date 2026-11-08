@@ -1,4 +1,4 @@
-import type { Condition } from "@weather-widget/contract";
+import type { Condition, ForecastPart } from "@weather-widget/contract";
 import { DAYS_SHOWN, HOURS_SHOWN } from "./forecast-window.ts";
 
 export const COMPASS_POINTS = [
@@ -25,6 +25,14 @@ export type CompassPoint = (typeof COMPASS_POINTS)[number];
 export const MESSAGES = {
   loading: "Loading forecast",
   forecastUnavailable: "Forecast unavailable",
+  partUnavailable: {
+    current: "Current conditions unavailable",
+    hourly: "Hourly forecast unavailable",
+    daily: "Daily forecast unavailable",
+  } satisfies Record<ForecastPart, string>,
+  forecastFor: (name: string) => `Forecast for ${name}`,
+  forecastForUpdatedAt: (name: string, time: string) =>
+    `Forecast for ${name}, updated at ${time}`,
   tryAgain: "Try again",
   feelsLike: "Feels like",
   wind: "Wind",
