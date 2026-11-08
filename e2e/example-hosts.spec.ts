@@ -125,4 +125,14 @@ test.describe("the vanilla Example host", () => {
     expect(source).toContain("Copyright (c) 2020-present Bas Milius");
     expect(source).toContain("Permission is hereby granted, free of charge");
   });
+
+  test("serves the Widget's module compressed, as production does", async ({
+    request,
+  }) => {
+    const widgetModule = await request.get("/widget/weather-widget.js", {
+      headers: { "accept-encoding": "gzip" },
+    });
+
+    expect(widgetModule.headers()["content-encoding"]).toBe("gzip");
+  });
 });
