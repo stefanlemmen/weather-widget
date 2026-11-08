@@ -14,7 +14,9 @@ import {
   type Forecast,
 } from "./forecast-client.ts";
 import { forecastView, heard, observedAt } from "./forecast-view.ts";
+import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
 import { placeholderForecast } from "./skeleton.ts";
+import { DEFAULT_UNITS, parseUnits } from "./units.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
 type ShownForecast = Forecast & {
@@ -52,6 +54,8 @@ export class WeatherWidget extends LitElement {
     proxyUrl: { type: String, attribute: "proxy-url" },
     locationName: { type: String, attribute: "location-name" },
     parts: { type: String },
+    locale: { type: String },
+    units: { type: String },
     forecast: { state: true },
   };
 
@@ -118,13 +122,15 @@ export class WeatherWidget extends LitElement {
   declare proxyUrl: string;
   declare locationName: string | undefined;
   declare parts: string | undefined;
+  declare locale: string | undefined;
+  declare units: string | undefined;
   declare private forecast: ForecastState;
 
   #inFlight: AbortController | undefined;
   #viewport: IntersectionObserver | undefined;
   #nearViewport = false;
   #requestChanged = false;
-  #format: Formatter = formatterFor("en");
+  #format: Formatter = formatterFor(DEFAULT_LOCALE, DEFAULT_UNITS);
 
   constructor() {
     super();
@@ -176,6 +182,12 @@ export class WeatherWidget extends LitElement {
   }
 
   protected override willUpdate(changed: PropertyValues<this>) {
+    if (changed.has("locale") || changed.has("units")) {
+      this.#format = formatterFor(
+        parseLocale(this.locale),
+        parseUnits(this.units),
+      );
+    }
     if (
       changed.has("latitude") ||
       changed.has("longitude") ||
@@ -345,9 +357,9 @@ export class WeatherWidget extends LitElement {
   }
 
   protected override render() {
-    return html`<div role="status" class="visually-hidden">
-        ${this.#announcement()}
-      </div>
-      ${this.#content()}`;
+    return html`<div lang=${this.#format.locale}>
+      <div role="status" class="visually-hidden">${this.#announcement()}</div>
+      ${this.#content()}
+    </div>`;
   }
 }

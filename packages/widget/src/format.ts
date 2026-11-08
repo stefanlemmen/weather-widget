@@ -2,15 +2,23 @@ import type { Coordinates } from "@weather-widget/contract";
 import {
   COMPASS_POINTS,
   MESSAGES,
+  type CardinalPoint,
   type CompassPoint,
   type Locale,
   type Messages,
 } from "./messages.ts";
+import { MEASURES, type Units } from "./units.ts";
 
-const KILOMETRES_PER_HOUR_PER_METRE_PER_SECOND = 3.6;
 const DEGREES_PER_COMPASS_POINT = 360 / COMPASS_POINTS.length;
 const COORDINATE_DECIMALS = 2;
 const CALENDAR_TIME_ZONE = "UTC";
+const HYPHEN_MINUS = "-";
+const MINUS_SIGN = "\u2212";
+
+const HOUR_FORMATS: Readonly<Record<Locale, Intl.DateTimeFormatOptions>> = {
+  en: { hour: "numeric" },
+  nl: { hour: "2-digit", minute: "2-digit" },
+};
 
 export interface Spoken {
   readonly shown: string;
@@ -37,8 +45,9 @@ const compassPoint = (degrees: number): CompassPoint =>
     Math.round(degrees / DEGREES_PER_COMPASS_POINT) % COMPASS_POINTS.length
   ] ?? COMPASS_POINTS[0];
 
-export const formatterFor = (locale: Locale): Formatter => {
+export const formatterFor = (locale: Locale, units: Units): Formatter => {
   const messages = MESSAGES[locale];
+  const { temperature, speed } = MEASURES[units];
 
   const unitFormat = (unit: string, unitDisplay: "short" | "long") =>
     new Intl.NumberFormat(locale, {
@@ -49,10 +58,13 @@ export const formatterFor = (locale: Locale): Formatter => {
       signDisplay: "negative",
     });
 
-  const celsiusShort = unitFormat("celsius", "short");
-  const celsiusLong = unitFormat("celsius", "long");
-  const kilometresPerHourShort = unitFormat("kilometer-per-hour", "short");
-  const kilometresPerHourLong = unitFormat("kilometer-per-hour", "long");
+  const withMinusSign = (format: Intl.NumberFormat) => (value: number) =>
+    format.format(value).replace(HYPHEN_MINUS, MINUS_SIGN);
+
+  const temperatureShort = unitFormat(temperature.unit, "short");
+  const temperatureLong = unitFormat(temperature.unit, "long");
+  const speedShort = unitFormat(speed.unit, "short");
+  const speedLong = unitFormat(speed.unit, "long");
   const percentFormat = new Intl.NumberFormat(locale, { style: "percent" });
   const coordinateFormat = new Intl.NumberFormat(locale, {
     minimumFractionDigits: COORDINATE_DECIMALS,
@@ -61,36 +73,35 @@ export const formatterFor = (locale: Locale): Formatter => {
 
   const coordinate = (
     value: number,
-    positive: CompassPoint,
-    negative: CompassPoint,
+    positive: CardinalPoint,
+    negative: CardinalPoint,
   ): Spoken => {
     const degrees = coordinateFormat.format(Math.abs(value));
     const point = value < 0 ? negative : positive;
     return {
       shown: `${degrees}° ${messages.compassPointsShown[point]}`,
-      heard: messages.coordinateHeard(
-        degrees,
-        messages.compassPointsHeard[point],
-      ),
+      heard: messages.coordinateHeard(degrees, point),
     };
   };
 
   return {
     locale,
     messages,
-    temperature: (celsius) => ({
-      shown: celsiusShort.format(celsius),
-      heard: celsiusLong.format(celsius),
-    }),
+    temperature: (celsius) => {
+      const shownTemperature = temperature.fromMetric(celsius);
+      return {
+        shown: withMinusSign(temperatureShort)(shownTemperature),
+        heard: withMinusSign(temperatureLong)(shownTemperature),
+      };
+    },
     wind: (metresPerSecond, directionDegrees) => {
-      const kilometresPerHour =
-        metresPerSecond * KILOMETRES_PER_HOUR_PER_METRE_PER_SECOND;
-      if (Math.round(kilometresPerHour) === 0) return messages.calm;
+      const shownSpeed = speed.fromMetric(metresPerSecond);
+      if (Math.round(shownSpeed) === 0) return messages.calm;
       const point = compassPoint(directionDegrees);
       return {
-        shown: `${kilometresPerHourShort.format(kilometresPerHour)} ${messages.compassPointsShown[point]}`,
+        shown: `${speedShort.format(shownSpeed)} ${messages.compassPointsShown[point]}`,
         heard: messages.windFrom(
-          kilometresPerHourLong.format(kilometresPerHour),
+          speedLong.format(shownSpeed),
           messages.compassPointsHeard[point],
         ),
       };
@@ -101,9 +112,10 @@ export const formatterFor = (locale: Locale): Formatter => {
         new Date(isoTimestamp),
       ),
     hour: (isoTimestamp, timeZone) =>
-      new Intl.DateTimeFormat(locale, { timeZone, hour: "numeric" }).format(
-        new Date(isoTimestamp),
-      ),
+      new Intl.DateTimeFormat(locale, {
+        timeZone,
+        ...HOUR_FORMATS[locale],
+      }).format(new Date(isoTimestamp)),
     weekday: (isoDate, weekday) =>
       new Intl.DateTimeFormat(locale, {
         timeZone: CALENDAR_TIME_ZONE,
