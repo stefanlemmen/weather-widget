@@ -8,7 +8,7 @@ import {
 } from "./src/build-output.ts";
 
 const LUCIDE_LICENSE = readFileSync(
-  new URL("src/icons/lucide-LICENSE", import.meta.url),
+  new URL("lucide-LICENSE", import.meta.url),
   "utf8",
 );
 const LUCIDE_NOTICE = `/*! Lucide (https://lucide.dev)\n\n${LUCIDE_LICENSE}*/`;
