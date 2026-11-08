@@ -298,7 +298,7 @@ describe("the locations route in fixture mode", () => {
       Promise.reject(new Error("the network must not be used")),
     );
     return {
-      proxy: createProxy({ WEATHER_PROVIDER_MODE: "fixtures" }, { fetch }),
+      proxy: createProxy({ PROVIDER_MODE: "fixtures" }, { fetch }),
       fetch,
     };
   };

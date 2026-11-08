@@ -7,7 +7,7 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { RECORDED_SEARCHES } from "../fixtures/recorded-responses.ts";
-import { WEATHER_PROVIDER_MODES, type Environment } from "./environment.ts";
+import { PROVIDER_MODES, type Environment } from "./environment.ts";
 import { fetchParsedWith, type ProviderCall } from "./provider-call.ts";
 
 const SEARCH_PROVIDER = "Search provider";
@@ -82,7 +82,7 @@ export const createSearchProvider = (
   const fetchParsed = fetchParsedWith({
     provider: SEARCH_PROVIDER,
     fetch:
-      environment.mode === WEATHER_PROVIDER_MODES.fixtures
+      environment.mode === PROVIDER_MODES.fixtures
         ? recordedSearch
         : dependencies.fetch,
     timeoutMs:

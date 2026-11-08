@@ -15,7 +15,7 @@ import {
   recordedFetchFor,
 } from "../fixtures/recorded-responses.ts";
 import { conditionFor } from "./conditions.ts";
-import { WEATHER_PROVIDER_MODES, type Environment } from "./environment.ts";
+import { PROVIDER_MODES, type Environment } from "./environment.ts";
 import {
   FAILED,
   fetchParsedWith,
@@ -317,7 +317,7 @@ const optionsFor = (
   environment: Environment,
   dependencies: WeatherProviderDependencies,
 ): WeatherProviderOptions =>
-  environment.mode === WEATHER_PROVIDER_MODES.fixtures
+  environment.mode === PROVIDER_MODES.fixtures
     ? {
         provider: WEATHER_PROVIDER,
         key: FIXTURE_KEY,

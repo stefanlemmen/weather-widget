@@ -15,6 +15,6 @@ export default defineConfig({
     command: "pnpm preview",
     url: `${PREVIEW_ORIGIN}/api/health`,
     reuseExistingServer: !process.env.CI,
-    env: { WEATHER_PROVIDER_MODE: "fixtures" },
+    env: { PROVIDER_MODE: "fixtures" },
   },
 });

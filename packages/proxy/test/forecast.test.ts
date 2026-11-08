@@ -834,7 +834,7 @@ describe("the Proxy in fixture mode", () => {
       Promise.reject(new Error("the network must not be used")),
     );
     const proxy = createProxy(
-      { WEATHER_PROVIDER_MODE: "fixtures" },
+      { PROVIDER_MODE: "fixtures" },
       { fetch: weatherProvider.fetch },
     );
 
@@ -848,12 +848,12 @@ describe("the Proxy in fixture mode", () => {
     expect(weatherProvider.requestedUrls).toHaveLength(0);
   });
 
-  it("refuses to start in an unknown Weather provider mode", () => {
+  it("refuses to start in an unknown provider mode", () => {
     expect(() =>
       createProxy({
-        WEATHER_PROVIDER_MODE: "recorded",
+        PROVIDER_MODE: "recorded",
         OPENWEATHER_API_KEY: TEST_KEY,
       }),
-    ).toThrow("WEATHER_PROVIDER_MODE");
+    ).toThrow("PROVIDER_MODE");
   });
 });
