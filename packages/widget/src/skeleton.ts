@@ -24,7 +24,7 @@ const placeholderConditions = (now: Date): CurrentConditions => ({
   temperatureCelsius: 12,
   feelsLikeCelsius: 10,
   windSpeedMetresPerSecond: 4,
-  windDirectionDegrees: 225,
+  windDirectionDegrees: 200,
   precipitationChance: 0.4,
   observedAt: now.toISOString(),
 });
