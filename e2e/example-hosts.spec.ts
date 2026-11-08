@@ -7,7 +7,7 @@ const RECORDED_AT = new Date("2026-11-08T09:41:44Z");
 const RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT = "48°";
 const WCAG_AA_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const DESKTOP_WIDTH = 1280;
-const SHOWN_PARTS = "h2, h3, p, li, dt, dd, a, button, .icon";
+const SHOWN_PARTS = "h2, h3, p, li, dt, dd, a, button, input, label, .icon";
 const VIEWPORT_HEIGHT = 800;
 const ZOOM_LEVELS = [
   { zoom: "200%", width: DESKTOP_WIDTH / 2 },
@@ -199,14 +199,16 @@ test.describe("the vanilla Example host", () => {
   }
 
   for (const { zoom, width } of ZOOM_LEVELS) {
-    test(`keeps everything inside each Widget at ${zoom} zoom`, async ({
+    test(`keeps everything inside each Widget and the Location picker at ${zoom} zoom`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
       await showEveryWidget(page);
 
       const cutOff: string[] = [];
-      for (const widget of await page.locator("weather-widget").all()) {
+      for (const widget of await page
+        .locator("weather-widget, weather-location-picker")
+        .all()) {
         const bounds = await widget.boundingBox();
         expect(bounds).not.toBeNull();
         if (!bounds) continue;
@@ -227,4 +229,110 @@ test.describe("the vanilla Example host", () => {
       expect(cutOff).toEqual([]);
     });
   }
+
+  test.describe("its Location picker", () => {
+    const chosenLocation = (page: Page) =>
+      page.locator("weather-widget").first();
+    const picker = (page: Page) => page.locator("weather-location-picker");
+    const forecastRequestAt = (page: Page, latitude: string) =>
+      page.waitForRequest((request) => {
+        const url = new URL(request.url());
+        return (
+          url.pathname === "/api/forecast" &&
+          url.searchParams.get("latitude") === latitude
+        );
+      });
+
+    test("drives the top Widget, which starts on Nieuwegein", async ({
+      page,
+    }) => {
+      await page.goto("/vanilla/");
+
+      await expect(
+        chosenLocation(page).getByRole("heading", {
+          level: 2,
+          name: RECORDED_NIEUWEGEIN_NAME,
+        }),
+      ).toBeVisible();
+
+      await picker(page)
+        .getByRole("searchbox", { name: "Location" })
+        .fill("Paris");
+      await picker(page).getByRole("button", { name: "Search" }).click();
+      const forecast = forecastRequestAt(page, "33.66094");
+      await picker(page)
+        .getByRole("button", { name: "Paris Texas, United States" })
+        .click();
+
+      const url = new URL((await forecast).url());
+      expect(url.searchParams.get("longitude")).toBe("-95.55551");
+      await expect(
+        chosenLocation(page).getByRole("heading", { level: 2, name: "Paris" }),
+      ).toBeVisible();
+    });
+
+    test("announces a search that finds nothing", async ({ page }) => {
+      await page.goto("/vanilla/");
+
+      await picker(page)
+        .getByRole("searchbox", { name: "Location" })
+        .fill("Atlantis");
+      await picker(page).getByRole("button", { name: "Search" }).click();
+
+      await expect(picker(page).getByRole("status")).toHaveText(
+        "No locations found for “Atlantis”. Check the spelling or try a nearby town.",
+      );
+    });
+
+    test("sends the top Widget the device's Location rounded to 2 decimals", async ({
+      page,
+      context,
+    }) => {
+      await context.grantPermissions(["geolocation"]);
+      await context.setGeolocation({ latitude: 48.85341, longitude: 2.3488 });
+      await page.goto("/vanilla/");
+      await expect(
+        chosenLocation(page).getByRole("heading", {
+          level: 2,
+          name: RECORDED_NIEUWEGEIN_NAME,
+        }),
+      ).toBeVisible();
+
+      const forecast = forecastRequestAt(page, "48.85");
+      await picker(page)
+        .getByRole("button", { name: "Use my location" })
+        .click();
+
+      expect(
+        new URL((await forecast).url()).searchParams.get("longitude"),
+      ).toBe("2.35");
+    });
+
+    test("loads as its own standalone ES module, which the Widget's module leaves out", async ({
+      page,
+      request,
+    }) => {
+      const pickerModule = page.waitForResponse(
+        "**/widget/weather-location-picker.js",
+      );
+
+      await page.goto("/vanilla/");
+
+      expect((await pickerModule).status()).toBe(200);
+      const widgetModule = await request.get("/widget/weather-widget.js");
+      expect(await widgetModule.text()).not.toContain(
+        "weather-location-picker",
+      );
+    });
+
+    test("ships the Lucide licence inside its module", async ({ request }) => {
+      const pickerModule = await request.get(
+        "/widget/weather-location-picker.js",
+      );
+
+      expect(await pickerModule.text()).toContain(
+        "Lucide Icons and Contributors",
+      );
+    });
+  });
 });

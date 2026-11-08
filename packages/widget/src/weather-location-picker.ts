@@ -1,0 +1,285 @@
+import {
+  DEFAULT_LOCALE,
+  PROXY_BASE_PATH,
+  roundCoordinates,
+  type Coordinates,
+  type FoundLocation,
+  type Locale,
+  type Result,
+} from "@weather-widget/contract";
+import { html, LitElement, nothing, type PropertyValues } from "lit";
+import { parseLocale } from "./locale.ts";
+import { findLocations } from "./location-search.ts";
+import {
+  PICKER_MESSAGES,
+  type LocationError,
+  type PickerMessages,
+} from "./picker-messages.ts";
+import { pickerStyles } from "./picker-styles.ts";
+
+export const WEATHER_LOCATION_PICKER_TAG = "weather-location-picker";
+export const LOCATION_SELECT_EVENT = "location-select";
+
+export type LocationSelectDetail = Coordinates & {
+  readonly name: string | null;
+};
+
+const SEARCH_FIELD_ID = "search-term";
+const SEARCH_FIELD_NAME = "q";
+
+const CREDIT_LINKS = {
+  openMeteo: "https://open-meteo.com/",
+  geoNames: "https://www.geonames.org/",
+  ccBy: "https://creativecommons.org/licenses/by/4.0/",
+} as const;
+
+const DEVICE_LOCATION_TIMEOUT_MS = 10_000;
+const DEVICE_LOCATION_MAX_AGE_MS = 5 * 60 * 1000;
+
+const DEVICE_LOCATION_OPTIONS: PositionOptions = {
+  timeout: DEVICE_LOCATION_TIMEOUT_MS,
+  maximumAge: DEVICE_LOCATION_MAX_AGE_MS,
+};
+
+const locationErrorOf = (error: GeolocationPositionError): LocationError => {
+  if (error.code === error.PERMISSION_DENIED) return "denied";
+  if (error.code === error.TIMEOUT) return "timedOut";
+  return "unavailable";
+};
+
+type Message =
+  | { readonly kind: "none" }
+  | { readonly kind: "found"; readonly count: number }
+  | { readonly kind: "noneFound"; readonly term: string }
+  | { readonly kind: "searchFailed" }
+  | { readonly kind: "locating" }
+  | { readonly kind: "locationError"; readonly error: LocationError };
+
+const NO_MESSAGE: Message = { kind: "none" };
+
+const searchMessageFor = (
+  found: Result<readonly FoundLocation[]>,
+  term: string,
+): Message => {
+  if (found.status === "error") return { kind: "searchFailed" };
+  if (found.data.length === 0) return { kind: "noneFound", term };
+  return { kind: "found", count: found.data.length };
+};
+
+const textOf = (messages: PickerMessages, message: Message) => {
+  switch (message.kind) {
+    case "none":
+      return "";
+    case "found":
+      return messages.foundCount(message.count);
+    case "noneFound":
+      return messages.noneFound(message.term);
+    case "searchFailed":
+      return messages.searchFailed;
+    case "locating":
+      return messages.locating;
+    case "locationError":
+      return messages.locationErrors[message.error];
+  }
+};
+
+const contextOf = ({ region, country }: FoundLocation) =>
+  [region, country].filter((part) => part !== null).join(", ");
+
+const NAVIGATION_ICON = html`<svg
+  aria-hidden="true"
+  focusable="false"
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+</svg>`;
+
+export class WeatherLocationPicker extends LitElement {
+  static override properties = {
+    locale: { type: String },
+    proxyUrl: { type: String, attribute: "proxy-url" },
+  };
+
+  static override styles = pickerStyles;
+
+  declare locale: string | undefined;
+  declare proxyUrl: string;
+
+  #locale: Locale = DEFAULT_LOCALE;
+  #messages: PickerMessages = PICKER_MESSAGES[DEFAULT_LOCALE];
+  #found: readonly FoundLocation[] = [];
+  #message: Message = NO_MESSAGE;
+  #locating = false;
+  #search: AbortController | undefined;
+
+  constructor() {
+    super();
+    this.proxyUrl = PROXY_BASE_PATH;
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.#search?.abort();
+  }
+
+  protected override willUpdate(changed: PropertyValues<this>) {
+    if (changed.has("locale")) {
+      this.#locale = parseLocale(this.locale);
+      this.#messages = PICKER_MESSAGES[this.#locale];
+    }
+  }
+
+  #showResults(found: readonly FoundLocation[], message: Message) {
+    this.#found = found;
+    this.#message = message;
+    this.requestUpdate();
+  }
+
+  #announce(message: Message) {
+    this.#showResults(this.#found, message);
+  }
+
+  readonly #onSubmit = async (event: SubmitEvent) => {
+    event.preventDefault();
+    if (!(event.currentTarget instanceof HTMLFormElement)) return;
+    const term = new FormData(event.currentTarget).get(SEARCH_FIELD_NAME);
+    const name = typeof term === "string" ? term.trim() : "";
+    if (name === "") return;
+
+    this.#search?.abort();
+    const search = new AbortController();
+    this.#search = search;
+    const found = await findLocations(
+      this.proxyUrl,
+      { name, locale: this.#locale },
+      search.signal,
+    );
+    if (search.signal.aborted) return;
+
+    this.#showResults(
+      found.status === "ok" ? found.data : [],
+      searchMessageFor(found, name),
+    );
+  };
+
+  #select(detail: LocationSelectDetail) {
+    this.dispatchEvent(
+      new CustomEvent<LocationSelectDetail>(LOCATION_SELECT_EVENT, {
+        detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  readonly #onLocate = () => {
+    if (this.#locating) return;
+    this.#locating = true;
+    this.#announce({ kind: "locating" });
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        this.#locating = false;
+        this.#announce(NO_MESSAGE);
+        this.#select({ ...roundCoordinates(coords), name: null });
+      },
+      (error) => {
+        this.#locating = false;
+        this.#announce({
+          kind: "locationError",
+          error: locationErrorOf(error),
+        });
+      },
+      DEVICE_LOCATION_OPTIONS,
+    );
+  };
+
+  #locateButton() {
+    if (!("geolocation" in navigator)) return nothing;
+    return html`<button
+      type="button"
+      class="button locate"
+      aria-disabled=${this.#locating}
+      @click=${this.#onLocate}
+    >
+      ${NAVIGATION_ICON}${this.#messages.useMyLocation}
+    </button>`;
+  }
+
+  #results() {
+    if (this.#found.length === 0) return nothing;
+    return html`<ul
+      class="picker-results"
+      aria-label=${this.#messages.locationsFound}
+    >
+      ${this.#found.map((location) => {
+        const context = contextOf(location);
+        return html`<li>
+          <button
+            type="button"
+            class="result"
+            @click=${() => {
+              this.#select({
+                latitude: location.latitude,
+                longitude: location.longitude,
+                name: location.name,
+              });
+            }}
+          >
+            <span class="result-name">${location.name}</span>${
+              context === ""
+                ? nothing
+                : html` <span class="result-context">${context}</span>`
+            }
+          </button>
+        </li>`;
+      })}
+    </ul>`;
+  }
+
+  protected override render() {
+    const messages = this.#messages;
+    const message = textOf(messages, this.#message);
+    return html`<div class="picker" lang=${this.#locale}>
+      <form
+        role="search"
+        aria-label=${messages.chooseALocation}
+        @submit=${this.#onSubmit}
+      >
+        <label for=${SEARCH_FIELD_ID}>${messages.location}</label>
+        <div class="picker-row">
+          <input
+            id=${SEARCH_FIELD_ID}
+            type="search"
+            name=${SEARCH_FIELD_NAME}
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit" class="button button-primary">
+            ${messages.search}
+          </button>
+        </div>
+      </form>
+      ${this.#locateButton()}
+      <p
+        class=${message === "" ? "picker-message is-empty" : "picker-message"}
+        role="status"
+      >
+        ${message}
+      </p>
+      ${this.#results()}
+      <p class="credit">
+        ${messages.creditSearchBy}
+        <a href=${CREDIT_LINKS.openMeteo}>Open-Meteo</a>,
+        ${messages.creditPlaceNamesFrom}
+        <a href=${CREDIT_LINKS.geoNames}>GeoNames</a>
+        (<a href=${CREDIT_LINKS.ccBy}>CC BY 4.0</a>)
+      </p>
+    </div>`;
+  }
+}

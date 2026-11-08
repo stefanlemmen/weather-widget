@@ -27,6 +27,20 @@ export const CoordinatesSchema = v.object({
 
 export type Coordinates = v.InferOutput<typeof CoordinatesSchema>;
 
+const COORDINATE_DECIMALS = 2;
+const COORDINATE_FACTOR = 10 ** COORDINATE_DECIMALS;
+
+const roundCoordinate = (value: number) =>
+  Math.round(value * COORDINATE_FACTOR) / COORDINATE_FACTOR;
+
+export const roundCoordinates = ({
+  latitude,
+  longitude,
+}: Coordinates): Coordinates => ({
+  latitude: roundCoordinate(latitude),
+  longitude: roundCoordinate(longitude),
+});
+
 export const FORECAST_PARTS = ["current", "hourly", "daily"] as const;
 
 export type ForecastPart = (typeof FORECAST_PARTS)[number];
@@ -141,6 +155,8 @@ export type Result<TData> =
   | { readonly status: "ok"; readonly data: TData }
   | { readonly status: "error" };
 
+export const FAILED = { status: "error" } as const;
+
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,
   parts: v.object({
@@ -163,3 +179,46 @@ export type ProblemDetails = v.InferOutput<typeof ProblemDetailsSchema>;
 
 export const PROBLEM_DETAILS_MEDIA_TYPE = "application/problem+json";
 export const UNTYPED_PROBLEM = "about:blank";
+
+export const LOCALES = ["en", "nl"] as const;
+
+export type Locale = (typeof LOCALES)[number];
+
+export const DEFAULT_LOCALE: Locale = "en";
+
+export const LOCATIONS_PATH = "/locations";
+export const MAX_LOCATIONS_FOUND = 5;
+export const SEARCH_TERM_MAX_LENGTH = 100;
+
+export const LocationsQuerySchema = v.object({
+  name: v.pipe(
+    v.string(),
+    v.trim(),
+    v.nonEmpty(),
+    v.maxLength(SEARCH_TERM_MAX_LENGTH),
+  ),
+  locale: v.picklist(LOCALES),
+});
+
+export type LocationsQuery = v.InferOutput<typeof LocationsQuerySchema>;
+
+const PlaceNameSchema = v.pipe(v.string(), v.nonEmpty());
+
+export const FoundLocationSchema = v.object({
+  name: PlaceNameSchema,
+  region: v.nullable(PlaceNameSchema),
+  country: v.nullable(PlaceNameSchema),
+  latitude: coordinate(LATITUDE_RANGE),
+  longitude: coordinate(LONGITUDE_RANGE),
+});
+
+export type FoundLocation = v.InferOutput<typeof FoundLocationSchema>;
+
+export const LocationsResponseSchema = v.object({
+  locations: v.pipe(
+    v.array(FoundLocationSchema),
+    v.maxLength(MAX_LOCATIONS_FOUND),
+  ),
+});
+
+export type LocationsResponse = v.InferOutput<typeof LocationsResponseSchema>;

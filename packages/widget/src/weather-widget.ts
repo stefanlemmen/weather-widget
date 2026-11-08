@@ -1,4 +1,8 @@
-import { CoordinatesSchema, PROXY_BASE_PATH } from "@weather-widget/contract";
+import {
+  CoordinatesSchema,
+  DEFAULT_LOCALE,
+  PROXY_BASE_PATH,
+} from "@weather-widget/contract";
 import { html, LitElement, type PropertyValues } from "lit";
 import * as v from "valibot";
 import { formatterFor, type Formatter, type Spoken } from "./format.ts";
@@ -9,7 +13,7 @@ import {
   forecastAnnouncement,
   forecastView,
 } from "./forecast-view.ts";
-import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
+import { parseLocale } from "./locale.ts";
 import { MotionPreference, STILL } from "./motion-preference.ts";
 import { placeholderForecast } from "./skeleton.ts";
 import { DEFAULT_UNITS, parseUnits } from "./units.ts";

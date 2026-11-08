@@ -45,11 +45,31 @@
       }
     </style>
     <script type="module" src="/widget/weather-widget.js" vite-ignore></script>
+    <script
+      type="module"
+      src="/widget/weather-location-picker.js"
+      vite-ignore
+    ></script>
+    <script type="module">
+      const chosen = document.querySelector("#chosen-location");
+      document
+        .querySelector("weather-location-picker")
+        .addEventListener("location-select", ({ detail }) => {
+          chosen.latitude = detail.latitude;
+          chosen.longitude = detail.longitude;
+          chosen.locationName = detail.name ?? undefined;
+        });
+    </script>
   </head>
   <body>
     <main>
       <h1>Weather Widget in plain HTML</h1>
-      <weather-widget latitude="52.03" longitude="5.08"></weather-widget>
+      <weather-location-picker></weather-location-picker>
+      <weather-widget
+        id="chosen-location"
+        latitude="52.03"
+        longitude="5.08"
+      ></weather-widget>
       <weather-widget
         latitude="52.03"
         longitude="5.08"

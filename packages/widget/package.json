@@ -4,10 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./location-picker": "./src/location-picker.ts",
     "./build-output": "./src/build-output.ts"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && vite build --mode location-picker",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

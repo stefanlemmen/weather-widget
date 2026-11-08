@@ -1,7 +1,7 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "WEATHER_PROVIDER_MODE=fixtures pnpm preview",
+      "startServerCommand": "PROVIDER_MODE=fixtures pnpm preview",
       "startServerReadyPattern": "Preview listening",
       "url": ["http://localhost:4173/vanilla/"],
       "numberOfRuns": 3
