@@ -38,10 +38,15 @@ import { upcomingDays, upcomingHours } from "./forecast-window.ts";
 import { MESSAGES } from "./messages.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
+type ShownForecast = Extract<ForecastResult, { readonly status: "ok" }> & {
+  readonly nameTakesFocus: boolean;
+};
+
 type ForecastState =
   | { readonly status: "loading" }
   | { readonly status: "retrying" }
-  | ForecastResult
+  | ShownForecast
+  | Exclude<ForecastResult, { readonly status: "ok" }>
   | { readonly status: "invalid-location" };
 
 type FetchingState = Extract<
@@ -301,17 +306,30 @@ export class WeatherWidget extends LitElement {
       requestedParts(this.parts),
       request.signal,
     );
-    if (!request.signal.aborted) this.forecast = forecast;
+    if (request.signal.aborted) return;
+    this.forecast =
+      forecast.status === "ok"
+        ? {
+            ...forecast,
+            nameTakesFocus:
+              fetching === RETRYING && this.shadowRoot?.activeElement != null,
+          }
+        : forecast;
   }
 
-  async #retry() {
-    if (this.forecast.status === "retrying") return;
-    await this.#load(RETRYING);
-    await this.updateComplete;
-    const focusLeftWithTryAgain = document.activeElement === document.body;
-    if (this.forecast.status === "ok" && focusLeftWithTryAgain) {
+  protected override updated(changed: PropertyValues) {
+    if (
+      changed.has("forecast") &&
+      this.forecast.status === "ok" &&
+      this.forecast.nameTakesFocus
+    ) {
       this.renderRoot.querySelector("h2")?.focus();
     }
+  }
+
+  #retry() {
+    if (this.forecast.status === "retrying") return;
+    void this.#load(RETRYING);
   }
 
   #locationName({ coordinates, location }: Forecast): Spoken | string {
@@ -332,7 +350,7 @@ export class WeatherWidget extends LitElement {
       ${footer(forecast)}`;
   }
 
-  #forecastAnnouncement(forecast: Forecast) {
+  #forecastAnnouncement(forecast: ShownForecast) {
     const observed = observedAt(forecast);
     const name = heard(this.#locationName(forecast));
     const headline = observed
@@ -344,7 +362,10 @@ export class WeatherWidget extends LitElement {
     const failedParts = FORECAST_PARTS.filter(
       (part) => forecast[part]?.status === "error",
     ).map((part) => MESSAGES.partUnavailable[part]);
-    return [headline, ...failedParts].join(ANNOUNCEMENT_SEPARATOR);
+    return [
+      ...(forecast.nameTakesFocus ? [] : [headline]),
+      ...failedParts,
+    ].join(ANNOUNCEMENT_SEPARATOR);
   }
 
   #announcement() {
@@ -372,7 +393,9 @@ export class WeatherWidget extends LitElement {
           <button
             type="button"
             aria-disabled=${this.forecast.status === "retrying"}
-            @click=${() => void this.#retry()}
+            @click=${() => {
+              this.#retry();
+            }}
           >
             ${MESSAGES.tryAgain}
           </button>`;

@@ -292,6 +292,54 @@ describe("<weather-widget>", () => {
       });
     });
 
+    it("leaves the Forecast's announcement to the focused name", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      const widget = renderWidget(NIEUWEGEIN);
+      const answer = answerLater();
+      await pressTryAgain(widget);
+
+      answer(Response.json(fullForecast()));
+
+      const name = page.getByRole("heading", { level: 2 });
+      await vi.waitFor(() => {
+        expect(focusedIn(widget)).toBe(name.element());
+      });
+      expect(page.getByRole("status").element().textContent.trim()).toBe("");
+    });
+
+    it("still announces the failed parts when focus moves to the name", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      const widget = renderWidget(NIEUWEGEIN);
+      const answer = answerLater();
+      await pressTryAgain(widget);
+
+      answer(Response.json(forecastFailing("daily")));
+
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent(/^Daily forecast unavailable$/);
+      expect(focusedIn(widget)).toBe(
+        page.getByRole("heading", { level: 2 }).element(),
+      );
+    });
+
+    it("keeps the announcement when the Host page renames the Location after focus moved", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
+      const widget = renderWidget(NIEUWEGEIN);
+      const answer = answerLater();
+      await pressTryAgain(widget);
+      answer(Response.json(fullForecast()));
+      const name = page.getByRole("heading", { level: 2 });
+      await vi.waitFor(() => {
+        expect(focusedIn(widget)).toBe(name.element());
+      });
+
+      widget.setAttribute("location-name", "Home");
+
+      await expect.element(name).toHaveTextContent("Home");
+      expect(page.getByRole("status").element().textContent.trim()).toBe("");
+    });
+
     it("stays where the visitor moved it while the Widget fetched", async () => {
       fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
       const widget = renderWidget(NIEUWEGEIN);
@@ -308,6 +356,9 @@ describe("<weather-widget>", () => {
         .toBeVisible();
       await widget.updateComplete;
       expect(document.activeElement).toBe(elsewhere);
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent("Forecast for Nieuwegein, updated at 10:41 AM");
     });
 
     it("fetches only once when the visitor presses Try again while it fetches", async () => {
