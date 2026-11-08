@@ -5,9 +5,9 @@ import {
   type CurrentConditions,
   type DailyForecast,
   type ForecastPart,
-  type ForecastPartResult,
   type HourlyForecast,
   type Location,
+  type Result,
 } from "@weather-widget/contract";
 import {
   css,
@@ -77,7 +77,7 @@ const chance = (precipitationChance: number) =>
 
 const shownOrUnavailable = <TData>(
   part: ForecastPart,
-  result: ForecastPartResult<TData>,
+  result: Result<TData>,
   show: (data: TData) => TemplateResult,
 ) =>
   result.status === "ok"
@@ -111,7 +111,7 @@ const currentConditionsDetails = (current: CurrentConditions) =>
     }
   </dl>`;
 
-const currentConditions = (current: ForecastPartResult<CurrentConditions>) =>
+const currentConditions = (current: Result<CurrentConditions>) =>
   shownOrUnavailable(
     "current",
     current,
@@ -123,7 +123,7 @@ const currentConditions = (current: ForecastPartResult<CurrentConditions>) =>
   );
 
 const hourlyForecast = (
-  hourly: ForecastPartResult<HourlyForecast>,
+  hourly: Result<HourlyForecast>,
   { timeZone }: Location,
   now: Date,
 ) =>
@@ -152,7 +152,7 @@ const hourlyForecast = (
   </section>`;
 
 const dailyForecast = (
-  daily: ForecastPartResult<DailyForecast>,
+  daily: Result<DailyForecast>,
   { timeZone }: Location,
   now: Date,
 ) =>

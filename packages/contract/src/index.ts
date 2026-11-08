@@ -118,7 +118,7 @@ export const LocationSchema = v.object({
 
 export type Location = v.InferOutput<typeof LocationSchema>;
 
-const forecastPartResult = <TData extends v.GenericSchema>(data: TData) =>
+const resultSchema = <TData extends v.GenericSchema>(data: TData) =>
   v.variant("status", [
     v.object({ status: v.literal("ok"), data }),
     v.object({ status: v.literal("error") }),
@@ -128,14 +128,12 @@ export type Result<TData> =
   | { readonly status: "ok"; readonly data: TData }
   | { readonly status: "error" };
 
-export type ForecastPartResult<TData> = Result<TData>;
-
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,
   parts: v.object({
-    current: v.optional(forecastPartResult(CurrentConditionsSchema)),
-    hourly: v.optional(forecastPartResult(HourlyForecastSchema)),
-    daily: v.optional(forecastPartResult(DailyForecastSchema)),
+    current: v.optional(resultSchema(CurrentConditionsSchema)),
+    hourly: v.optional(resultSchema(HourlyForecastSchema)),
+    daily: v.optional(resultSchema(DailyForecastSchema)),
   }),
 });
 

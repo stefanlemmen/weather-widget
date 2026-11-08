@@ -7,9 +7,9 @@ import {
   type CurrentConditions,
   type DailyForecast,
   type ForecastPart,
-  type ForecastPartResult,
   type HourlyForecast,
   type Location,
+  type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
 
@@ -18,9 +18,9 @@ const PARTS_ATTRIBUTE_SEPARATOR = /\s+/;
 export interface Forecast {
   readonly coordinates: Coordinates;
   readonly location: Location;
-  readonly current?: ForecastPartResult<CurrentConditions>;
-  readonly hourly?: ForecastPartResult<HourlyForecast>;
-  readonly daily?: ForecastPartResult<DailyForecast>;
+  readonly current?: Result<CurrentConditions>;
+  readonly hourly?: Result<HourlyForecast>;
+  readonly daily?: Result<DailyForecast>;
 }
 
 export type ForecastResult =
