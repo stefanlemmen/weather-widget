@@ -27,6 +27,20 @@ export const CoordinatesSchema = v.object({
 
 export type Coordinates = v.InferOutput<typeof CoordinatesSchema>;
 
+const COORDINATE_DECIMALS = 2;
+const COORDINATE_FACTOR = 10 ** COORDINATE_DECIMALS;
+
+const roundCoordinate = (value: number) =>
+  Math.round(value * COORDINATE_FACTOR) / COORDINATE_FACTOR;
+
+export const roundCoordinates = ({
+  latitude,
+  longitude,
+}: Coordinates): Coordinates => ({
+  latitude: roundCoordinate(latitude),
+  longitude: roundCoordinate(longitude),
+});
+
 export const FORECAST_PARTS = ["current", "hourly", "daily"] as const;
 
 export type ForecastPart = (typeof FORECAST_PARTS)[number];

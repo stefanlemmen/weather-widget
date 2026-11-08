@@ -12,7 +12,7 @@ import {
   PROBLEM_DETAILS_MEDIA_TYPE,
   PROXY_BASE_PATH,
   UNTYPED_PROBLEM,
-  type Coordinates,
+  roundCoordinates,
   type ForecastResponse,
   type HealthResponse,
   type LocationsResponse,
@@ -38,7 +38,6 @@ export const LOCATIONS_CACHE_CONTROL = FORECAST_CACHE_CONTROL;
 export const PARTIAL_FORECAST_CACHE_CONTROL =
   "public, max-age=0, s-maxage=60, stale-if-error=3600";
 const NO_STORE = "no-store";
-const COORDINATE_DECIMALS = 2;
 
 type ProblemResponse = ProblemDetails & { readonly status: 400 | 404 | 503 };
 
@@ -93,19 +92,6 @@ const problem = (context: Context, details: ProblemResponse) => {
     "content-type": PROBLEM_DETAILS_MEDIA_TYPE,
   });
 };
-
-const roundCoordinate = (value: number) => {
-  const factor = 10 ** COORDINATE_DECIMALS;
-  return Math.round(value * factor) / factor;
-};
-
-const roundCoordinates = ({
-  latitude,
-  longitude,
-}: Coordinates): Coordinates => ({
-  latitude: roundCoordinate(latitude),
-  longitude: roundCoordinate(longitude),
-});
 
 const isPartial = ({ parts }: ForecastResponse) =>
   Object.values(parts).some((part) => part?.status === "error");
