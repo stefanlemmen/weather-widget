@@ -51,8 +51,12 @@ The expected weather per day for the next 5 days, summarised as high, low, condi
 _Avoid_: Week forecast, daily data
 
 **Condition**:
-The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon plus a text label.
+The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon. Current conditions also show its name. In the Hourly and Daily forecast the icon stands alone and screen readers read its name.
 _Avoid_: Weather type, weather code, status
+
+**Daylight**:
+Whether a period at the Location falls by day or by night, which decides whether its Condition shows the sun or the moon. The Daily forecast is always by day.
+_Avoid_: Time of day, day/night flag, is day
 
 ## Services
 
