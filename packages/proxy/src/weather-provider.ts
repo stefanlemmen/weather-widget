@@ -16,20 +16,17 @@ import {
 } from "../fixtures/recorded-responses.ts";
 import { conditionFor } from "./conditions.ts";
 import { WEATHER_PROVIDER_MODES, type Environment } from "./environment.ts";
+import {
+  FAILED,
+  fetchParsedWith,
+  type ProviderCall,
+  type ProviderOptions,
+} from "./provider-call.ts";
 
 const WEATHER_PROVIDER_ORIGIN = "https://api.openweathermap.org";
 const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
 const FIXTURE_KEY = "fixtures";
-const TIMEOUT_ERROR = "TimeoutError";
-const FAILURE_REASONS = {
-  timedOut: "timed out",
-  unreachable: "unreachable",
-  unexpectedResponse: "unexpected response",
-} as const;
-type FailureReason =
-  (typeof FAILURE_REASONS)[keyof typeof FAILURE_REASONS] | `HTTP ${string}`;
-const httpStatusReason = (status: number): FailureReason =>
-  `HTTP ${String(status)}`;
+const WEATHER_PROVIDER = "Weather provider";
 const METRIC_UNITS = "metric";
 const NAMES_WANTED = "1";
 const MILLISECONDS_PER_SECOND = 1000;
@@ -161,12 +158,6 @@ const ReverseGeocodingResponseSchema = v.union([
   ),
 ]);
 
-interface WeatherProviderCall<TSchema extends v.GenericSchema> {
-  readonly name: string;
-  readonly url: string;
-  readonly schema: TSchema;
-}
-
 const WEATHER_PROVIDER_CALLS = {
   current: {
     name: "current",
@@ -188,7 +179,7 @@ const WEATHER_PROVIDER_CALLS = {
     url: `${WEATHER_PROVIDER_ORIGIN}/geo/1.0/reverse`,
     schema: ReverseGeocodingResponseSchema,
   },
-} satisfies Record<string, WeatherProviderCall<v.GenericSchema>>;
+} satisfies Record<string, ProviderCall<v.GenericSchema>>;
 
 type ResponseOf<TCall extends keyof typeof WEATHER_PROVIDER_CALLS> = Result<
   v.InferOutput<(typeof WEATHER_PROVIDER_CALLS)[TCall]["schema"]>
@@ -206,24 +197,7 @@ export type FetchForecast = (
   parts: readonly ForecastPart[],
 ) => Promise<Result<ForecastResponse>>;
 
-const FAILED = { status: "error" } as const;
 const SKIPPED = Promise.resolve(undefined);
-
-const failureReason = (error: unknown): FailureReason => {
-  if (error instanceof DOMException && error.name === TIMEOUT_ERROR) {
-    return FAILURE_REASONS.timedOut;
-  }
-  if (error instanceof SyntaxError) return FAILURE_REASONS.unexpectedResponse;
-  return FAILURE_REASONS.unreachable;
-};
-
-const callFailed = (
-  call: WeatherProviderCall<v.GenericSchema>,
-  reason: FailureReason,
-) => {
-  console.error(`Weather provider ${call.name} call failed: ${reason}`);
-  return FAILED;
-};
 
 const partFrom = <TResponse, TPart>(
   response: Result<TResponse>,
@@ -289,10 +263,8 @@ const forecastFrom = (
   };
 };
 
-interface WeatherProviderOptions {
+interface WeatherProviderOptions extends ProviderOptions {
   readonly key: string;
-  readonly fetch: typeof globalThis.fetch;
-  readonly timeoutMs: number;
 }
 
 export interface WeatherProviderDependencies {
@@ -301,30 +273,11 @@ export interface WeatherProviderDependencies {
 }
 
 const fetchForecastWith = (options: WeatherProviderOptions): FetchForecast => {
-  const fetchParsed = async <TSchema extends v.GenericSchema>(
-    call: WeatherProviderCall<TSchema>,
+  const fetchParsed = fetchParsedWith(options);
+  const fetchWithKey = <TSchema extends v.GenericSchema>(
+    call: ProviderCall<TSchema>,
     parameters: Readonly<Record<string, string>>,
-  ): Promise<Result<v.InferOutput<TSchema>>> => {
-    const url = new URL(call.url);
-    url.search = new URLSearchParams({
-      ...parameters,
-      appid: options.key,
-    }).toString();
-    try {
-      const response = await options.fetch(url, {
-        signal: AbortSignal.timeout(options.timeoutMs),
-      });
-      if (!response.ok) {
-        return callFailed(call, httpStatusReason(response.status));
-      }
-      const parsed = v.safeParse(call.schema, await response.json());
-      return parsed.success
-        ? { status: "ok", data: parsed.output }
-        : callFailed(call, FAILURE_REASONS.unexpectedResponse);
-    } catch (error) {
-      return callFailed(call, failureReason(error));
-    }
-  };
+  ) => fetchParsed(call, { ...parameters, appid: options.key });
 
   return async ({ latitude, longitude }, parts) => {
     const at = { lat: String(latitude), lon: String(longitude) };
@@ -333,15 +286,15 @@ const fetchForecastWith = (options: WeatherProviderOptions): FetchForecast => {
     const hourlyUse = hourlyUseFor(parts);
     const [current, hourly, daily, name] = await Promise.all([
       wants("current")
-        ? fetchParsed(WEATHER_PROVIDER_CALLS.current, metricAt)
+        ? fetchWithKey(WEATHER_PROVIDER_CALLS.current, metricAt)
         : SKIPPED,
       hourlyUse !== HOURLY_USES.notFetched
-        ? fetchParsed(WEATHER_PROVIDER_CALLS.hourly, metricAt)
+        ? fetchWithKey(WEATHER_PROVIDER_CALLS.hourly, metricAt)
         : SKIPPED,
       wants("daily")
-        ? fetchParsed(WEATHER_PROVIDER_CALLS.daily, metricAt)
+        ? fetchWithKey(WEATHER_PROVIDER_CALLS.daily, metricAt)
         : SKIPPED,
-      fetchParsed(WEATHER_PROVIDER_CALLS.reverseGeocoding, {
+      fetchWithKey(WEATHER_PROVIDER_CALLS.reverseGeocoding, {
         ...at,
         limit: NAMES_WANTED,
       }),
@@ -366,11 +319,13 @@ const optionsFor = (
 ): WeatherProviderOptions =>
   environment.mode === WEATHER_PROVIDER_MODES.fixtures
     ? {
+        provider: WEATHER_PROVIDER,
         key: FIXTURE_KEY,
         fetch: recordedFetch,
         timeoutMs: WEATHER_PROVIDER_TIMEOUT_MS,
       }
     : {
+        provider: WEATHER_PROVIDER,
         key: environment.weatherProviderKey,
         fetch: dependencies.fetch,
         timeoutMs:
