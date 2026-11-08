@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isLighthouseRunFile,
   renderLighthouseSummary,
   type LighthouseRun,
 } from "./lighthouse-summary-report.ts";
@@ -145,5 +146,23 @@ describe("the Lighthouse job summary", () => {
 
   it("ends with a blank line so the next summary on the page starts its own block", () => {
     expect(renderLighthouseSummary(passingResults).endsWith("\n\n")).toBe(true);
+  });
+});
+
+describe("a Lighthouse run file in .lighthouseci/", () => {
+  it.each(["lhr-1762592000000.json", "lhr-1762592000000-123456.json"])(
+    "is recognised by the name %s",
+    (name) => {
+      expect(isLighthouseRunFile(name)).toBe(true);
+    },
+  );
+
+  it.each([
+    "lhr-1762592000000.html",
+    "lhr-1762592000000-123456.html",
+    "assertion-results.json",
+    "links.json",
+  ])("isn't confused with %s", (name) => {
+    expect(isLighthouseRunFile(name)).toBe(false);
   });
 });

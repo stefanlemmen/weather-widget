@@ -1,6 +1,7 @@
 import { appendFile, readdir, readFile } from "node:fs/promises";
 import * as v from "valibot";
 import {
+  isLighthouseRunFile,
   FailedAssertionsSchema,
   LighthouseRunSchema,
   renderLighthouseSummary,
@@ -12,7 +13,6 @@ const LHCI_DIRECTORY = new URL("../.lighthouseci/", import.meta.url);
 const LIGHTHOUSE_CONFIG = new URL("../lighthouserc.json", import.meta.url);
 const ASSERTION_RESULTS_FILE = "assertion-results.json";
 const LINKS_FILE = "links.json";
-const RUN_FILE_PATTERN = /^lhr-\d+\.json$/;
 
 const ConfigSchema = v.object({
   ci: v.object({
@@ -42,9 +42,7 @@ const readJsonIfPresent = async <TSchema extends v.GenericSchema>(
   }
 };
 
-const runFiles = (await readdir(LHCI_DIRECTORY)).filter((file) =>
-  RUN_FILE_PATTERN.test(file),
-);
+const runFiles = (await readdir(LHCI_DIRECTORY)).filter(isLighthouseRunFile);
 if (runFiles.length === 0) {
   throw new Error(
     "No Lighthouse runs found in .lighthouseci/. Run pnpm lighthouse first.",

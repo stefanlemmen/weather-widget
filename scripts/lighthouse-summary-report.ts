@@ -47,6 +47,11 @@ const groupByUrl = (runs: readonly LighthouseRun[]) => {
 const median = (values: readonly number[]) =>
   values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)];
 
+const RUN_FILE_PATTERN = /^lhr-\d+(-\d+)?\.json$/;
+
+export const isLighthouseRunFile = (name: string) =>
+  RUN_FILE_PATTERN.test(name);
+
 const pathOf = (url: string) => new URL(url).pathname;
 
 const EXAMPLE_HOSTS_DIRECTORY = "hosts";
