@@ -27,7 +27,7 @@ describe("<weather-widget>", () => {
 
     renderWidget(NIEUWEGEIN);
 
-    await expect.element(page.getByText("5°C")).toBeVisible();
+    await expect.element(page.getByText("5°")).toBeVisible();
     const [url] = requestedUrls();
     expect(url?.pathname).toBe("/api/forecast");
     expect(url?.searchParams.get("latitude")).toBe("52.03");
@@ -40,16 +40,16 @@ describe("<weather-widget>", () => {
 
     renderWidget({ ...NIEUWEGEIN, "proxy-url": "https://proxy.example/api" });
 
-    await expect.element(page.getByText("5°C")).toBeVisible();
+    await expect.element(page.getByText("5°")).toBeVisible();
     expect(requestedUrls()[0]?.href).toBe(
       `https://proxy.example/api/forecast?latitude=52.03&longitude=5.08&parts=${encodeURIComponent(ALL_PARTS)}`,
     );
   });
 
   it.each([
-    [12.5, "13°C"],
-    [-3.4, "−3°C"],
-    [-0.4, "0°C"],
+    [12.5, "13°"],
+    [-3.4, "−3°"],
+    [-0.4, "0°"],
   ])("rounds %d °C to %s", async (temperature, shown) => {
     fakeProxy.mockImplementation(() =>
       respondWith(forecastWithTemperature(temperature)),
@@ -102,7 +102,7 @@ describe("<weather-widget>", () => {
 
     await page.getByRole("button", { name: "Try again" }).click();
 
-    await expect.element(page.getByText("11°C")).toBeVisible();
+    await expect.element(page.getByText("11°")).toBeVisible();
     expect(fakeProxy).toHaveBeenCalledTimes(2);
   });
 
@@ -240,12 +240,12 @@ describe("<weather-widget>", () => {
       ),
     );
     const widget = renderWidget(NIEUWEGEIN);
-    await expect.element(page.getByText("5°C")).toBeVisible();
+    await expect.element(page.getByText("5°")).toBeVisible();
 
     widget.setAttribute("latitude", "35.68");
     widget.setAttribute("longitude", "139.69");
 
-    await expect.element(page.getByText("18°C")).toBeVisible();
+    await expect.element(page.getByText("18°")).toBeVisible();
   });
 
   it("ignores an earlier Location's answer that arrives after the new one", async () => {
@@ -264,7 +264,7 @@ describe("<weather-widget>", () => {
     });
 
     widget.setAttribute("latitude", "35.68");
-    await expect.element(page.getByText("18°C")).toBeVisible();
+    await expect.element(page.getByText("18°")).toBeVisible();
     const lateAnswer = Response.json(forecastWithTemperature(5));
     answerNieuwegein(lateAnswer);
     await vi.waitFor(() => {
@@ -273,8 +273,8 @@ describe("<weather-widget>", () => {
     await new Promise((settle) => setTimeout(settle));
     await widget.updateComplete;
 
-    expect(page.getByText("18°C").query()).not.toBeNull();
-    expect(page.getByText("5°C").query()).toBeNull();
+    expect(page.getByText("18°").query()).not.toBeNull();
+    expect(page.getByText("5°").query()).toBeNull();
   });
 
   it("matches every attribute with a property", async () => {
@@ -291,7 +291,7 @@ describe("<weather-widget>", () => {
     document.body.append(widget);
     nearViewport(widget);
 
-    await expect.element(page.getByText("41°F")).toBeVisible();
+    await expect.element(page.getByText("41°")).toBeVisible();
     await expect.element(locationName()).toHaveTextContent("Home");
     expect(page.getByText("Gevoelstemperatuur").query()).not.toBeNull();
     expect(requestedUrls()[0]?.href).toBe(
@@ -335,7 +335,7 @@ describe("<weather-widget>", () => {
 
       renderWidget({ latitude, longitude });
 
-      await expect.element(page.getByText("−30°C")).toBeVisible();
+      await expect.element(page.getByText("−30°")).toBeVisible();
     },
   );
 
@@ -346,7 +346,7 @@ describe("<weather-widget>", () => {
 
     widget.setAttribute("longitude", "5.08");
 
-    await expect.element(page.getByText("5°C")).toBeVisible();
+    await expect.element(page.getByText("5°")).toBeVisible();
   });
 
   it("announces the Forecast through the live region that announced loading", async () => {

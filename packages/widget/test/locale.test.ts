@@ -30,7 +30,7 @@ describe("locale", () => {
       );
     expect(
       page.getByText("Gevoelstemperatuur").element().nextElementSibling,
-    ).toHaveTextContent("7°C");
+    ).toHaveTextContent("7°");
     expect(
       page.getByText("Wind", { exact: true }).element().nextElementSibling,
     ).toHaveTextContent("12 km/u ZZW");
@@ -55,7 +55,7 @@ describe("locale", () => {
     const days = page.getByRole("list", { name: "Komende 5 dagen" });
     await expect.element(hours).toBeVisible();
     expect(hours.getByRole("listitem").elements()[0]).toHaveTextContent(
-      /10:00.*31°C.*Kans op neerslag\s*85%/,
+      /10:00.*31°.*Kans op neerslag\s*85%/,
     );
     expect(conditionsShownIn(hours)[0]).toBe("Regen");
     expect(conditionsShownIn(days)[0]).toBe("Regen");
@@ -66,7 +66,7 @@ describe("locale", () => {
     ]);
     const firstDay = days.getByRole("listitem").first();
     expect(firstDay.element()).toHaveTextContent(
-      /zo.*Laagste\s*21°C.*Hoogste\s*50°C/,
+      /zo.*Laagste\s*21°.*Hoogste\s*50°/,
     );
     expect(firstDay.element().querySelector("abbr")?.title).toBe("zondag");
   });

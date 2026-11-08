@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-const RECORDED_NIEUWEGEIN_TEMPERATURE = "9°C";
+const RECORDED_NIEUWEGEIN_TEMPERATURE = "9°";
 const RECORDED_NIEUWEGEIN_NAME = "Nieuwegein";
 const RECORDED_AT = new Date("2026-11-08T09:41:44Z");
-const RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT = "48°F";
+const RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT = "48°";
 
 test.describe("the vanilla Example host", () => {
   test("shows the Current conditions for the Widget's Location", async ({

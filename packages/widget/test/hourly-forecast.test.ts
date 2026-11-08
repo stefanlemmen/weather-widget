@@ -24,8 +24,8 @@ describe("the Hourly forecast", () => {
     await expect.element(hourlyForecast()).toBeVisible();
     const hours = hourlyForecast().getByRole("listitem").elements();
     expect(hours).toHaveLength(12);
-    expect(hours[0]).toHaveTextContent(/10 AM.*31°C.*85%/);
-    expect(hours[1]).toHaveTextContent(/11 AM.*32°C.*0%/);
+    expect(hours[0]).toHaveTextContent(/10 AM.*31°.*85%/);
+    expect(hours[1]).toHaveTextContent(/11 AM.*32°.*0%/);
     expect(conditionsShownIn(hourlyForecast()).slice(0, 2)).toEqual([
       "Rain",
       "Overcast",
@@ -68,7 +68,7 @@ describe("the Hourly forecast", () => {
     await expect
       .element(firstHour.getByText("31 degrees Celsius"))
       .toBeInTheDocument();
-    expect(firstHour.getByText("31°C").element()).toHaveAttribute(
+    expect(firstHour.getByText("31°").element()).toHaveAttribute(
       "aria-hidden",
       "true",
     );

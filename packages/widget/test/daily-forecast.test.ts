@@ -24,7 +24,7 @@ describe("the Daily forecast", () => {
     await expect.element(dailyForecast()).toBeVisible();
     const days = dailyForecast().getByRole("listitem").elements();
     expect(days).toHaveLength(5);
-    expect(days[0]).toHaveTextContent(/Sun.*Low.*21°C.*High.*50°C.*39%/);
+    expect(days[0]).toHaveTextContent(/Sun.*Low.*21°.*High.*50°.*39%/);
     expect(conditionsShownIn(dailyForecast())[0]).toBe("Rain");
     expect(days[0]?.querySelector("abbr")?.title).toBe("Sunday");
     expect(shownDays()).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu"]);

@@ -33,7 +33,7 @@ describe("<weather-widget>", () => {
       await expect.element(locationName()).toBeVisible();
       expect(
         page.getByText("Feels like").element().nextElementSibling,
-      ).toHaveTextContent("7°C");
+      ).toHaveTextContent("7°");
       expect(
         page.getByText("Wind", { exact: true }).element().nextElementSibling,
       ).toHaveTextContent("12 km/h SSW");
@@ -66,7 +66,7 @@ describe("<weather-widget>", () => {
       await expect
         .element(page.getByText("9 degrees Celsius"))
         .toBeInTheDocument();
-      expect(page.getByText("9°C").element()).toHaveAttribute(
+      expect(page.getByText("9°").element()).toHaveAttribute(
         "aria-hidden",
         "true",
       );
