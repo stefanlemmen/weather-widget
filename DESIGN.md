@@ -361,7 +361,7 @@ The picker is its own element and uses the same tokens, theming properties and r
 1. A search form (`role="search"`): the visible label "Location" (600), a text field and a primary "Search" button on one row. Below 20rem the button drops under the field.
 2. A secondary "Use my location" button with the Lucide `navigation` arrow. It renders only when the Geolocation API exists. While locating it is `aria-disabled="true"`, its cursor is `progress`, and the arrow pulses to 35% opacity (1.2s, alternate) under `prefers-reduced-motion: no-preference`.
 3. A `role="status"` message in ink soft at label size, hidden while empty.
-4. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color.
+4. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color. Choosing one cancels a running search, clears the list and moves focus back to the text field.
 5. The credit: "Search by Open-Meteo, place names from GeoNames (CC BY 4.0)", with links.
 
 The text field is 44px high with a 1.5px field-border outline, the body font (17px, so iOS doesn't zoom) and an accent caret. On focus its border turns accent and the focus ring sits 2px outside it.
@@ -370,7 +370,9 @@ The text field is 44px high with a 1.5px field-border outline, the body font (17
 
 | Situation            | Message                                                                    |
 | -------------------- | -------------------------------------------------------------------------- |
+| Searching            | "Searching for “Utrecht”…"                                                 |
 | Results              | "5 locations found"                                                        |
+| Chosen               | "Utrecht chosen"                                                           |
 | No results           | "No locations found for “Parjs”. Check the spelling or try a nearby town." |
 | Search failed        | "Search isn't working right now. Try again in a moment."                   |
 | Locating             | "Finding your location…"                                                   |
