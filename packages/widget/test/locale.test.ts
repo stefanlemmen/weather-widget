@@ -14,6 +14,7 @@ import {
   renderWidget,
   textsOf,
   conditionsShownIn,
+  weatherProviderCredit,
 } from "./support.ts";
 
 describe("locale", () => {
@@ -44,10 +45,17 @@ describe("locale", () => {
     await expect
       .element(shownMessage("Bijgewerkt om"))
       .toHaveTextContent("Bijgewerkt om 10:41");
-    await expect
-      .element(page.getByRole("link", { name: "OpenWeather" }))
-      .toBeVisible();
-    expect(shownMessage("Weergegevens van").query()).not.toBeNull();
+  });
+
+  it("keeps the Weather provider's credit in English, as the Weather provider requires", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget(DUTCH);
+
+    await expect.element(weatherProviderCredit()).toBeVisible();
+    expect(shownMessage("Bijgewerkt om").element()).toHaveTextContent(
+      /^\s*Bijgewerkt om 10:41\s*·\s*Weather data provided by OpenWeather\s*$/,
+    );
   });
 
   it("shows the Hourly and Daily forecast in Dutch, with hours on the 24-hour clock and Dutch day names", async () => {

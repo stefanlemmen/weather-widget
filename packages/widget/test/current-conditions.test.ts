@@ -8,6 +8,7 @@ import {
   respondWith,
   fakeProxy,
   renderWidget,
+  weatherProviderCredit,
 } from "./support.ts";
 
 describe("<weather-widget>", () => {
@@ -55,12 +56,15 @@ describe("<weather-widget>", () => {
       );
     });
 
-    it("credits OpenWeather with a visible link", async () => {
+    it("credits OpenWeather with the whole credit as a visible link", async () => {
       renderWidget(NIEUWEGEIN);
 
       await expect
-        .element(page.getByRole("link", { name: "OpenWeather" }))
+        .element(weatherProviderCredit())
         .toHaveAttribute("href", "https://openweathermap.org/");
+      expect(shownMessage("Updated at").element()).toHaveTextContent(
+        /^\s*Updated at 10:41 AM\s*·\s*Weather data provided by OpenWeather\s*$/,
+      );
     });
 
     it("tells screen readers the temperatures, units and wind in full", async () => {

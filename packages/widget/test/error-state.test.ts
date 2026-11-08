@@ -10,6 +10,7 @@ import {
   renderWidget,
   respondWith,
   unavailable,
+  weatherProviderCredit,
 } from "./support.ts";
 
 const ACCENT = "rgb(23, 112, 63)";
@@ -81,9 +82,7 @@ describe("the error state", () => {
 
     renderWidget(NIEUWEGEIN);
 
-    await expect
-      .element(page.getByRole("link", { name: "OpenWeather" }))
-      .toBeVisible();
+    await expect.element(weatherProviderCredit()).toBeVisible();
   });
 
   it("leaves out the explanation and Try again when the Location is invalid", async () => {

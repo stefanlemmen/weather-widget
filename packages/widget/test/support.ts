@@ -119,6 +119,12 @@ export const errorHeading = (text: string) =>
 
 export const announcement = () => page.getByRole("status");
 
+export const weatherProviderCredit = () =>
+  page.getByRole("link", {
+    name: "Weather data provided by OpenWeather",
+    exact: true,
+  });
+
 export const locationName = () => page.getByRole("heading", { level: 2 });
 
 export const respondWith = (body: unknown, status = 200) =>

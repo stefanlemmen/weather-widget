@@ -2,6 +2,8 @@ import type { Condition, ForecastPart } from "@weather-widget/contract";
 import * as v from "valibot";
 import { DAYS_SHOWN, HOURS_SHOWN } from "./forecast-window.ts";
 
+const WEATHER_PROVIDER_CREDIT = "Weather data provided by OpenWeather";
+
 export const COMPASS_POINTS = [
   "N",
   "NNE",
@@ -50,8 +52,7 @@ export interface Messages {
   readonly chanceOfPrecipitation: string;
   readonly calm: string;
   readonly updatedAt: string;
-  readonly weatherDataFrom: string;
-  readonly weatherProviderName: string;
+  readonly weatherProviderCredit: string;
   readonly nextHours: string;
   readonly nextDays: string;
   readonly low: string;
@@ -110,8 +111,7 @@ const en: Messages = {
   chanceOfPrecipitation: "Chance of precipitation",
   calm: "Calm",
   updatedAt: "Updated at",
-  weatherDataFrom: "Weather data from",
-  weatherProviderName: "OpenWeather",
+  weatherProviderCredit: WEATHER_PROVIDER_CREDIT,
   nextHours: `Next ${String(HOURS_SHOWN)} hours`,
   nextDays: `Next ${String(DAYS_SHOWN)} days`,
   low: "Low",
@@ -174,8 +174,7 @@ const nl: Messages = {
   chanceOfPrecipitation: "Kans op neerslag",
   calm: "Windstil",
   updatedAt: "Bijgewerkt om",
-  weatherDataFrom: "Weergegevens van",
-  weatherProviderName: "OpenWeather",
+  weatherProviderCredit: WEATHER_PROVIDER_CREDIT,
   nextHours: `Komende ${String(HOURS_SHOWN)} uur`,
   nextDays: `Komende ${String(DAYS_SHOWN)} dagen`,
   low: "Laagste",

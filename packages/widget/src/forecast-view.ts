@@ -285,8 +285,7 @@ const footer = (format: Formatter, observed?: Observed) =>
               ·`
           : nothing
       }
-      ${format.messages.weatherDataFrom}
-      <a href=${OPENWEATHER_URL}>${format.messages.weatherProviderName}</a>
+      <a href=${OPENWEATHER_URL}>${format.messages.weatherProviderCredit}</a>
     </p>
   </footer>`;
 

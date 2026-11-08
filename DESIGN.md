@@ -253,7 +253,7 @@ The Widget fills the width its Host page gives it. It is a size container (`cont
 
 ### Current conditions
 
-The temperature fills the left column. The Condition icon sits to its right, up to 160px and bleeding slightly above and below its row, with the Condition label under it. The facts (Feels like, Wind, Rain) follow:
+The temperature fills the left column. The Condition icon sits to its right, up to 160px and bleeding slightly above and below its row, with the Condition label under it. The facts (Feels like, Wind, Chance of precipitation) follow:
 
 - **Column:** three equal centred columns, each a 60px icon over a label over a value. A long value such as "112 km/h NNW" wraps onto two centred lines.
 - **Narrow sidebar:** one row per fact: a 36px icon, the label beside it, the value right-aligned.
@@ -309,7 +309,7 @@ Each Widget has one visually hidden `role="status"` element, outside the Forecas
 
 ### Facts
 
-Feels like (thermometer), Wind (compass) and Rain (raindrop): an icon, a label in ink muted and a value at 600. The Rain value is rain blue.
+Feels like (thermometer), Wind (compass) and Chance of precipitation (raindrop): an icon, a label in ink muted and a value at 600. The Chance of precipitation value is rain blue.
 
 ### Hour
 
@@ -442,7 +442,7 @@ Build requirements the reference sheet can't show, for #6 to #12.
 - **Icons:** `@meteocons/svg` (animated) and `@meteocons/svg-static` (static), both `3.0.0-next.10`, MIT, no install scripts. That is a pre-release, published 2026-04-12; the only stable release (`0.1.0`) predates the monochrome set. The owner approved both at this pre-release as dependencies for #10; add them with `--save-exact`. Inline the SVG markup so `currentColor` applies, and pick the static or animated variant from `matchMedia("(prefers-reduced-motion: reduce)")`, listening for changes. The reference sheet uses CSS masks instead, which only works over HTTP.
 - **Wind direction:** the compass needle sits in a `rotate(0 64 64)` group, pointing north-east at 0 degrees. Rotate it by the wind direction plus 135 degrees, so a south-west wind (225) points north-east and every needle points where the wind blows to. Drop the needle's sway animation under reduced motion.
 - **Minus sign:** `Intl.NumberFormat` outputs a hyphen-minus, so replace it with U+2212 when formatting (#9).
-- **Accessible names:** hour and day icons carry the Condition as their accessible name. Icons next to a visible label (Current conditions, facts, N/A) are hidden. "chance of rain", "low" and "high" are visually hidden prefixes, and temperatures and wind are announced in full ("12 degrees Celsius", "24 kilometres per hour from the south-west").
+- **Accessible names:** hour and day icons carry the Condition as their accessible name. Icons next to a visible label (Current conditions, facts, N/A) are hidden. "chance of precipitation", "low" and "high" are visually hidden prefixes, and temperatures and wind are announced in full ("12 degrees Celsius", "24 kilometres per hour from the south-west").
 - **Day names:** render the three lengths from `Intl.DateTimeFormat` (the first two letters of `weekday: "short"`, `"short"` and `"long"`) and show one per width with container queries. Screen readers get the full name as visually hidden text, because an `abbr` title isn't read out reliably. The reference sheet hides letters of one word instead, which only works because every English short name is the start of the full one.
 - **Hour row lines:** select the rows after the first with `:nth-child` per column count (`n + 5` for 4 columns, `n + 7` for 6), because a selector can't read the column count. At 12 columns there is one row and no line.
 - **Skeleton:** render the loading state from the same template as the Forecast, with placeholder values wrapped in bones, so the two can't drift apart in size.
