@@ -172,11 +172,15 @@ export type FetchForecast = (
 const FAILED = { status: "error" } as const;
 const SKIPPED = Promise.resolve(undefined);
 
-export const createLiveWeatherProvider = (options: {
+export interface WeatherProviderOptions {
   readonly key: string;
   readonly fetch: typeof globalThis.fetch;
   readonly timeoutMs: number;
-}): FetchForecast => {
+}
+
+export const createLiveWeatherProvider = (
+  options: WeatherProviderOptions,
+): FetchForecast => {
   const fetchParsed = async <TSchema extends v.GenericSchema>(
     endpoint: string,
     parameters: Readonly<Record<string, string>>,
