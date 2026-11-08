@@ -1,5 +1,6 @@
 import {
   DAY,
+  FORECAST_PARTS,
   type CurrentConditions,
   type DailyForecast,
   type ForecastPart,
@@ -14,10 +15,12 @@ import {
 } from "./condition-icon.ts";
 import type { Formatter, Spoken } from "./format.ts";
 import type { Forecast } from "./forecast-client.ts";
+import type { ForecastState, ShownForecast } from "./forecast-loader.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";
 import type { Motion } from "./motion-preference.ts";
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
+const ANNOUNCEMENT_SEPARATOR = ". ";
 
 export interface ViewContext {
   readonly format: Formatter;
@@ -30,7 +33,7 @@ const spoken = (text: Spoken | string) =>
     : html`<span aria-hidden="true">${text.shown}</span
         ><span class="visually-hidden">${text.heard}</span>`;
 
-export const heard = (text: Spoken | string) =>
+const heard = (text: Spoken | string) =>
   typeof text === "string" ? text : text.heard;
 
 const chance = (format: Formatter, precipitationChance: number) =>
@@ -180,7 +183,7 @@ const dailyForecast = (
     )}
   </section>`;
 
-export const observedAt = ({ current }: Forecast) =>
+const observedAt = ({ current }: Forecast) =>
   current?.status === "ok" ? current.data.observedAt : undefined;
 
 const footer = (format: Formatter, forecast: Forecast) => {
@@ -213,4 +216,41 @@ export const forecastView = (
     ${hourly ? hourlyForecast(context, hourly, location, now) : nothing}
     ${daily ? dailyForecast(context, daily, location, now) : nothing}
     ${footer(context.format, forecast)}`;
+};
+
+const shownForecastAnnouncement = (
+  format: Formatter,
+  forecast: ShownForecast,
+  name: Spoken | string,
+) => {
+  const observed = observedAt(forecast);
+  const headline = observed
+    ? format.messages.forecastForUpdatedAt(
+        heard(name),
+        format.time(observed, forecast.location.timeZone),
+      )
+    : format.messages.forecastFor(heard(name));
+  const failedParts = FORECAST_PARTS.filter(
+    (part) => forecast[part]?.status === "error",
+  ).map((part) => format.messages.partUnavailable[part]);
+  return [...(forecast.nameTakesFocus ? [] : [headline]), ...failedParts].join(
+    ANNOUNCEMENT_SEPARATOR,
+  );
+};
+
+export const forecastAnnouncement = (
+  format: Formatter,
+  announced: ForecastState,
+  nameOf: (forecast: Forecast) => Spoken | string,
+) => {
+  switch (announced.status) {
+    case "loading":
+    case "retrying":
+      return format.messages.loading;
+    case "ok":
+      return shownForecastAnnouncement(format, announced, nameOf(announced));
+    case "error":
+    case "invalid-location":
+      return format.messages.forecastUnavailable;
+  }
 };
