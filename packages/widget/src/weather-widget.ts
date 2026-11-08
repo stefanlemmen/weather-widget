@@ -32,27 +32,24 @@ import {
   fetchForecast,
   requestedParts,
   type Forecast,
-  type ForecastResult,
 } from "./forecast-client.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";
 import { MESSAGES } from "./messages.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
-type ShownForecast = Extract<ForecastResult, { readonly status: "ok" }> & {
+type ShownForecast = Forecast & {
+  readonly status: "ok";
   readonly nameTakesFocus: boolean;
 };
 
-type ForecastState =
-  | { readonly status: "loading" }
-  | { readonly status: "retrying" }
-  | ShownForecast
-  | Exclude<ForecastResult, { readonly status: "ok" }>
-  | { readonly status: "invalid-location" };
+type FetchingState =
+  { readonly status: "loading" } | { readonly status: "retrying" };
 
-type FetchingState = Extract<
-  ForecastState,
-  { readonly status: "loading" | "retrying" }
->;
+type ForecastState =
+  | FetchingState
+  | ShownForecast
+  | { readonly status: "error" }
+  | { readonly status: "invalid-location" };
 
 const LOADING: FetchingState = { status: "loading" };
 const RETRYING: FetchingState = { status: "retrying" };
