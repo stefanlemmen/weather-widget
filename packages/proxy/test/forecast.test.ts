@@ -6,15 +6,21 @@ import {
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
+import recordedDailyForecast from "../fixtures/daily-nieuwegein.json" with { type: "json" };
 import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { type: "json" };
 import recordedReverseGeocoding from "../fixtures/reverse-nieuwegein.json" with { type: "json" };
 import { createProxy } from "../src/index.ts";
+import {
+  RECORDED_NIEUWEGEIN_DAYS,
+  RECORDED_NIEUWEGEIN_HOURS,
+} from "./recorded-nieuwegein.ts";
 
 const TEST_KEY = "test-key-that-must-stay-secret";
 const liveEnvironment = { OPENWEATHER_API_KEY: TEST_KEY };
 
 const CURRENT_PATH = "/data/4.0/onecall/current";
 const HOURLY_PATH = "/data/4.0/onecall/timeline/1h";
+const DAILY_PATH = "/data/4.0/onecall/timeline/1day";
 const REVERSE_GEOCODING_PATH = "/geo/1.0/reverse";
 
 const RECORDED_NIEUWEGEIN_FORECAST = {
@@ -31,6 +37,8 @@ const RECORDED_NIEUWEGEIN_FORECAST = {
         observedAt: "2026-11-08T09:41:44.000Z",
       },
     },
+    hourly: { status: "ok", data: RECORDED_NIEUWEGEIN_HOURS },
+    daily: { status: "ok", data: RECORDED_NIEUWEGEIN_DAYS },
   },
 };
 
@@ -60,6 +68,7 @@ const proxyAnswering = (respond: Respond) => {
 const RECORDED_RESPONSES: Readonly<Record<string, unknown>> = {
   [CURRENT_PATH]: recordedCurrentConditions,
   [HOURLY_PATH]: recordedHourlyForecast,
+  [DAILY_PATH]: recordedDailyForecast,
   [REVERSE_GEOCODING_PATH]: recordedReverseGeocoding,
 };
 
@@ -88,7 +97,7 @@ const expectProblemDetails = async (response: Response, status: number) => {
 };
 
 describe("the forecast route", () => {
-  it("answers with the Location and its Current conditions from the Weather provider", async () => {
+  it("answers with the Location and every Forecast part from the Weather provider", async () => {
     const { proxy } = healthyProxy();
 
     const response = await proxy.request(
@@ -104,6 +113,7 @@ describe("the forecast route", () => {
   it.each([
     ["current", CURRENT_PATH],
     ["hourly", HOURLY_PATH],
+    ["daily", DAILY_PATH],
   ])(
     "asks the Weather provider's %s endpoint for metric data at coordinates rounded to 2 decimals",
     async (_, pathname) => {
@@ -139,7 +149,7 @@ describe("the forecast route", () => {
     await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
 
     expect(requestedUrls.map((url) => url.pathname).sort()).toEqual(
-      [CURRENT_PATH, HOURLY_PATH, REVERSE_GEOCODING_PATH].sort(),
+      [CURRENT_PATH, HOURLY_PATH, DAILY_PATH, REVERSE_GEOCODING_PATH].sort(),
     );
   });
 
@@ -264,14 +274,21 @@ describe("the forecast route", () => {
   it.each([
     ["a negative wind speed", CURRENT_PATH, { wind_speed: -1 }],
     ["a wind direction above 360 degrees", CURRENT_PATH, { wind_deg: 361 }],
-    ["a chance of precipitation above 1", HOURLY_PATH, { pop: 1.5 }],
+    ["an hour's chance of precipitation above 1", HOURLY_PATH, { pop: 1.5 }],
+    ["a day's chance of precipitation above 1", DAILY_PATH, { pop: 1.5 }],
+    [
+      "a day whose low is above its high",
+      DAILY_PATH,
+      { temp: { min: 11, max: 10 } },
+    ],
   ] as const)(
     "answers 503 Problem Details when the Weather provider reports %s",
     async (_, pathname, outOfRange) => {
-      const recorded =
-        pathname === CURRENT_PATH
-          ? recordedCurrentConditions
-          : recordedHourlyForecast;
+      const recorded: { readonly data: readonly object[] } = {
+        [CURRENT_PATH]: recordedCurrentConditions,
+        [HOURLY_PATH]: recordedHourlyForecast,
+        [DAILY_PATH]: recordedDailyForecast,
+      }[pathname];
       const [first, ...rest] = recorded.data;
       const { proxy } = proxyAnswering(
         answerFromRecordingsExcept(pathname, () =>
@@ -295,6 +312,7 @@ describe("the forecast route", () => {
   const FORECAST_ENDPOINTS = [
     ["current", CURRENT_PATH],
     ["hourly", HOURLY_PATH],
+    ["daily", DAILY_PATH],
   ] as const;
 
   it.each(
@@ -361,6 +379,191 @@ describe("the forecast route", () => {
       v.parse(ForecastResponseSchema, await response.json()).location.name,
     ).toBeNull();
   });
+});
+
+describe("Forecast parts", () => {
+  const PROVIDER_PATHS_FOR_PARTS = [
+    ["current", [CURRENT_PATH, HOURLY_PATH]],
+    ["hourly", [HOURLY_PATH]],
+    ["daily", [DAILY_PATH]],
+    ["current,hourly", [CURRENT_PATH, HOURLY_PATH]],
+    ["current,daily", [CURRENT_PATH, HOURLY_PATH, DAILY_PATH]],
+    ["hourly,daily", [HOURLY_PATH, DAILY_PATH]],
+    ["current,hourly,daily", [CURRENT_PATH, HOURLY_PATH, DAILY_PATH]],
+  ] as const;
+
+  it.each(PROVIDER_PATHS_FOR_PARTS)(
+    "answers parts=%s with exactly those Forecast parts",
+    async (parts) => {
+      const { proxy } = healthyProxy();
+
+      const response = await proxy.request(
+        `/api/forecast?latitude=52.03&longitude=5.08&parts=${parts}`,
+      );
+
+      expect(response.status).toBe(200);
+      const forecast = v.parse(ForecastResponseSchema, await response.json());
+      expect(Object.keys(forecast.parts)).toEqual(parts.split(","));
+      expect(forecast.location).toEqual(RECORDED_NIEUWEGEIN_FORECAST.location);
+      expect(forecast.parts).toEqual(
+        Object.fromEntries(
+          Object.entries(RECORDED_NIEUWEGEIN_FORECAST.parts).filter(([part]) =>
+            parts.split(",").includes(part),
+          ),
+        ),
+      );
+    },
+  );
+
+  it.each(PROVIDER_PATHS_FOR_PARTS)(
+    "asks the Weather provider only for what parts=%s needs",
+    async (parts, providerPaths) => {
+      const { proxy, requestedUrls } = healthyProxy();
+
+      await proxy.request(
+        `/api/forecast?latitude=52.03&longitude=5.08&parts=${parts}`,
+      );
+
+      expect(requestedUrls.map((url) => url.pathname).sort()).toEqual(
+        [...providerPaths, REVERSE_GEOCODING_PATH].sort(),
+      );
+    },
+  );
+
+  it.each([
+    ["an unknown part", "current,weekly"],
+    ["parts out of order", "daily,current"],
+    ["a repeated part", "hourly,hourly"],
+    ["an empty list", ""],
+    ["a trailing separator", "current,"],
+    ["spaces instead of commas", "current hourly"],
+    ["a part in capitals", "Current"],
+  ])(
+    "rejects %s with 400 Problem Details, without calling the Weather provider",
+    async (_, parts) => {
+      const { proxy, requestedUrls } = healthyProxy();
+
+      const response = await proxy.request(
+        `/api/forecast?latitude=52.03&longitude=5.08&parts=${encodeURIComponent(parts)}`,
+      );
+
+      await expectProblemDetails(response, 400);
+      expect(requestedUrls).toHaveLength(0);
+    },
+  );
+
+  it("takes the Location's time zone from the daily endpoint when only the Daily forecast is requested", async () => {
+    const { proxy } = proxyAnswering(
+      answerFromRecordingsExcept(DAILY_PATH, () =>
+        Promise.resolve(
+          jsonResponse({ ...recordedDailyForecast, timezone: "Asia/Tokyo" }),
+        ),
+      ),
+    );
+
+    const response = await proxy.request(
+      "/api/forecast?latitude=52.03&longitude=5.08&parts=daily",
+    );
+
+    expect(
+      v.parse(ForecastResponseSchema, await response.json()).location.timeZone,
+    ).toBe("Asia/Tokyo");
+  });
+});
+
+describe("the Daily forecast", () => {
+  const dailyAnswering = (timezone: string, dts: readonly number[]) => {
+    const [first] = recordedDailyForecast.data;
+    return proxyAnswering(
+      answerFromRecordingsExcept(DAILY_PATH, () =>
+        Promise.resolve(
+          jsonResponse({
+            ...recordedDailyForecast,
+            timezone,
+            data: dts.map((dt) => ({ ...first, dt })),
+          }),
+        ),
+      ),
+    );
+  };
+
+  const secondsSinceEpoch = (isoTimestamp: string) =>
+    Date.parse(isoTimestamp) / 1000;
+
+  it.each(["Pacific/Pago_Pago", "Europe/Amsterdam", "Pacific/Kiritimati"])(
+    "dates each day by the calendar day the Weather provider marks with UTC midnight, also for a Location in %s",
+    async (timezone) => {
+      const { proxy } = dailyAnswering(timezone, [
+        secondsSinceEpoch("2026-11-08T00:00:00Z"),
+        secondsSinceEpoch("2026-11-09T00:00:00Z"),
+      ]);
+
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08&parts=daily",
+      );
+
+      const { daily } = v.parse(
+        ForecastResponseSchema,
+        await response.json(),
+      ).parts;
+      expect(
+        daily?.status === "ok" ? daily.data.map((day) => day.date) : [],
+      ).toEqual(["2026-11-08", "2026-11-09"]);
+    },
+  );
+});
+
+describe("Conditions", () => {
+  const CONDITIONS_BY_CODE = [
+    [[200, 201, 202, 210, 211, 212, 221, 230, 231, 232], "thunderstorm"],
+    [[771, 781], "thunderstorm"],
+    [[300, 301, 302, 310, 311, 312, 313, 314, 321], "drizzle"],
+    [[500, 501, 502, 503, 504, 520, 521, 522, 531], "rain"],
+    [[511, 611, 612, 613, 615, 616], "sleet"],
+    [[600, 601, 602, 620, 621, 622], "snow"],
+    [[701, 741], "fog"],
+    [[711, 721, 731, 751, 761, 762], "haze"],
+    [[800], "clear"],
+    [[801, 802], "partly-cloudy"],
+    [[803], "mostly-cloudy"],
+    [[804], "overcast"],
+    [[0, 199, 233, 400, 999], "unknown"],
+  ] as const;
+
+  const hourlyWithCode = (id: number) => {
+    const [first, ...rest] = recordedHourlyForecast.data;
+    return {
+      ...recordedHourlyForecast,
+      data: [{ ...first, weather: [{ ...first?.weather[0], id }] }, ...rest],
+    };
+  };
+
+  it.each(
+    CONDITIONS_BY_CODE.flatMap(([codes, condition]) =>
+      codes.map((code) => [code, condition] as const),
+    ),
+  )(
+    "maps Weather provider code %d to the Condition %s",
+    async (code, condition) => {
+      const { proxy } = proxyAnswering(
+        answerFromRecordingsExcept(HOURLY_PATH, () =>
+          Promise.resolve(jsonResponse(hourlyWithCode(code))),
+        ),
+      );
+
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08&parts=hourly",
+      );
+
+      const { hourly } = v.parse(
+        ForecastResponseSchema,
+        await response.json(),
+      ).parts;
+      expect(hourly?.status === "ok" && hourly.data[0]?.condition).toBe(
+        condition,
+      );
+    },
+  );
 });
 
 describe("the Proxy in fixture mode", () => {

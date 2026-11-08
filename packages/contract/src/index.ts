@@ -27,23 +27,89 @@ export const CoordinatesSchema = v.object({
 
 export type Coordinates = v.InferOutput<typeof CoordinatesSchema>;
 
+export const FORECAST_PARTS = ["current", "hourly", "daily"] as const;
+
+export type ForecastPart = (typeof FORECAST_PARTS)[number];
+
+export const FORECAST_PARTS_SEPARATOR = ",";
+
+const inCanonicalOrder = (parts: ForecastPart[]) =>
+  parts.join() === FORECAST_PARTS.filter((part) => parts.includes(part)).join();
+
+const ForecastPartsQueryParameterSchema = v.pipe(
+  v.optional(v.string(), FORECAST_PARTS.join(FORECAST_PARTS_SEPARATOR)),
+  v.transform((parts) => parts.split(FORECAST_PARTS_SEPARATOR)),
+  v.array(v.picklist(FORECAST_PARTS)),
+  v.check(inCanonicalOrder),
+);
+
 export const ForecastQuerySchema = v.object({
   latitude: coordinateQueryParameter(LATITUDE_RANGE),
   longitude: coordinateQueryParameter(LONGITUDE_RANGE),
+  parts: ForecastPartsQueryParameterSchema,
 });
 
 export type ForecastQuery = v.InferOutput<typeof ForecastQuerySchema>;
+
+export const CONDITIONS = [
+  "clear",
+  "partly-cloudy",
+  "mostly-cloudy",
+  "overcast",
+  "fog",
+  "haze",
+  "drizzle",
+  "rain",
+  "sleet",
+  "snow",
+  "thunderstorm",
+  "unknown",
+] as const;
+
+export type Condition = (typeof CONDITIONS)[number];
+
+const ChanceSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
 export const CurrentConditionsSchema = v.object({
   temperatureCelsius: v.number(),
   feelsLikeCelsius: v.number(),
   windSpeedMetresPerSecond: v.pipe(v.number(), v.minValue(0)),
   windDirectionDegrees: v.pipe(v.number(), v.minValue(0), v.maxValue(360)),
-  precipitationChance: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+  precipitationChance: ChanceSchema,
   observedAt: v.pipe(v.string(), v.isoTimestamp()),
 });
 
 export type CurrentConditions = v.InferOutput<typeof CurrentConditionsSchema>;
+
+export const HourSchema = v.object({
+  startsAt: v.pipe(v.string(), v.isoTimestamp()),
+  condition: v.picklist(CONDITIONS),
+  temperatureCelsius: v.number(),
+  precipitationChance: ChanceSchema,
+});
+
+export type Hour = v.InferOutput<typeof HourSchema>;
+
+export const HourlyForecastSchema = v.array(HourSchema);
+
+export type HourlyForecast = v.InferOutput<typeof HourlyForecastSchema>;
+
+export const DaySchema = v.pipe(
+  v.object({
+    date: v.pipe(v.string(), v.isoDate()),
+    condition: v.picklist(CONDITIONS),
+    lowCelsius: v.number(),
+    highCelsius: v.number(),
+    precipitationChance: ChanceSchema,
+  }),
+  v.check(({ lowCelsius, highCelsius }) => lowCelsius <= highCelsius),
+);
+
+export type Day = v.InferOutput<typeof DaySchema>;
+
+export const DailyForecastSchema = v.array(DaySchema);
+
+export type DailyForecast = v.InferOutput<typeof DailyForecastSchema>;
 
 export const LocationSchema = v.object({
   name: v.nullable(v.pipe(v.string(), v.nonEmpty())),
@@ -58,10 +124,16 @@ const forecastPartResult = <TData extends v.GenericSchema>(data: TData) =>
     v.object({ status: v.literal("error") }),
   ]);
 
+export type ForecastPartResult<TData> =
+  | { readonly status: "ok"; readonly data: TData }
+  | { readonly status: "error" };
+
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,
   parts: v.object({
-    current: forecastPartResult(CurrentConditionsSchema),
+    current: v.optional(forecastPartResult(CurrentConditionsSchema)),
+    hourly: v.optional(forecastPartResult(HourlyForecastSchema)),
+    daily: v.optional(forecastPartResult(DailyForecastSchema)),
   }),
 });
 

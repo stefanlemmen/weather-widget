@@ -1,3 +1,6 @@
+import type { Condition } from "@weather-widget/contract";
+import { DAYS_SHOWN, HOURS_SHOWN } from "./forecast-window.ts";
+
 export const COMPASS_POINTS = [
   "N",
   "NNE",
@@ -30,6 +33,24 @@ export const MESSAGES = {
   updatedAt: "Updated at",
   weatherDataFrom: "Weather data from",
   weatherProviderName: "OpenWeather",
+  nextHours: `Next ${String(HOURS_SHOWN)} hours`,
+  nextDays: `Next ${String(DAYS_SHOWN)} days`,
+  low: "Low",
+  high: "High",
+  conditions: {
+    clear: "Clear",
+    "partly-cloudy": "Partly cloudy",
+    "mostly-cloudy": "Mostly cloudy",
+    overcast: "Overcast",
+    fog: "Fog",
+    haze: "Haze",
+    drizzle: "Drizzle",
+    rain: "Rain",
+    sleet: "Sleet",
+    snow: "Snow",
+    thunderstorm: "Thunderstorm",
+    unknown: "Unknown",
+  } satisfies Record<Condition, string>,
   windFrom: (speed: string, direction: string) =>
     `${speed} from the ${direction}`,
   coordinateHeard: (degrees: string, direction: string) =>

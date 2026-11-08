@@ -1,4 +1,6 @@
 import {
+  FORECAST_PARTS,
+  FORECAST_PARTS_SEPARATOR,
   FORECAST_PATH,
   ForecastQuerySchema,
   LATITUDE_RANGE,
@@ -92,14 +94,17 @@ export const createProxy = (
           type: UNTYPED_PROBLEM,
           title: "Invalid forecast request",
           status: 400,
-          detail: `latitude must be a number from ${String(LATITUDE_RANGE.min)} to ${String(LATITUDE_RANGE.max)} and longitude a number from ${String(LONGITUDE_RANGE.min)} to ${String(LONGITUDE_RANGE.max)}.`,
+          detail: `latitude must be a number from ${String(LATITUDE_RANGE.min)} to ${String(LATITUDE_RANGE.max)} and longitude a number from ${String(LONGITUDE_RANGE.min)} to ${String(LONGITUDE_RANGE.max)}. parts, when given, must list Forecast parts from ${FORECAST_PARTS.join(", ")}, each at most once, in that order and separated by "${FORECAST_PARTS_SEPARATOR}".`,
         });
       }
 
-      const forecast = await fetchForecast({
-        latitude: roundCoordinate(query.output.latitude),
-        longitude: roundCoordinate(query.output.longitude),
-      });
+      const forecast = await fetchForecast(
+        {
+          latitude: roundCoordinate(query.output.latitude),
+          longitude: roundCoordinate(query.output.longitude),
+        },
+        query.output.parts,
+      );
       if (forecast.status === "error") {
         return problem(context, {
           type: UNTYPED_PROBLEM,
@@ -110,9 +115,14 @@ export const createProxy = (
       }
 
       context.header("cache-control", FORECAST_CACHE_CONTROL);
+      const { current, hourly, daily } = forecast.data.parts;
       return context.json({
         location: forecast.data.location,
-        parts: { current: { status: "ok", data: forecast.data.current } },
+        parts: {
+          ...(current && { current: { status: "ok", data: current } }),
+          ...(hourly && { hourly: { status: "ok", data: hourly } }),
+          ...(daily && { daily: { status: "ok", data: daily } }),
+        },
       } satisfies ForecastResponse);
     });
 };

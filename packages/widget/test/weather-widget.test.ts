@@ -1,6 +1,9 @@
 import type {
+  Condition,
   CurrentConditions,
+  Day,
   ForecastResponse,
+  Hour,
   Location,
   ProblemDetails,
 } from "@weather-widget/contract";
@@ -24,9 +27,44 @@ const NIEUWEGEIN_LOCATION: Location = {
   timeZone: "Europe/Amsterdam",
 };
 
+const RECORDED_AT = "2026-11-08T09:41:44.000Z";
+const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
+const MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
+const CONDITION_CYCLE: readonly Condition[] = [
+  "rain",
+  "overcast",
+  "partly-cloudy",
+  "clear",
+];
+
+const hoursFrom = (firstHourStartsAt: string, count = 20): Hour[] =>
+  Array.from({ length: count }, (_, index) => ({
+    startsAt: new Date(
+      Date.parse(firstHourStartsAt) + index * MILLISECONDS_PER_HOUR,
+    ).toISOString(),
+    condition: CONDITION_CYCLE[index % CONDITION_CYCLE.length] ?? "unknown",
+    temperatureCelsius: 30.75 + index,
+    precipitationChance: index === 0 ? 0.85 : 0,
+  }));
+
+const daysFrom = (firstDate: string, count = 10): Day[] =>
+  Array.from({ length: count }, (_, index) => ({
+    date: new Date(Date.parse(firstDate) + index * MILLISECONDS_PER_DAY)
+      .toISOString()
+      .slice(0, "YYYY-MM-DD".length),
+    condition: CONDITION_CYCLE[index % CONDITION_CYCLE.length] ?? "unknown",
+    lowCelsius: 20.51 + index,
+    highCelsius: 50.29 + index,
+    precipitationChance: index === 0 ? 0.39 : 0,
+  }));
+
+const RECORDED_HOURS = hoursFrom("2026-11-08T09:00:00.000Z");
+const RECORDED_DAYS = daysFrom("2026-11-08");
+
 const forecastWith = (
   conditions: Partial<CurrentConditions> = {},
   location: Partial<Location> = {},
+  { hours = [], days = [] }: { hours?: Hour[]; days?: Day[] } = {},
 ): ForecastResponse => ({
   location: { ...NIEUWEGEIN_LOCATION, ...location },
   parts: {
@@ -34,8 +72,18 @@ const forecastWith = (
       status: "ok",
       data: { ...RECORDED_CONDITIONS, ...conditions },
     },
+    hourly: { status: "ok", data: hours },
+    daily: { status: "ok", data: days },
   },
 });
+
+const fullForecast = () =>
+  forecastWith({}, {}, { hours: RECORDED_HOURS, days: RECORDED_DAYS });
+
+const forecastIn = (
+  timeZone: string,
+  forecast: { hours?: Hour[]; days?: Day[] },
+) => forecastWith({}, { timeZone }, forecast);
 
 const forecastWithTemperature = (temperatureCelsius: number) =>
   forecastWith({ temperatureCelsius });
@@ -65,14 +113,19 @@ const renderWidget = (attributes: Readonly<Record<string, string>>) => {
   return widget;
 };
 
+const ALL_PARTS = "current,hourly,daily";
+
 beforeEach(() => {
   fakeProxy.mockReset();
   vi.stubGlobal("fetch", fakeProxy);
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(RECORDED_AT);
 });
 
 afterEach(() => {
   document.body.replaceChildren();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("<weather-widget>", () => {
@@ -88,6 +141,7 @@ describe("<weather-widget>", () => {
     expect(url?.pathname).toBe("/api/forecast");
     expect(url?.searchParams.get("latitude")).toBe("52.03");
     expect(url?.searchParams.get("longitude")).toBe("5.08");
+    expect(url?.searchParams.get("parts")).toBe(ALL_PARTS);
   });
 
   it("asks the Proxy at the address set in proxy-url", async () => {
@@ -97,7 +151,7 @@ describe("<weather-widget>", () => {
 
     await expect.element(page.getByText("5°C")).toBeVisible();
     expect(requestedUrls()[0]?.href).toBe(
-      "https://proxy.example/api/forecast?latitude=52.03&longitude=5.08",
+      `https://proxy.example/api/forecast?latitude=52.03&longitude=5.08&parts=${encodeURIComponent(ALL_PARTS)}`,
     );
   });
 
@@ -217,6 +271,7 @@ describe("<weather-widget>", () => {
     widget.longitude = 5.08;
     widget.proxyUrl = "https://proxy.example/api";
     widget.locationName = "Home";
+    widget.parts = "current hourly daily";
     document.body.append(widget);
 
     await expect.element(page.getByText("5°C")).toBeVisible();
@@ -224,7 +279,7 @@ describe("<weather-widget>", () => {
       .element(page.getByRole("heading", { level: 2 }))
       .toHaveTextContent("Home");
     expect(requestedUrls()[0]?.href).toBe(
-      "https://proxy.example/api/forecast?latitude=52.03&longitude=5.08",
+      `https://proxy.example/api/forecast?latitude=52.03&longitude=5.08&parts=${encodeURIComponent(ALL_PARTS)}`,
     );
   });
 
@@ -539,5 +594,311 @@ describe("<weather-widget>", () => {
         "Feels like",
       );
     });
+  });
+});
+
+const hourlyForecast = () => page.getByRole("list", { name: "Next 12 hours" });
+const dailyForecast = () => page.getByRole("list", { name: "Next 5 days" });
+
+const textsOf = (list: ReturnType<typeof page.getByRole>, selector: string) =>
+  Array.from(list.element().querySelectorAll(selector), (element) =>
+    element.textContent.trim(),
+  );
+
+const shownHours = () => textsOf(hourlyForecast(), "time");
+const shownDays = () => textsOf(dailyForecast(), "abbr");
+
+describe("the Hourly forecast", () => {
+  it("shows twelve hours, each with its time, Condition, temperature and chance of precipitation", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(hourlyForecast()).toBeVisible();
+    const hours = hourlyForecast().getByRole("listitem").elements();
+    expect(hours).toHaveLength(12);
+    expect(hours[0]).toHaveTextContent(/10 AM.*Rain.*31°C.*85%/);
+    expect(hours[1]).toHaveTextContent(/11 AM.*Overcast.*32°C.*0%/);
+    expect(hours[0]?.querySelector("time")?.dateTime).toBe(
+      "2026-11-08T09:00:00.000Z",
+    );
+  });
+
+  it("starts at the hour under way and leaves out hours that have ended", async () => {
+    vi.setSystemTime("2026-11-08T11:05:00Z");
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(hourlyForecast()).toBeVisible();
+    expect(shownHours().slice(0, 2)).toEqual(["12 PM", "1 PM"]);
+    expect(shownHours()).toHaveLength(12);
+  });
+
+  it("shows every hour the Proxy returns when it returns fewer than twelve", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(
+        forecastWith({}, {}, { hours: hoursFrom("2026-11-08T09:00:00Z", 3) }),
+      ),
+    );
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(hourlyForecast()).toBeVisible();
+    expect(shownHours()).toEqual(["10 AM", "11 AM", "12 PM"]);
+  });
+
+  it("tells screen readers the temperature and chance of precipitation in full", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    const firstHour = hourlyForecast().getByRole("listitem").first();
+    await expect
+      .element(firstHour.getByText("31 degrees Celsius"))
+      .toBeInTheDocument();
+    expect(firstHour.getByText("31°C").element()).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+    expect(firstHour.element()).toHaveTextContent(
+      /Chance of precipitation\s*85%/,
+    );
+  });
+
+  it.each([
+    ["Pacific/Kiritimati", "2026-11-08T09:00:00Z", ["11 PM", "12 AM", "1 AM"]],
+    ["Pacific/Pago_Pago", "2026-11-08T09:00:00Z", ["10 PM", "11 PM", "12 AM"]],
+    ["Asia/Kolkata", "2026-11-08T09:00:00Z", ["2 PM", "3 PM", "4 PM"]],
+  ])(
+    "shows the hours of a Location in %s in its own time, across midnight",
+    async (timeZone, now, hours) => {
+      vi.setSystemTime(now);
+      fakeProxy.mockImplementation(() =>
+        respondWith(
+          forecastIn(timeZone, { hours: hoursFrom("2026-11-08T09:00:00Z") }),
+        ),
+      );
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect.element(hourlyForecast()).toBeVisible();
+      expect(shownHours().slice(0, 3)).toEqual(hours);
+    },
+  );
+
+  it.each([
+    [
+      "the clocks go back",
+      "2026-10-25T00:00:00Z",
+      ["2 AM", "2 AM", "3 AM", "4 AM"],
+    ],
+    [
+      "the clocks go forward",
+      "2027-03-28T00:00:00Z",
+      ["1 AM", "3 AM", "4 AM", "5 AM"],
+    ],
+  ])(
+    "follows the Location's clock when %s",
+    async (_, firstHourStartsAt, hours) => {
+      vi.setSystemTime(firstHourStartsAt);
+      fakeProxy.mockImplementation(() =>
+        respondWith(
+          forecastWith({}, {}, { hours: hoursFrom(firstHourStartsAt) }),
+        ),
+      );
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect.element(hourlyForecast()).toBeVisible();
+      expect(shownHours().slice(0, 4)).toEqual(hours);
+    },
+  );
+});
+
+describe("the Daily forecast", () => {
+  it("shows five days, each with its day name, Condition, low, high and chance of precipitation", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(dailyForecast()).toBeVisible();
+    const days = dailyForecast().getByRole("listitem").elements();
+    expect(days).toHaveLength(5);
+    expect(days[0]).toHaveTextContent(/Sun.*Rain.*Low.*21°C.*High.*50°C.*39%/);
+    expect(days[0]?.querySelector("abbr")?.title).toBe("Sunday");
+    expect(shownDays()).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu"]);
+  });
+
+  it("tells screen readers the low, high and chance of precipitation in full", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    const firstDay = dailyForecast().getByRole("listitem").first();
+    await expect
+      .element(firstDay.getByText("21 degrees Celsius"))
+      .toBeInTheDocument();
+    expect(firstDay.getByText("50 degrees Celsius").query()).not.toBeNull();
+    expect(firstDay.element()).toHaveTextContent(
+      /Chance of precipitation\s*39%/,
+    );
+  });
+
+  it.each([
+    ["one minute before midnight", "2026-11-08T22:59:00Z", "Sun"],
+    ["at midnight", "2026-11-08T23:00:00Z", "Mon"],
+  ])("starts on the Location's today, %s", async (_, now, firstDay) => {
+    vi.setSystemTime(now);
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(dailyForecast()).toBeVisible();
+    expect(shownDays()[0]).toBe(firstDay);
+    expect(shownDays()).toHaveLength(5);
+  });
+
+  it.each([
+    [
+      "already in tomorrow",
+      "Pacific/Kiritimati",
+      ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    ],
+    [
+      "still in yesterday",
+      "Pacific/Pago_Pago",
+      ["Sun", "Mon", "Tue", "Wed", "Thu"],
+    ],
+  ])(
+    "names the days of a Location %s by its own calendar (%s)",
+    async (_, timeZone, days) => {
+      vi.setSystemTime("2026-11-08T12:00:00Z");
+      fakeProxy.mockImplementation(() =>
+        respondWith(forecastIn(timeZone, { days: daysFrom("2026-11-08") })),
+      );
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect.element(dailyForecast()).toBeVisible();
+      expect(shownDays()).toEqual(days);
+    },
+  );
+
+  it("names each day once across a daylight saving change", async () => {
+    vi.setSystemTime("2026-10-24T10:00:00Z");
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastWith({}, {}, { days: daysFrom("2026-10-24") })),
+    );
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(dailyForecast()).toBeVisible();
+    expect(shownDays()).toEqual(["Sat", "Sun", "Mon", "Tue", "Wed"]);
+  });
+});
+
+describe("Forecast parts", () => {
+  const SHOWN_FOR_PARTS = [
+    ["current", "current"],
+    ["hourly", "hourly"],
+    ["daily", "daily"],
+    ["current hourly", "current,hourly"],
+    ["current daily", "current,daily"],
+    ["hourly daily", "hourly,daily"],
+    ["current hourly daily", "current,hourly,daily"],
+  ] as const;
+
+  const shownParts = () =>
+    [
+      page.getByText("Feels like").query() && "current",
+      hourlyForecast().query() && "hourly",
+      dailyForecast().query() && "daily",
+    ]
+      .filter(Boolean)
+      .join(",");
+
+  it.each(SHOWN_FOR_PARTS)(
+    'shows and asks the Proxy for exactly the Forecast parts in parts="%s"',
+    async (parts, requested) => {
+      fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+      renderWidget({ ...NIEUWEGEIN, parts });
+
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toBeVisible();
+      expect(shownParts()).toBe(requested);
+      expect(requestedUrls()[0]?.searchParams.get("parts")).toBe(requested);
+    },
+  );
+
+  it.each([
+    ["in any order", "daily current", "current,daily"],
+    ["repeated", "hourly hourly", "hourly"],
+    ["with extra whitespace", "  daily\n\thourly  ", "hourly,daily"],
+    ["next to an unknown part", "weekly daily", "daily"],
+    ["only unknown", "weekly", ALL_PARTS],
+    ["empty", "", ALL_PARTS],
+  ])(
+    "asks for the Forecast parts in the fixed order when parts are %s",
+    async (_, parts, requested) => {
+      fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+      renderWidget({ ...NIEUWEGEIN, parts });
+
+      await vi.waitFor(() => {
+        expect(fakeProxy).toHaveBeenCalledOnce();
+      });
+      expect(requestedUrls()[0]?.searchParams.get("parts")).toBe(requested);
+    },
+  );
+
+  it("sets the Forecast parts through the parts property", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+    const widget = document.createElement("weather-widget");
+
+    widget.latitude = 52.03;
+    widget.longitude = 5.08;
+    widget.parts = "daily";
+    document.body.append(widget);
+
+    await expect.element(dailyForecast()).toBeVisible();
+    expect(requestedUrls()[0]?.searchParams.get("parts")).toBe("daily");
+  });
+
+  it("shows the new Forecast parts when the Host page changes them", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+    const widget = renderWidget({ ...NIEUWEGEIN, parts: "current" });
+    await expect.element(page.getByText("Feels like")).toBeVisible();
+
+    widget.setAttribute("parts", "hourly");
+
+    await expect.element(hourlyForecast()).toBeVisible();
+    expect(page.getByText("Feels like").query()).toBeNull();
+    expect(requestedUrls()[1]?.searchParams.get("parts")).toBe("hourly");
+  });
+
+  it('shows "Forecast unavailable" when the Proxy leaves out a requested Forecast part', async () => {
+    const { location, parts } = forecastWith();
+    fakeProxy.mockImplementation(() =>
+      respondWith({ location, parts: { current: parts.current } }),
+    );
+
+    renderWidget({ ...NIEUWEGEIN, parts: "current daily" });
+
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent("Forecast unavailable");
+  });
+
+  it("credits OpenWeather without Current conditions", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget({ ...NIEUWEGEIN, parts: "daily" });
+
+    await expect
+      .element(page.getByRole("link", { name: "OpenWeather" }))
+      .toBeVisible();
   });
 });
