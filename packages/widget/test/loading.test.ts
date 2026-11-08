@@ -79,6 +79,31 @@ describe("loading", () => {
       expect(heightOf(widget)).toBe(loadingHeight);
     });
 
+    it("draws its placeholder text in transparent ink while loading", async () => {
+      answerLater();
+      const widget = renderWidget(NIEUWEGEIN);
+      await widget.updateComplete;
+
+      const skeleton = widget.shadowRoot?.querySelector(".skeleton");
+      if (!skeleton) throw new Error("The Widget shows no skeleton");
+      const placeholders = [skeleton, ...skeleton.querySelectorAll("*")].filter(
+        (element) =>
+          Array.from(element.childNodes).some(
+            (node) =>
+              node.nodeType === Node.TEXT_NODE &&
+              node.textContent?.trim() !== "",
+          ),
+      );
+      expect(placeholders.length).toBeGreaterThan(0);
+      expect(
+        placeholders
+          .filter(
+            (element) => getComputedStyle(element).color !== "rgba(0, 0, 0, 0)",
+          )
+          .map((element) => element.textContent.trim()),
+      ).toEqual([]);
+    });
+
     it("marks the Widget busy and hides the placeholder from screen readers", async () => {
       const answer = answerLater();
       const widget = renderWidget(NIEUWEGEIN);

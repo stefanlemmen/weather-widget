@@ -459,6 +459,14 @@ const layouts = css`
 `;
 
 const skeleton = css`
+  .skeleton {
+    --_ink: transparent;
+    --_ink-soft: transparent;
+    --_ink-muted: transparent;
+    --_rain: transparent;
+    --_accent: transparent;
+  }
+
   .skeleton,
   .skeleton * {
     color: transparent;
