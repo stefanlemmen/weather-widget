@@ -5,7 +5,7 @@ import {
 } from "@weather-widget/contract";
 import { css, html, LitElement, type PropertyValues } from "lit";
 import * as v from "valibot";
-import { formatCoordinates, formatTime, type Spoken } from "./format.ts";
+import { formatterFor, type Formatter, type Spoken } from "./format.ts";
 import {
   fetchForecast,
   keepsShownParts,
@@ -14,7 +14,6 @@ import {
   type Forecast,
 } from "./forecast-client.ts";
 import { forecastView, heard, observedAt } from "./forecast-view.ts";
-import { MESSAGES } from "./messages.ts";
 import { placeholderForecast } from "./skeleton.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
@@ -125,6 +124,7 @@ export class WeatherWidget extends LitElement {
   #viewport: IntersectionObserver | undefined;
   #nearViewport = false;
   #requestChanged = false;
+  #format: Formatter = formatterFor("en");
 
   constructor() {
     super();
@@ -272,7 +272,7 @@ export class WeatherWidget extends LitElement {
     return (
       nonBlank(this.locationName) ??
       location.name ??
-      formatCoordinates(coordinates)
+      this.#format.coordinates(coordinates)
     );
   }
 
@@ -280,14 +280,14 @@ export class WeatherWidget extends LitElement {
     const observed = observedAt(forecast);
     const name = heard(this.#locationName(forecast));
     const headline = observed
-      ? MESSAGES.forecastForUpdatedAt(
+      ? this.#format.messages.forecastForUpdatedAt(
           name,
-          formatTime(observed, forecast.location.timeZone),
+          this.#format.time(observed, forecast.location.timeZone),
         )
-      : MESSAGES.forecastFor(name);
+      : this.#format.messages.forecastFor(name);
     const failedParts = FORECAST_PARTS.filter(
       (part) => forecast[part]?.status === "error",
-    ).map((part) => MESSAGES.partUnavailable[part]);
+    ).map((part) => this.#format.messages.partUnavailable[part]);
     return [
       ...(forecast.nameTakesFocus ? [] : [headline]),
       ...failedParts,
@@ -298,12 +298,12 @@ export class WeatherWidget extends LitElement {
     switch (this.forecast.status) {
       case "loading":
       case "retrying":
-        return MESSAGES.loading;
+        return this.#format.messages.loading;
       case "ok":
         return this.#forecastAnnouncement(this.forecast);
       case "error":
       case "invalid-location":
-        return MESSAGES.forecastUnavailable;
+        return this.#format.messages.forecastUnavailable;
     }
   }
 
@@ -313,7 +313,7 @@ export class WeatherWidget extends LitElement {
       new Date(),
     );
     return html`<div class="skeleton" aria-hidden="true" inert>
-      ${forecastView(placeholder, this.#locationName(placeholder))}
+      ${forecastView(this.#format, placeholder, this.#locationName(placeholder))}
     </div>`;
   }
 
@@ -322,10 +322,14 @@ export class WeatherWidget extends LitElement {
       case "loading":
         return this.#skeleton();
       case "ok":
-        return forecastView(this.forecast, this.#locationName(this.forecast));
+        return forecastView(
+          this.#format,
+          this.forecast,
+          this.#locationName(this.forecast),
+        );
       case "error":
       case "retrying":
-        return html`<p>${MESSAGES.forecastUnavailable}</p>
+        return html`<p>${this.#format.messages.forecastUnavailable}</p>
           <button
             type="button"
             aria-disabled=${this.forecast.status === "retrying"}
@@ -333,10 +337,10 @@ export class WeatherWidget extends LitElement {
               this.#retry();
             }}
           >
-            ${MESSAGES.tryAgain}
+            ${this.#format.messages.tryAgain}
           </button>`;
       case "invalid-location":
-        return html`<p>${MESSAGES.forecastUnavailable}</p>`;
+        return html`<p>${this.#format.messages.forecastUnavailable}</p>`;
     }
   }
 

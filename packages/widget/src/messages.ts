@@ -22,16 +22,45 @@ export const COMPASS_POINTS = [
 
 export type CompassPoint = (typeof COMPASS_POINTS)[number];
 
-export const MESSAGES = {
+export const LOCALES = ["en"] as const;
+
+export type Locale = (typeof LOCALES)[number];
+
+export interface Messages {
+  readonly loading: string;
+  readonly forecastUnavailable: string;
+  readonly partUnavailable: Readonly<Record<ForecastPart, string>>;
+  readonly forecastFor: (name: string) => string;
+  readonly forecastForUpdatedAt: (name: string, time: string) => string;
+  readonly tryAgain: string;
+  readonly feelsLike: string;
+  readonly wind: string;
+  readonly chanceOfPrecipitation: string;
+  readonly calm: string;
+  readonly updatedAt: string;
+  readonly weatherDataFrom: string;
+  readonly weatherProviderName: string;
+  readonly nextHours: string;
+  readonly nextDays: string;
+  readonly low: string;
+  readonly high: string;
+  readonly conditions: Readonly<Record<Condition, string>>;
+  readonly windFrom: (speed: string, direction: string) => string;
+  readonly coordinateHeard: (degrees: string, direction: string) => string;
+  readonly compassPointsShown: Readonly<Record<CompassPoint, string>>;
+  readonly compassPointsHeard: Readonly<Record<CompassPoint, string>>;
+}
+
+const en: Messages = {
   loading: "Loading forecast",
   forecastUnavailable: "Forecast unavailable",
   partUnavailable: {
     current: "Current conditions unavailable",
     hourly: "Hourly forecast unavailable",
     daily: "Daily forecast unavailable",
-  } satisfies Record<ForecastPart, string>,
-  forecastFor: (name: string) => `Forecast for ${name}`,
-  forecastForUpdatedAt: (name: string, time: string) =>
+  },
+  forecastFor: (name) => `Forecast for ${name}`,
+  forecastForUpdatedAt: (name, time) =>
     `Forecast for ${name}, updated at ${time}`,
   tryAgain: "Try again",
   feelsLike: "Feels like",
@@ -58,12 +87,28 @@ export const MESSAGES = {
     snow: "Snow",
     thunderstorm: "Thunderstorm",
     unknown: "Unknown",
-  } satisfies Record<Condition, string>,
-  windFrom: (speed: string, direction: string) =>
-    `${speed} from the ${direction}`,
-  coordinateHeard: (degrees: string, direction: string) =>
-    `${degrees} degrees ${direction}`,
-  compassPoints: {
+  },
+  windFrom: (speed, direction) => `${speed} from the ${direction}`,
+  coordinateHeard: (degrees, direction) => `${degrees} degrees ${direction}`,
+  compassPointsShown: {
+    N: "N",
+    NNE: "NNE",
+    NE: "NE",
+    ENE: "ENE",
+    E: "E",
+    ESE: "ESE",
+    SE: "SE",
+    SSE: "SSE",
+    S: "S",
+    SSW: "SSW",
+    SW: "SW",
+    WSW: "WSW",
+    W: "W",
+    WNW: "WNW",
+    NW: "NW",
+    NNW: "NNW",
+  },
+  compassPointsHeard: {
     N: "north",
     NNE: "north-northeast",
     NE: "northeast",
@@ -80,5 +125,7 @@ export const MESSAGES = {
     WNW: "west-northwest",
     NW: "northwest",
     NNW: "north-northwest",
-  } satisfies Record<CompassPoint, string>,
-} as const;
+  },
+};
+
+export const MESSAGES: Readonly<Record<Locale, Messages>> = { en };
