@@ -1,15 +1,21 @@
-import type {
-  CurrentConditions,
-  DailyForecast,
-  ForecastPart,
-  HourlyForecast,
-  Location,
-  Result,
+import {
+  DAY,
+  type CurrentConditions,
+  type DailyForecast,
+  type ForecastPart,
+  type HourlyForecast,
+  type Location,
+  type Result,
 } from "@weather-widget/contract";
 import { html, nothing, type TemplateResult } from "lit";
+import {
+  decorativeConditionIcon,
+  namedConditionIcon,
+} from "./condition-icon.ts";
 import type { Formatter, Spoken } from "./format.ts";
 import type { Forecast } from "./forecast-client.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";
+import type { Motion } from "./motion-preference.ts";
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
 
@@ -71,6 +77,7 @@ const currentConditionsDetails = (
 const currentConditions = (
   format: Formatter,
   current: Result<CurrentConditions>,
+  motion: Motion,
 ) =>
   shownOrUnavailable(
     format,
@@ -80,6 +87,10 @@ const currentConditions = (
       html`<p class="temperature">
           ${spoken(format.temperature(conditions.temperatureCelsius))}
         </p>
+        <p class="condition">
+          ${decorativeConditionIcon({ ...conditions, motion })}
+          <span>${format.messages.conditions[conditions.condition]}</span>
+        </p>
         ${currentConditionsDetails(format, conditions)}`,
   );
 
@@ -88,6 +99,7 @@ const hourlyForecast = (
   hourly: Result<HourlyForecast>,
   { timeZone }: Location,
   now: Date,
+  motion: Motion,
 ) =>
   html`<section>
     <h3 id="hourly-heading">${format.messages.nextHours}</h3>
@@ -103,7 +115,10 @@ const hourlyForecast = (
                 <time datetime=${hour.startsAt}
                   >${format.hour(hour.startsAt, timeZone)}</time
                 >
-                <span>${format.messages.conditions[hour.condition]}</span>
+                ${namedConditionIcon(
+                  { ...hour, motion },
+                  format.messages.conditions[hour.condition],
+                )}
                 <span
                   >${spoken(format.temperature(hour.temperatureCelsius))}</span
                 >
@@ -119,6 +134,7 @@ const dailyForecast = (
   daily: Result<DailyForecast>,
   { timeZone }: Location,
   now: Date,
+  motion: Motion,
 ) =>
   html`<section>
     <h3 id="daily-heading">${format.messages.nextDays}</h3>
@@ -134,7 +150,10 @@ const dailyForecast = (
                 <abbr title=${format.weekday(day.date, "long")}
                   >${format.weekday(day.date, "short")}</abbr
                 >
-                <span>${format.messages.conditions[day.condition]}</span>
+                ${namedConditionIcon(
+                  { condition: day.condition, timeOfDay: DAY, motion },
+                  format.messages.conditions[day.condition],
+                )}
                 <span
                   ><span class="visually-hidden">${format.messages.low}</span>
                   ${spoken(format.temperature(day.lowCelsius))}</span
@@ -175,12 +194,13 @@ export const forecastView = (
   format: Formatter,
   forecast: Forecast,
   name: Spoken | string,
+  motion: Motion,
 ) => {
   const { current, hourly, daily, location } = forecast;
   const now = new Date();
   return html`<h2 tabindex="-1">${spoken(name)}</h2>
-    ${current ? currentConditions(format, current) : nothing}
-    ${hourly ? hourlyForecast(format, hourly, location, now) : nothing}
-    ${daily ? dailyForecast(format, daily, location, now) : nothing}
+    ${current ? currentConditions(format, current, motion) : nothing}
+    ${hourly ? hourlyForecast(format, hourly, location, now, motion) : nothing}
+    ${daily ? dailyForecast(format, daily, location, now, motion) : nothing}
     ${footer(format, forecast)}`;
 };

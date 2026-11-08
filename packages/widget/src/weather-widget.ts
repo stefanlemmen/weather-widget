@@ -15,6 +15,7 @@ import {
 } from "./forecast-client.ts";
 import { forecastView, heard, observedAt } from "./forecast-view.ts";
 import { DEFAULT_LOCALE, parseLocale } from "./messages.ts";
+import { MotionPreference, STILL } from "./motion-preference.ts";
 import { placeholderForecast } from "./skeleton.ts";
 import { DEFAULT_UNITS, parseUnits } from "./units.ts";
 
@@ -61,6 +62,7 @@ export class WeatherWidget extends LitElement {
 
   static override styles = css`
     :host {
+      --_bone: color-mix(in srgb, CanvasText 12%, Canvas);
       display: block;
       min-block-size: 6rem;
       font-family: system-ui, sans-serif;
@@ -92,10 +94,14 @@ export class WeatherWidget extends LitElement {
       text-decoration: none;
     }
 
-    .skeleton :is(h2, h3, p, dt, dd, li > *) {
+    .skeleton :is(h2, h3, p, dt, dd, li > *, .condition > *) {
       inline-size: fit-content;
       border-radius: 4px;
-      background-color: color-mix(in srgb, CanvasText 12%, Canvas);
+      background-color: var(--_bone);
+    }
+
+    .skeleton .condition {
+      background-color: transparent;
     }
 
     @media (prefers-reduced-motion: no-preference) {
@@ -108,6 +114,35 @@ export class WeatherWidget extends LitElement {
       to {
         opacity: 0.55;
       }
+    }
+
+    .icon {
+      display: inline-block;
+      inline-size: var(--_icon-size, 40px);
+      block-size: var(--_icon-size, 40px);
+      vertical-align: middle;
+    }
+
+    .icon svg {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+    }
+
+    .condition {
+      --_icon-size: 160px;
+    }
+
+    li:has(abbr) {
+      --_icon-size: 36px;
+    }
+
+    .skeleton .icon {
+      border-radius: 50%;
+    }
+
+    .skeleton .icon svg {
+      visibility: hidden;
     }
 
     .temperature {
@@ -131,6 +166,7 @@ export class WeatherWidget extends LitElement {
   #nearViewport = false;
   #requestChanged = false;
   #format: Formatter = formatterFor(DEFAULT_LOCALE, DEFAULT_UNITS);
+  readonly #motionPreference = new MotionPreference(this);
 
   constructor() {
     super();
@@ -325,7 +361,12 @@ export class WeatherWidget extends LitElement {
       new Date(),
     );
     return html`<div class="skeleton" aria-hidden="true" inert>
-      ${forecastView(this.#format, placeholder, this.#locationName(placeholder))}
+      ${forecastView(
+        this.#format,
+        placeholder,
+        this.#locationName(placeholder),
+        STILL,
+      )}
     </div>`;
   }
 
@@ -338,6 +379,7 @@ export class WeatherWidget extends LitElement {
           this.#format,
           this.forecast,
           this.#locationName(this.forecast),
+          this.#motionPreference.motion,
         );
       case "error":
       case "retrying":

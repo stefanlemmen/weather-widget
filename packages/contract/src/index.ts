@@ -68,9 +68,21 @@ export const CONDITIONS = [
 
 export type Condition = (typeof CONDITIONS)[number];
 
+export const TIMES_OF_DAY = ["day", "night"] as const;
+
+export type TimeOfDay = (typeof TIMES_OF_DAY)[number];
+
+export const DAY: TimeOfDay = "day";
+export const NIGHT: TimeOfDay = "night";
+
+const ConditionSchema = v.picklist(CONDITIONS);
+const TimeOfDaySchema = v.picklist(TIMES_OF_DAY);
+
 const ChanceSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
 export const CurrentConditionsSchema = v.object({
+  condition: ConditionSchema,
+  timeOfDay: TimeOfDaySchema,
   temperatureCelsius: v.number(),
   feelsLikeCelsius: v.number(),
   windSpeedMetresPerSecond: v.pipe(v.number(), v.minValue(0)),
@@ -83,7 +95,8 @@ export type CurrentConditions = v.InferOutput<typeof CurrentConditionsSchema>;
 
 export const HourSchema = v.object({
   startsAt: v.pipe(v.string(), v.isoTimestamp()),
-  condition: v.picklist(CONDITIONS),
+  condition: ConditionSchema,
+  timeOfDay: TimeOfDaySchema,
   temperatureCelsius: v.number(),
   precipitationChance: ChanceSchema,
 });
@@ -97,7 +110,7 @@ export type HourlyForecast = v.InferOutput<typeof HourlyForecastSchema>;
 export const DaySchema = v.pipe(
   v.object({
     date: v.pipe(v.string(), v.isoDate()),
-    condition: v.picklist(CONDITIONS),
+    condition: ConditionSchema,
     lowCelsius: v.number(),
     highCelsius: v.number(),
     precipitationChance: ChanceSchema,

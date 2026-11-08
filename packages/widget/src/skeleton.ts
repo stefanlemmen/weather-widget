@@ -1,9 +1,10 @@
-import type {
-  CurrentConditions,
-  Day,
-  ForecastPart,
-  Hour,
-  Location,
+import {
+  DAY,
+  type CurrentConditions,
+  type Day,
+  type ForecastPart,
+  type Hour,
+  type Location,
 } from "@weather-widget/contract";
 import type { Forecast } from "./forecast-client.ts";
 import { DAYS_SHOWN, HOURS_SHOWN } from "./forecast-window.ts";
@@ -18,6 +19,8 @@ const PLACEHOLDER_LOCATION: Location = {
 };
 
 const placeholderConditions = (now: Date): CurrentConditions => ({
+  condition: "partly-cloudy",
+  timeOfDay: DAY,
   temperatureCelsius: 12,
   feelsLikeCelsius: 10,
   windSpeedMetresPerSecond: 4,
@@ -34,6 +37,7 @@ const placeholderHours = (now: Date): Hour[] => {
       hourUnderWay + index * MILLISECONDS_PER_HOUR,
     ).toISOString(),
     condition: "partly-cloudy",
+    timeOfDay: DAY,
     temperatureCelsius: 12,
     precipitationChance: 0.4,
   }));

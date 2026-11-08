@@ -1,20 +1,24 @@
-import type {
-  Condition,
-  CurrentConditions,
-  Day,
-  ForecastPart,
-  ForecastResponse,
-  Hour,
-  Location,
-  ProblemDetails,
+import {
+  CONDITIONS,
+  TIMES_OF_DAY,
+  type Condition,
+  type CurrentConditions,
+  type Day,
+  type ForecastPart,
+  type ForecastResponse,
+  type Hour,
+  type Location,
+  type ProblemDetails,
 } from "@weather-widget/contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { page, userEvent } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import { WeatherWidget } from "../src/index.ts";
 
 const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
 
 const RECORDED_CONDITIONS: CurrentConditions = {
+  condition: "overcast",
+  timeOfDay: "day",
   temperatureCelsius: 8.85,
   feelsLikeCelsius: 6.93,
   windSpeedMetresPerSecond: 3.35,
@@ -44,6 +48,7 @@ const hoursFrom = (firstHourStartsAt: string, count = 20): Hour[] =>
       Date.parse(firstHourStartsAt) + index * MILLISECONDS_PER_HOUR,
     ).toISOString(),
     condition: CONDITION_CYCLE[index % CONDITION_CYCLE.length] ?? "unknown",
+    timeOfDay: "day",
     temperatureCelsius: 30.75 + index,
     precipitationChance: index === 0 ? 0.85 : 0,
   }));
@@ -847,6 +852,12 @@ const textsOf = (list: ReturnType<typeof page.getByRole>, selector: string) =>
   );
 
 const shownHours = () => textsOf(hourlyForecast(), "time");
+
+const conditionsShownIn = (list: ReturnType<typeof page.getByRole>) =>
+  list
+    .getByRole("img")
+    .elements()
+    .map((icon) => icon.getAttribute("aria-label"));
 const shownDays = () => textsOf(dailyForecast(), "abbr");
 
 describe("the Hourly forecast", () => {
@@ -858,8 +869,12 @@ describe("the Hourly forecast", () => {
     await expect.element(hourlyForecast()).toBeVisible();
     const hours = hourlyForecast().getByRole("listitem").elements();
     expect(hours).toHaveLength(12);
-    expect(hours[0]).toHaveTextContent(/10 AM.*Rain.*31°C.*85%/);
-    expect(hours[1]).toHaveTextContent(/11 AM.*Overcast.*32°C.*0%/);
+    expect(hours[0]).toHaveTextContent(/10 AM.*31°C.*85%/);
+    expect(hours[1]).toHaveTextContent(/11 AM.*32°C.*0%/);
+    expect(conditionsShownIn(hourlyForecast()).slice(0, 2)).toEqual([
+      "Rain",
+      "Overcast",
+    ]);
     expect(hours[0]?.querySelector("time")?.dateTime).toBe(
       "2026-11-08T09:00:00.000Z",
     );
@@ -966,7 +981,8 @@ describe("the Daily forecast", () => {
     await expect.element(dailyForecast()).toBeVisible();
     const days = dailyForecast().getByRole("listitem").elements();
     expect(days).toHaveLength(5);
-    expect(days[0]).toHaveTextContent(/Sun.*Rain.*Low.*21°C.*High.*50°C.*39%/);
+    expect(days[0]).toHaveTextContent(/Sun.*Low.*21°C.*High.*50°C.*39%/);
+    expect(conditionsShownIn(dailyForecast())[0]).toBe("Rain");
     expect(days[0]?.querySelector("abbr")?.title).toBe("Sunday");
     expect(shownDays()).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu"]);
   });
@@ -1515,8 +1531,10 @@ describe("locale", () => {
     const days = page.getByRole("list", { name: "Komende 5 dagen" });
     await expect.element(hours).toBeVisible();
     expect(hours.getByRole("listitem").elements()[0]).toHaveTextContent(
-      /10:00.*Regen.*31°C.*Kans op neerslag\s*85%/,
+      /10:00.*31°C.*Kans op neerslag\s*85%/,
     );
+    expect(conditionsShownIn(hours)[0]).toBe("Regen");
+    expect(conditionsShownIn(days)[0]).toBe("Regen");
     expect(textsOf(hours, "time").slice(0, 3)).toEqual([
       "10:00",
       "11:00",
@@ -1524,7 +1542,7 @@ describe("locale", () => {
     ]);
     const firstDay = days.getByRole("listitem").first();
     expect(firstDay.element()).toHaveTextContent(
-      /zo.*Regen.*Laagste\s*21°C.*Hoogste\s*50°C/,
+      /zo.*Laagste\s*21°C.*Hoogste\s*50°C/,
     );
     expect(firstDay.element().querySelector("abbr")?.title).toBe("zondag");
   });
@@ -1726,5 +1744,196 @@ describe("the Proxy request", () => {
       "longitude",
       "parts",
     ]);
+  });
+});
+
+describe("Conditions", () => {
+  const METEOCONS_ICONS: Readonly<
+    Record<Condition, readonly [day: string, night: string]>
+  > = {
+    clear: ["clear-day", "clear-night"],
+    "partly-cloudy": ["partly-cloudy-day", "partly-cloudy-night"],
+    "mostly-cloudy": ["overcast-day", "overcast-night"],
+    overcast: ["cloudy", "cloudy"],
+    fog: ["fog-day", "fog-night"],
+    haze: ["haze-day", "haze-night"],
+    drizzle: ["drizzle", "drizzle"],
+    rain: ["rain", "rain"],
+    sleet: ["sleet", "sleet"],
+    snow: ["snow", "snow"],
+    thunderstorm: ["thunderstorms-day", "thunderstorms-night"],
+    unknown: ["not-available", "not-available"],
+  };
+
+  const ICON_ID_SEPARATOR = "__";
+  const ANIMATION = "animate, animateTransform, animateMotion";
+
+  const drawnIcon = (icon: Element) => ({
+    name: icon.querySelector("g[id]")?.id.split(ICON_ID_SEPARATOR)[0],
+    animated: icon.querySelector(ANIMATION) !== null,
+  });
+
+  const iconsIn = (list: ReturnType<typeof page.getByRole>) =>
+    list.getByRole("img").elements().map(drawnIcon);
+
+  const oneHour = (hour: Pick<Hour, "condition" | "timeOfDay">) =>
+    forecastWith(
+      {},
+      {},
+      {
+        hours: [
+          {
+            startsAt: "2026-11-08T09:00:00.000Z",
+            temperatureCelsius: 9,
+            precipitationChance: 0,
+            ...hour,
+          },
+        ],
+      },
+    );
+
+  beforeEach(async () => {
+    await commands.emulateReducedMotion("no-preference");
+  });
+
+  afterEach(async () => {
+    await commands.emulateReducedMotion("no-preference");
+  });
+
+  it.each(
+    CONDITIONS.flatMap((condition) =>
+      TIMES_OF_DAY.map(
+        (timeOfDay, index) =>
+          [condition, timeOfDay, METEOCONS_ICONS[condition][index]] as const,
+      ),
+    ),
+  )(
+    "draws %s by %s as the Meteocons icon %s",
+    async (condition, timeOfDay, icon) => {
+      fakeProxy.mockImplementation(() =>
+        respondWith(oneHour({ condition, timeOfDay })),
+      );
+
+      renderWidget({ ...NIEUWEGEIN, parts: "hourly" });
+
+      await expect.element(hourlyForecast()).toBeVisible();
+      expect(iconsIn(hourlyForecast())[0]?.name).toBe(icon);
+    },
+  );
+
+  it("names the Condition of each hour and day by its icon alone", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect
+      .element(hourlyForecast().getByRole("img", { name: "Rain" }).first())
+      .toBeVisible();
+    await expect
+      .element(dailyForecast().getByRole("img", { name: "Rain" }).first())
+      .toBeVisible();
+    expect(hourlyForecast().getByText("Rain").query()).toBeNull();
+    expect(dailyForecast().getByText("Rain").query()).toBeNull();
+  });
+
+  it("draws every day with its day icon", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(
+        forecastWith({}, {}, { days: daysFrom("2026-11-08").slice(2, 3) }),
+      ),
+    );
+    vi.setSystemTime("2026-11-08T21:00:00Z");
+
+    renderWidget({ ...NIEUWEGEIN, parts: "daily" });
+
+    await expect.element(dailyForecast()).toBeVisible();
+    expect(iconsIn(dailyForecast())[0]?.name).toBe("partly-cloudy-day");
+  });
+
+  it("labels the Condition of Current conditions in text, beside an icon screen readers skip", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(
+        forecastWith({ condition: "partly-cloudy", timeOfDay: "night" }),
+      ),
+    );
+
+    const widget = renderWidget({ ...NIEUWEGEIN, parts: "current" });
+
+    await expect.element(locationName()).toBeVisible();
+    await expect.element(page.getByText("Partly cloudy")).toBeVisible();
+    const icons = widget.shadowRoot?.querySelectorAll("svg") ?? [];
+    expect(icons).toHaveLength(1);
+    const [icon] = icons;
+    expect(icon && drawnIcon(icon).name).toBe("partly-cloudy-night");
+    expect(icon?.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(page.getByRole("img").query()).toBeNull();
+  });
+
+  it("animates the icons when the visitor has no motion preference", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(NIEUWEGEIN);
+
+    await expect.element(hourlyForecast()).toBeVisible();
+    expect(iconsIn(hourlyForecast()).map((icon) => icon.animated)).toEqual(
+      Array.from({ length: 12 }, () => true),
+    );
+  });
+
+  it("draws still icons when the visitor prefers reduced motion", async () => {
+    await commands.emulateReducedMotion("reduce");
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    const widget = renderWidget(NIEUWEGEIN);
+
+    await expect.element(hourlyForecast()).toBeVisible();
+    expect(widget.shadowRoot?.querySelector(ANIMATION)).toBeNull();
+    expect(iconsIn(hourlyForecast())[0]?.name).toBe("rain");
+  });
+
+  it("stops the icons when the visitor turns on reduced motion while the Forecast shows", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+    const widget = renderWidget(NIEUWEGEIN);
+    await expect.element(hourlyForecast()).toBeVisible();
+
+    await commands.emulateReducedMotion("reduce");
+
+    await expect
+      .poll(() => widget.shadowRoot?.querySelector(ANIMATION) ?? null)
+      .toBeNull();
+  });
+
+  const TRANSPARENT = "rgba(0, 0, 0, 0)";
+
+  const bonesBehind = (element: Element | null) => {
+    const bones: Element[] = [];
+    for (
+      let ancestor = element?.parentElement;
+      ancestor && !ancestor.classList.contains("skeleton");
+      ancestor = ancestor.parentElement
+    ) {
+      if (getComputedStyle(ancestor).backgroundColor !== TRANSPARENT) {
+        bones.push(ancestor);
+      }
+    }
+    return bones;
+  };
+
+  it("draws a circle in place of each icon while loading", async () => {
+    fakeProxy.mockImplementation(() => new Promise(() => undefined));
+
+    const widget = renderWidget(NIEUWEGEIN);
+    await widget.updateComplete;
+
+    const icons = widget.shadowRoot?.querySelectorAll("svg") ?? [];
+    expect(icons.length).toBeGreaterThan(0);
+    for (const icon of icons) {
+      const placeholder = icon.parentElement;
+      expect(icon).not.toBeVisible();
+      expect(placeholder && getComputedStyle(placeholder).borderRadius).toBe(
+        "50%",
+      );
+      expect(bonesBehind(placeholder)).toEqual([]);
+    }
   });
 });
