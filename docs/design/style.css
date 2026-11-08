@@ -252,13 +252,27 @@
   padding-inline-start: var(--_space-indent);
   display: grid;
   grid-template-columns: repeat(var(--hour-columns), 1fr);
-  row-gap: 1.25rem;
+  row-gap: 0.75rem;
 }
 
 .hour {
   display: grid;
   justify-items: center;
   gap: 0.375rem;
+}
+
+@container weather (20rem <= inline-size < 45rem) {
+  .hour:nth-child(n + 7) {
+    border-block-start: 1px solid var(--_track);
+    padding-block-start: 0.75rem;
+  }
+}
+
+@container weather (inline-size < 20rem) {
+  .hour:nth-child(n + 5) {
+    border-block-start: 1px solid var(--_track);
+    padding-block-start: 0.75rem;
+  }
 }
 
 .hour time {
@@ -297,13 +311,15 @@
 .days ol {
   padding-inline-start: var(--_space-indent);
   display: grid;
+  grid-template-columns: max-content 2.25rem max-content 1fr max-content max-content;
+  column-gap: 0.625rem;
 }
 
 .day {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 3.5rem 2.25rem 2.5rem 1fr 2.5rem 2.75rem;
+  grid-template-columns: subgrid;
   align-items: center;
-  column-gap: 0.625rem;
   padding-block: 0.5rem;
 }
 
@@ -313,6 +329,10 @@
 
 .day-name abbr {
   text-decoration: none;
+}
+
+.day-name-rest {
+  display: none;
 }
 
 .day .icon {
@@ -573,14 +593,19 @@
     padding-inline-start: 0;
   }
 
+  .day-name-tail {
+    display: none;
+  }
+
   .picker-row {
     grid-template-columns: 1fr;
   }
 }
 
 @container weather (inline-size < 24rem) {
-  .day {
-    grid-template-columns: 1fr 2rem 2.5rem 2.5rem 2.5rem;
+  .days ol {
+    grid-template-columns: max-content 2rem repeat(3, max-content);
+    justify-content: space-between;
     column-gap: 0.375rem;
   }
 
@@ -599,6 +624,10 @@
 }
 
 @container weather (inline-size >= 35rem) {
+  .day-name-rest {
+    display: inline;
+  }
+
   .current {
     grid-template-columns: auto minmax(0, 9rem) minmax(12rem, 1fr);
     grid-template-areas:
@@ -640,7 +669,7 @@
     grid-area: value;
   }
 
-  .day {
+  .days ol {
     grid-template-columns:
       minmax(3.5rem, 1fr) 2.25rem 2.5rem minmax(4rem, 14rem)
       2.5rem 2.75rem;
