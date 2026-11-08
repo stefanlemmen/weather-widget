@@ -1,4 +1,4 @@
-import type { Result } from "@weather-widget/contract";
+import { FAILED, type Result } from "@weather-widget/contract";
 import * as v from "valibot";
 
 const TIMEOUT_ERROR = "TimeoutError";
@@ -11,8 +11,6 @@ type FailureReason =
   (typeof FAILURE_REASONS)[keyof typeof FAILURE_REASONS] | `HTTP ${string}`;
 const httpStatusReason = (status: number): FailureReason =>
   `HTTP ${String(status)}`;
-
-export const FAILED = { status: "error" } as const;
 
 export interface ProviderCall<TSchema extends v.GenericSchema> {
   readonly name: string;

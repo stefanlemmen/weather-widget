@@ -1,4 +1,5 @@
 import {
+  FAILED,
   FORECAST_PARTS,
   FORECAST_PARTS_SEPARATOR,
   FORECAST_PATH,
@@ -25,8 +26,6 @@ export interface Forecast {
 
 export type ForecastResult =
   ({ readonly status: "ok" } & Forecast) | { readonly status: "error" };
-
-const FAILED: ForecastResult = { status: "error" };
 
 export const requestedParts = (
   parts: string | undefined,

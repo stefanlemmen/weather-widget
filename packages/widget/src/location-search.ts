@@ -1,4 +1,5 @@
 import {
+  FAILED,
   LOCATIONS_PATH,
   LocationsResponseSchema,
   type FoundLocation,
@@ -6,8 +7,6 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
-
-const FAILED = { status: "error" } as const;
 
 const locationsUrl = (proxyUrl: string, { name, locale }: LocationsQuery) => {
   const url = new URL(`${proxyUrl}${LOCATIONS_PATH}`, document.baseURI);

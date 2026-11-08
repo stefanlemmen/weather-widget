@@ -155,6 +155,8 @@ export type Result<TData> =
   | { readonly status: "ok"; readonly data: TData }
   | { readonly status: "error" };
 
+export const FAILED = { status: "error" } as const;
+
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,
   parts: v.object({

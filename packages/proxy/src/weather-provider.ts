@@ -3,6 +3,7 @@ import {
   DAY,
   NIGHT,
   DailyForecastSchema,
+  FAILED,
   HourlyForecastSchema,
   type Coordinates,
   type ForecastPart,
@@ -17,7 +18,6 @@ import {
 import { conditionFor } from "./conditions.ts";
 import { PROVIDER_MODES, type Environment } from "./environment.ts";
 import {
-  FAILED,
   fetchParsedWith,
   type ProviderCall,
   type ProviderOptions,
