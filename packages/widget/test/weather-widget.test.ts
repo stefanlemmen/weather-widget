@@ -1821,6 +1821,29 @@ describe("Conditions", () => {
     },
   );
 
+  it("keeps every id in the Widget unique, so each icon's masks and clip paths point at its own shapes", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    const widget = renderWidget(NIEUWEGEIN);
+
+    await expect.element(dailyForecast()).toBeVisible();
+    const ids = Array.from(
+      widget.shadowRoot?.querySelectorAll("[id]") ?? [],
+      (element) => element.id,
+    );
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const reference of widget.shadowRoot?.querySelectorAll(
+      "[clip-path], [mask]",
+    ) ?? []) {
+      const icon = reference.closest("svg");
+      const target = (
+        reference.getAttribute("clip-path") ?? reference.getAttribute("mask")
+      )?.match(/url\(#(.+)\)/)?.[1];
+      expect(target && icon?.querySelector(`[id="${target}"]`)).toBeTruthy();
+    }
+  });
+
   it("names the Condition of each hour and day by its icon alone", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 

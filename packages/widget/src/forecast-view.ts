@@ -88,7 +88,11 @@ const currentConditions = (
           ${spoken(format.temperature(conditions.temperatureCelsius))}
         </p>
         <p class="condition">
-          ${decorativeConditionIcon({ ...conditions, motion })}
+          ${decorativeConditionIcon({
+            ...conditions,
+            motion,
+            placement: "current",
+          })}
           <span>${format.messages.conditions[conditions.condition]}</span>
         </p>
         ${currentConditionsDetails(format, conditions)}`,
@@ -110,13 +114,13 @@ const hourlyForecast = (
       (hours) =>
         html`<ol aria-labelledby="hourly-heading">
           ${upcomingHours(hours, now).map(
-            (hour) =>
+            (hour, index) =>
               html`<li>
                 <time datetime=${hour.startsAt}
                   >${format.hour(hour.startsAt, timeZone)}</time
                 >
                 ${namedConditionIcon(
-                  { ...hour, motion },
+                  { ...hour, motion, placement: `hour-${String(index)}` },
                   format.messages.conditions[hour.condition],
                 )}
                 <span
@@ -145,13 +149,18 @@ const dailyForecast = (
       (days) =>
         html`<ol aria-labelledby="daily-heading">
           ${upcomingDays(days, timeZone, now).map(
-            (day) =>
+            (day, index) =>
               html`<li>
                 <abbr title=${format.weekday(day.date, "long")}
                   >${format.weekday(day.date, "short")}</abbr
                 >
                 ${namedConditionIcon(
-                  { condition: day.condition, daylight: DAY, motion },
+                  {
+                    condition: day.condition,
+                    daylight: DAY,
+                    motion,
+                    placement: `day-${String(index)}`,
+                  },
                   format.messages.conditions[day.condition],
                 )}
                 <span

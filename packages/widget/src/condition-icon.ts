@@ -100,18 +100,30 @@ export interface ConditionIcon {
   readonly condition: Condition;
   readonly daylight: Daylight;
   readonly motion: Motion;
+  readonly placement: string;
 }
+
+const ID_SEPARATOR = "__";
 
 const SVG_OPENING = "<svg ";
 const HIDDEN_SVG_OPENING = '<svg aria-hidden="true" ';
 
-const markupOf = ({ condition, daylight, motion }: ConditionIcon) =>
-  unsafeHTML(
-    METEOCONS[METEOCON_FOR_CONDITION[condition][daylight]][motion].replace(
-      SVG_OPENING,
-      HIDDEN_SVG_OPENING,
-    ),
+const markupOf = ({
+  condition,
+  daylight,
+  motion,
+  placement,
+}: ConditionIcon) => {
+  const meteocon = METEOCON_FOR_CONDITION[condition][daylight];
+  return unsafeHTML(
+    METEOCONS[meteocon][motion]
+      .replace(SVG_OPENING, HIDDEN_SVG_OPENING)
+      .replaceAll(
+        `${meteocon}${ID_SEPARATOR}`,
+        `${meteocon}${ID_SEPARATOR}${placement}-`,
+      ),
   );
+};
 
 export const decorativeConditionIcon = (icon: ConditionIcon) =>
   html`<span class="icon">${markupOf(icon)}</span>`;
