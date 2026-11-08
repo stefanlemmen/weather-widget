@@ -3,7 +3,7 @@ import type {
   LocationsResponse,
 } from "@weather-widget/contract";
 import * as v from "valibot";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../src/location-picker.ts";
 import type { LocationSelectDetail } from "../src/location-picker.ts";
@@ -82,6 +82,9 @@ const selections = () => {
     }
   });
   document.addEventListener("location-select", listener);
+  onTestFinished(() => {
+    document.removeEventListener("location-select", listener);
+  });
   return { selected, listener };
 };
 
