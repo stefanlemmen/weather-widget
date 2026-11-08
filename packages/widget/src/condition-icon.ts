@@ -1,4 +1,4 @@
-import type { Condition, TimeOfDay } from "@weather-widget/contract";
+import type { Condition, Daylight } from "@weather-widget/contract";
 import { html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import clearDayAnimated from "@meteocons/svg/monochrome/clear-day.svg?raw";
@@ -80,7 +80,7 @@ const METEOCONS = {
 type Meteocon = keyof typeof METEOCONS;
 
 const METEOCON_FOR_CONDITION: Readonly<
-  Record<Condition, Readonly<Record<TimeOfDay, Meteocon>>>
+  Record<Condition, Readonly<Record<Daylight, Meteocon>>>
 > = {
   clear: { day: "clear-day", night: "clear-night" },
   "partly-cloudy": { day: "partly-cloudy-day", night: "partly-cloudy-night" },
@@ -98,16 +98,16 @@ const METEOCON_FOR_CONDITION: Readonly<
 
 export interface ConditionIcon {
   readonly condition: Condition;
-  readonly timeOfDay: TimeOfDay;
+  readonly daylight: Daylight;
   readonly motion: Motion;
 }
 
 const SVG_OPENING = "<svg ";
 const HIDDEN_SVG_OPENING = '<svg aria-hidden="true" ';
 
-const markupOf = ({ condition, timeOfDay, motion }: ConditionIcon) =>
+const markupOf = ({ condition, daylight, motion }: ConditionIcon) =>
   unsafeHTML(
-    METEOCONS[METEOCON_FOR_CONDITION[condition][timeOfDay]][motion].replace(
+    METEOCONS[METEOCON_FOR_CONDITION[condition][daylight]][motion].replace(
       SVG_OPENING,
       HIDDEN_SVG_OPENING,
     ),

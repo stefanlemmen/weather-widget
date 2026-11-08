@@ -151,7 +151,7 @@ const dailyForecast = (
                   >${format.weekday(day.date, "short")}</abbr
                 >
                 ${namedConditionIcon(
-                  { condition: day.condition, timeOfDay: DAY, motion },
+                  { condition: day.condition, daylight: DAY, motion },
                   format.messages.conditions[day.condition],
                 )}
                 <span

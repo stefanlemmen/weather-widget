@@ -1,6 +1,6 @@
 import {
   CONDITIONS,
-  TIMES_OF_DAY,
+  DAYLIGHTS,
   type Condition,
   type CurrentConditions,
   type Day,
@@ -18,7 +18,7 @@ const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
 
 const RECORDED_CONDITIONS: CurrentConditions = {
   condition: "overcast",
-  timeOfDay: "day",
+  daylight: "day",
   temperatureCelsius: 8.85,
   feelsLikeCelsius: 6.93,
   windSpeedMetresPerSecond: 3.35,
@@ -48,7 +48,7 @@ const hoursFrom = (firstHourStartsAt: string, count = 20): Hour[] =>
       Date.parse(firstHourStartsAt) + index * MILLISECONDS_PER_HOUR,
     ).toISOString(),
     condition: CONDITION_CYCLE[index % CONDITION_CYCLE.length] ?? "unknown",
-    timeOfDay: "day",
+    daylight: "day",
     temperatureCelsius: 30.75 + index,
     precipitationChance: index === 0 ? 0.85 : 0,
   }));
@@ -1776,7 +1776,7 @@ describe("Conditions", () => {
   const iconsIn = (list: ReturnType<typeof page.getByRole>) =>
     list.getByRole("img").elements().map(drawnIcon);
 
-  const oneHour = (hour: Pick<Hour, "condition" | "timeOfDay">) =>
+  const oneHour = (hour: Pick<Hour, "condition" | "daylight">) =>
     forecastWith(
       {},
       {},
@@ -1802,16 +1802,16 @@ describe("Conditions", () => {
 
   it.each(
     CONDITIONS.flatMap((condition) =>
-      TIMES_OF_DAY.map(
-        (timeOfDay, index) =>
-          [condition, timeOfDay, METEOCONS_ICONS[condition][index]] as const,
+      DAYLIGHTS.map(
+        (daylight, index) =>
+          [condition, daylight, METEOCONS_ICONS[condition][index]] as const,
       ),
     ),
   )(
     "draws %s by %s as the Meteocons icon %s",
-    async (condition, timeOfDay, icon) => {
+    async (condition, daylight, icon) => {
       fakeProxy.mockImplementation(() =>
-        respondWith(oneHour({ condition, timeOfDay })),
+        respondWith(oneHour({ condition, daylight })),
       );
 
       renderWidget({ ...NIEUWEGEIN, parts: "hourly" });
@@ -1853,7 +1853,7 @@ describe("Conditions", () => {
   it("labels the Condition of Current conditions in text, beside an icon screen readers skip", async () => {
     fakeProxy.mockImplementation(() =>
       respondWith(
-        forecastWith({ condition: "partly-cloudy", timeOfDay: "night" }),
+        forecastWith({ condition: "partly-cloudy", daylight: "night" }),
       ),
     );
 

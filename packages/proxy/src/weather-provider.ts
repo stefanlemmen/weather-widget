@@ -46,7 +46,7 @@ const ConditionSchema = v.pipe(
   v.transform(([{ id }]) => conditionFor(id)),
 );
 
-const ConditionAndTimeOfDaySchema = v.pipe(
+const ConditionAndDaylightSchema = v.pipe(
   v.tupleWithRest(
     [
       v.object({
@@ -58,7 +58,7 @@ const ConditionAndTimeOfDaySchema = v.pipe(
   ),
   v.transform(([{ id, icon }]) => ({
     condition: conditionFor(id),
-    timeOfDay: icon.endsWith(NIGHT_ICON_SUFFIX) ? NIGHT : DAY,
+    daylight: icon.endsWith(NIGHT_ICON_SUFFIX) ? NIGHT : DAY,
   })),
 );
 
@@ -72,7 +72,7 @@ const CurrentResponseSchema = v.pipe(
         feels_like: v.number(),
         wind_speed: v.number(),
         wind_deg: v.number(),
-        weather: ConditionAndTimeOfDaySchema,
+        weather: ConditionAndDaylightSchema,
       }),
     ]),
   }),
@@ -98,7 +98,7 @@ const HourRecordSchema = v.pipe(
     dt: v.number(),
     temp: v.number(),
     pop: v.number(),
-    weather: ConditionAndTimeOfDaySchema,
+    weather: ConditionAndDaylightSchema,
   }),
   v.transform((hour) => ({
     startsAt: isoTimestamp(hour.dt),
