@@ -124,9 +124,11 @@ const forecastPartResult = <TData extends v.GenericSchema>(data: TData) =>
     v.object({ status: v.literal("error") }),
   ]);
 
-export type ForecastPartResult<TData> =
+export type Result<TData> =
   | { readonly status: "ok"; readonly data: TData }
   | { readonly status: "error" };
+
+export type ForecastPartResult<TData> = Result<TData>;
 
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,

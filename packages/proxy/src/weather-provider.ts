@@ -5,6 +5,7 @@ import {
   type Coordinates,
   type ForecastPart,
   type ForecastResponse,
+  type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { conditionFor } from "./conditions.ts";
@@ -147,14 +148,10 @@ const ReverseGeocodingResponseSchema = v.union([
   ),
 ]);
 
-export type WeatherProviderResult<TData> =
-  | { readonly status: "ok"; readonly data: TData }
-  | { readonly status: "error" };
-
 export type FetchForecast = (
   coordinates: Coordinates,
   parts: readonly ForecastPart[],
-) => Promise<WeatherProviderResult<ForecastResponse>>;
+) => Promise<Result<ForecastResponse>>;
 
 const FAILED = { status: "error" } as const;
 const SKIPPED = Promise.resolve(undefined);
@@ -173,15 +170,15 @@ const callFailed = (call: WeatherProviderCall, reason: FailureReason) => {
 };
 
 const partFrom = <TResponse, TPart>(
-  response: WeatherProviderResult<TResponse>,
+  response: Result<TResponse>,
   toPart: (data: TResponse) => TPart,
-): WeatherProviderResult<TPart> =>
+): Result<TPart> =>
   response.status === "ok"
     ? { status: "ok", data: toPart(response.data) }
     : FAILED;
 
 const timeZoneOf = (
-  response: WeatherProviderResult<{ readonly timeZone: string }> | undefined,
+  response: Result<{ readonly timeZone: string }> | undefined,
 ) => (response?.status === "ok" ? response.data.timeZone : undefined);
 
 export interface WeatherProviderOptions {
@@ -198,7 +195,7 @@ export const createLiveWeatherProvider = (
     endpoint: string,
     parameters: Readonly<Record<string, string>>,
     schema: TSchema,
-  ): Promise<WeatherProviderResult<v.InferOutput<TSchema>>> => {
+  ): Promise<Result<v.InferOutput<TSchema>>> => {
     const url = new URL(endpoint);
     url.search = new URLSearchParams({
       ...parameters,
