@@ -1,10 +1,9 @@
-import type { Coordinates } from "@weather-widget/contract";
+import type { Coordinates, Locale } from "@weather-widget/contract";
 import {
   COMPASS_POINTS,
   MESSAGES,
   type CardinalPoint,
   type CompassPoint,
-  type Locale,
   type Messages,
 } from "./messages.ts";
 import { MEASURES, type Units } from "./units.ts";

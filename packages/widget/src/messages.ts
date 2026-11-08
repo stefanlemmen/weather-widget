@@ -1,5 +1,4 @@
-import type { Condition, ForecastPart } from "@weather-widget/contract";
-import * as v from "valibot";
+import type { Condition, ForecastPart, Locale } from "@weather-widget/contract";
 import { DAYS_SHOWN, HOURS_SHOWN } from "./forecast-window.ts";
 
 const WEATHER_PROVIDER_CREDIT = "Weather data provided by OpenWeather";
@@ -26,17 +25,6 @@ export const COMPASS_POINTS = [
 export type CompassPoint = (typeof COMPASS_POINTS)[number];
 
 export type CardinalPoint = Extract<CompassPoint, "N" | "E" | "S" | "W">;
-
-export const LOCALES = ["en", "nl"] as const;
-
-export type Locale = (typeof LOCALES)[number];
-
-export const DEFAULT_LOCALE: Locale = "en";
-
-const LocaleSchema = v.fallback(v.picklist(LOCALES), DEFAULT_LOCALE);
-
-export const parseLocale = (locale: unknown): Locale =>
-  v.parse(LocaleSchema, locale);
 
 export interface Messages {
   readonly loading: string;
