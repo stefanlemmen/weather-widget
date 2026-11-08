@@ -16,6 +16,10 @@ _Avoid_: Parent, container, demo app
 A Host page we build ourselves in one framework to show how Widgets are embedded there.
 _Avoid_: Demo app, showcase, playground
 
+**Widget settings**:
+A form on an Example host that changes one Widget: its locale, units and Forecast parts, its theme and color scheme, and the width it gets.
+_Avoid_: Playground, config panel, controls
+
 **Location**:
 The place a Forecast is for. It has coordinates, a name and a time zone, and its Host page always hands it to the Widget.
 _Avoid_: City, place, position
