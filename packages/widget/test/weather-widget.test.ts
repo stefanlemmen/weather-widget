@@ -1793,11 +1793,11 @@ describe("Conditions", () => {
     );
 
   beforeEach(async () => {
-    await commands.emulateReducedMotion("no-preference");
+    await commands.emulateMedia({ reducedMotion: "no-preference" });
   });
 
   afterEach(async () => {
-    await commands.emulateReducedMotion("no-preference");
+    await commands.emulateMedia({ reducedMotion: "no-preference" });
   });
 
   it.each(
@@ -1881,7 +1881,7 @@ describe("Conditions", () => {
   });
 
   it("draws still icons when the visitor prefers reduced motion", async () => {
-    await commands.emulateReducedMotion("reduce");
+    await commands.emulateMedia({ reducedMotion: "reduce" });
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
     const widget = renderWidget(NIEUWEGEIN);
@@ -1896,7 +1896,7 @@ describe("Conditions", () => {
     const widget = renderWidget(NIEUWEGEIN);
     await expect.element(hourlyForecast()).toBeVisible();
 
-    await commands.emulateReducedMotion("reduce");
+    await commands.emulateMedia({ reducedMotion: "reduce" });
 
     await expect
       .poll(() => widget.shadowRoot?.querySelector(ANIMATION) ?? null)
@@ -1936,4 +1936,29 @@ describe("Conditions", () => {
       expect(bonesBehind(placeholder)).toEqual([]);
     }
   });
+});
+
+describe("color scheme", () => {
+  afterEach(async () => {
+    await commands.emulateMedia({ colorScheme: "light" });
+  });
+
+  it.each([
+    ["light", "rgb(238, 243, 249)", "rgb(19, 36, 58)", "rgb(23, 112, 63)"],
+    ["dark", "rgb(22, 38, 59)", "rgb(242, 245, 249)", "rgb(111, 220, 155)"],
+  ] as const)(
+    "paints its own ground, ink and accent link in the %s scheme, so the OpenWeather link stays readable",
+    async (colorScheme, ground, ink, accent) => {
+      await commands.emulateMedia({ colorScheme });
+      fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+      const widget = renderWidget(NIEUWEGEIN);
+
+      const link = page.getByRole("link", { name: "OpenWeather" });
+      await expect.element(link).toBeVisible();
+      expect(getComputedStyle(widget).backgroundColor).toBe(ground);
+      expect(getComputedStyle(widget).color).toBe(ink);
+      expect(getComputedStyle(link.element()).color).toBe(accent);
+    },
+  );
 });

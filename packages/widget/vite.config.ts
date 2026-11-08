@@ -7,7 +7,7 @@ import {
   WIDGET_MODULE_DIRECTORY,
   WIDGET_MODULE_FILE,
 } from "./src/build-output.ts";
-import { emulateReducedMotion } from "./test/reduced-motion-command.ts";
+import { emulateMedia } from "./test/emulate-media-command.ts";
 
 const METEOCONS_LICENSE = readFileSync(
   fileURLToPath(import.meta.resolve("@meteocons/svg/LICENSE")),
@@ -42,7 +42,7 @@ export default defineConfig({
       provider: playwright(),
       headless: true,
       instances: [{ browser: "chromium" }],
-      commands: { emulateReducedMotion },
+      commands: { emulateMedia },
     },
   },
 });

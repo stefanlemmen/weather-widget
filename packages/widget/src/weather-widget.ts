@@ -62,7 +62,13 @@ export class WeatherWidget extends LitElement {
 
   static override styles = css`
     :host {
-      --_bone: color-mix(in srgb, CanvasText 12%, Canvas);
+      --_ground: light-dark(#eef3f9, #16263b);
+      --_ink: light-dark(#13243a, #f2f5f9);
+      --_accent: light-dark(#17703f, #6fdc9b);
+      --_track: color-mix(in oklab, var(--_ink) 16%, var(--_ground));
+      color-scheme: light dark;
+      background-color: var(--_ground);
+      color: var(--_ink);
       display: block;
       min-block-size: 6rem;
       font-family: system-ui, sans-serif;
@@ -77,6 +83,10 @@ export class WeatherWidget extends LitElement {
 
     h2 {
       font-size: 1.25rem;
+    }
+
+    a {
+      color: var(--_accent);
     }
 
     .visually-hidden {
@@ -97,7 +107,7 @@ export class WeatherWidget extends LitElement {
     .skeleton :is(h2, h3, p, dt, dd, li > *, .condition > *) {
       inline-size: fit-content;
       border-radius: 4px;
-      background-color: var(--_bone);
+      background-color: var(--_track);
     }
 
     .skeleton .condition {
