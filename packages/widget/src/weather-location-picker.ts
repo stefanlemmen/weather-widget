@@ -5,6 +5,7 @@ import {
   type Coordinates,
   type FoundLocation,
   type Locale,
+  type Result,
 } from "@weather-widget/contract";
 import { html, LitElement, nothing, type PropertyValues } from "lit";
 import { parseLocale } from "./locale.ts";
@@ -55,6 +56,15 @@ type Message =
   | { readonly kind: "locationError"; readonly error: LocationError };
 
 const NO_MESSAGE: Message = { kind: "none" };
+
+const searchMessageFor = (
+  found: Result<readonly FoundLocation[]>,
+  term: string,
+): Message => {
+  if (found.status === "error") return { kind: "searchFailed" };
+  if (found.data.length === 0) return { kind: "noneFound", term };
+  return { kind: "found", count: found.data.length };
+};
 
 const textOf = (messages: PickerMessages, message: Message) => {
   switch (message.kind) {
@@ -152,16 +162,10 @@ export class WeatherLocationPicker extends LitElement {
     );
     if (search.signal.aborted) return;
 
-    if (found.status === "error") {
-      this.#showResults([], { kind: "searchFailed" });
-    } else if (found.data.length === 0) {
-      this.#showResults([], { kind: "noneFound", term: name });
-    } else {
-      this.#showResults(found.data, {
-        kind: "found",
-        count: found.data.length,
-      });
-    }
+    this.#showResults(
+      found.status === "ok" ? found.data : [],
+      searchMessageFor(found, name),
+    );
   };
 
   #select(detail: LocationSelectDetail) {
