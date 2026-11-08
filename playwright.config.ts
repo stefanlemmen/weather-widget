@@ -4,6 +4,7 @@ import { PREVIEW_ORIGIN } from "./scripts/preview-server.ts";
 export default defineConfig({
   testDir: "e2e",
   testMatch: "**/*.spec.ts",
+  fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI
     ? [["github"], ["./scripts/playwright-summary-reporter.ts"]]
