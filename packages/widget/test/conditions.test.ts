@@ -152,13 +152,15 @@ describe("Conditions", () => {
       ),
     );
 
-    const widget = renderWidget({ ...NIEUWEGEIN, parts: "current" });
+    renderWidget({ ...NIEUWEGEIN, parts: "current" });
 
     await expect.element(locationName()).toBeVisible();
     await expect.element(page.getByText("Partly cloudy")).toBeVisible();
-    const icons = widget.shadowRoot?.querySelectorAll("svg") ?? [];
-    expect(icons).toHaveLength(1);
-    const [icon] = icons;
+    const icon = page
+      .getByText("Partly cloudy")
+      .element()
+      .closest("p")
+      ?.querySelector("svg");
     expect(icon && drawnIcon(icon).name).toBe("partly-cloudy-night");
     expect(icon?.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(page.getByRole("img").query()).toBeNull();
@@ -198,16 +200,16 @@ describe("Conditions", () => {
       .toBeNull();
   });
 
-  const TRANSPARENT = "rgba(0, 0, 0, 0)";
-
-  const bonesBehind = (element: Element | null) => {
+  const bonesBehind = (placeholder: Element | null) => {
+    const boneColor =
+      placeholder && getComputedStyle(placeholder).backgroundColor;
     const bones: Element[] = [];
     for (
-      let ancestor = element?.parentElement;
+      let ancestor = placeholder?.parentElement;
       ancestor && !ancestor.classList.contains("skeleton");
       ancestor = ancestor.parentElement
     ) {
-      if (getComputedStyle(ancestor).backgroundColor !== TRANSPARENT) {
+      if (getComputedStyle(ancestor).backgroundColor === boneColor) {
         bones.push(ancestor);
       }
     }

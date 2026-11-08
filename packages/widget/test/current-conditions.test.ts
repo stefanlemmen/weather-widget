@@ -32,13 +32,16 @@ describe("<weather-widget>", () => {
 
       await expect.element(locationName()).toBeVisible();
       expect(
-        page.getByText("Feels like").element().nextElementSibling,
+        page.getByText("Feels like").element().closest("dt")
+          ?.nextElementSibling,
       ).toHaveTextContent("7°");
       expect(
-        page.getByText("Wind", { exact: true }).element().nextElementSibling,
+        page.getByText("Wind", { exact: true }).element().closest("dt")
+          ?.nextElementSibling,
       ).toHaveTextContent("12 km/h SSW");
       expect(
-        page.getByText("Chance of precipitation").element().nextElementSibling,
+        page.getByText("Chance of precipitation").element().closest("dt")
+          ?.nextElementSibling,
       ).toHaveTextContent("85%");
     });
 
@@ -128,7 +131,8 @@ describe("<weather-widget>", () => {
 
         await expect.element(locationName()).toBeVisible();
         expect(
-          page.getByText("Wind", { exact: true }).element().nextElementSibling,
+          page.getByText("Wind", { exact: true }).element().closest("dt")
+            ?.nextElementSibling,
         ).toHaveTextContent(/^\s*Calm\s*$/);
       },
     );

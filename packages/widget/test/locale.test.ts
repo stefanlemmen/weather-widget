@@ -6,6 +6,7 @@ import {
   fullForecast,
   unavailable,
   shownMessage,
+  errorHeading,
   announcement,
   locationName,
   respondWith,
@@ -29,13 +30,16 @@ describe("locale", () => {
         "Weersverwachting voor Nieuwegein, bijgewerkt om 10:41",
       );
     expect(
-      page.getByText("Gevoelstemperatuur").element().nextElementSibling,
+      page.getByText("Gevoelstemperatuur").element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("7°");
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("12 km/u ZZW");
     expect(
-      page.getByText("Kans op neerslag").element().nextElementSibling,
+      page.getByText("Kans op neerslag").element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("85%");
     await expect
       .element(shownMessage("Bijgewerkt om"))
@@ -113,7 +117,7 @@ describe("locale", () => {
       .element(page.getByRole("button", { name: "Opnieuw proberen" }))
       .toBeVisible();
     expect(
-      shownMessage("Weersverwachting niet beschikbaar").query(),
+      errorHeading("Weersverwachting niet beschikbaar").query(),
     ).not.toBeNull();
   });
 

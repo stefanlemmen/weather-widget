@@ -7,7 +7,7 @@ import {
   forecastWithTemperature,
   unavailable,
   forecastFailing,
-  shownMessage,
+  errorHeading,
   announcement,
   locationName,
   respondWith,
@@ -88,7 +88,7 @@ describe("<weather-widget>", () => {
 
     renderWidget(NIEUWEGEIN);
 
-    await expect.element(shownMessage("Forecast unavailable")).toBeVisible();
+    await expect.element(errorHeading("Forecast unavailable")).toBeVisible();
     await expect
       .element(page.getByRole("button", { name: "Try again" }))
       .toBeVisible();

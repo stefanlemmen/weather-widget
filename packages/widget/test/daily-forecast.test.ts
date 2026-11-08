@@ -13,7 +13,7 @@ import {
   conditionsShownIn,
 } from "./support.ts";
 
-const shownDays = () => textsOf(dailyForecast(), "abbr");
+const shownDays = () => textsOf(dailyForecast(), ".day-name-short");
 
 describe("the Daily forecast", () => {
   it("shows five days, each with its day name, Condition, low, high and chance of precipitation", async () => {

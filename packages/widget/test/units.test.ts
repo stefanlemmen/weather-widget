@@ -24,10 +24,11 @@ describe("units", () => {
 
     await expect.element(page.getByText("48°")).toBeVisible();
     expect(
-      page.getByText("Feels like").element().nextElementSibling,
+      page.getByText("Feels like").element().closest("dt")?.nextElementSibling,
     ).toHaveTextContent("44°");
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("7 mph SSW");
     expect(
       hourlyForecast().getByRole("listitem").elements()[0],
@@ -91,7 +92,8 @@ describe("units", () => {
 
     await expect.element(locationName()).toBeVisible();
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent(shown);
   });
 
@@ -104,7 +106,8 @@ describe("units", () => {
       .element(page.getByText("48 graden Fahrenheit"))
       .toBeInTheDocument();
     expect(
-      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      page.getByText("Wind", { exact: true }).element().closest("dt")
+        ?.nextElementSibling,
     ).toHaveTextContent("7 mi/h ZZW");
   });
 
