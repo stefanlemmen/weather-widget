@@ -163,3 +163,46 @@ export type ProblemDetails = v.InferOutput<typeof ProblemDetailsSchema>;
 
 export const PROBLEM_DETAILS_MEDIA_TYPE = "application/problem+json";
 export const UNTYPED_PROBLEM = "about:blank";
+
+export const LOCALES = ["en", "nl"] as const;
+
+export type Locale = (typeof LOCALES)[number];
+
+export const DEFAULT_LOCALE: Locale = "en";
+
+export const LOCATIONS_PATH = "/locations";
+export const MAX_LOCATIONS_FOUND = 5;
+export const SEARCH_TERM_MAX_LENGTH = 100;
+
+export const LocationsQuerySchema = v.object({
+  name: v.pipe(
+    v.string(),
+    v.trim(),
+    v.nonEmpty(),
+    v.maxLength(SEARCH_TERM_MAX_LENGTH),
+  ),
+  locale: v.picklist(LOCALES),
+});
+
+export type LocationsQuery = v.InferOutput<typeof LocationsQuerySchema>;
+
+const PlaceNameSchema = v.pipe(v.string(), v.nonEmpty());
+
+export const FoundLocationSchema = v.object({
+  name: PlaceNameSchema,
+  region: v.nullable(PlaceNameSchema),
+  country: v.nullable(PlaceNameSchema),
+  latitude: coordinate(LATITUDE_RANGE),
+  longitude: coordinate(LONGITUDE_RANGE),
+});
+
+export type FoundLocation = v.InferOutput<typeof FoundLocationSchema>;
+
+export const LocationsResponseSchema = v.object({
+  locations: v.pipe(
+    v.array(FoundLocationSchema),
+    v.maxLength(MAX_LOCATIONS_FOUND),
+  ),
+});
+
+export type LocationsResponse = v.InferOutput<typeof LocationsResponseSchema>;

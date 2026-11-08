@@ -2,12 +2,21 @@ import recordedCurrentConditions from "./current-nieuwegein.json" with { type: "
 import recordedDailyForecast from "./daily-nieuwegein.json" with { type: "json" };
 import recordedHourlyForecast from "./hourly-nieuwegein.json" with { type: "json" };
 import recordedReverseGeocoding from "./reverse-nieuwegein.json" with { type: "json" };
+import recordedParijsSearch from "./search-parijs.json" with { type: "json" };
+import recordedParisSearch from "./search-paris.json" with { type: "json" };
+import recordedSearchWithoutResults from "./search-parjs.json" with { type: "json" };
 
 export const RECORDED_RESPONSES = {
   current: recordedCurrentConditions,
   hourly: recordedHourlyForecast,
   daily: recordedDailyForecast,
   reverseGeocoding: recordedReverseGeocoding,
+} as const;
+
+export const RECORDED_SEARCHES = {
+  paris: recordedParisSearch,
+  parijs: recordedParijsSearch,
+  noResults: recordedSearchWithoutResults,
 } as const;
 
 const NOT_RECORDED_STATUS = 404;
