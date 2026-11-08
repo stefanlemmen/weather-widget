@@ -8536,9 +8536,10 @@
       </div>
     </section>
     <section class="specimen">
-      <h3>Location denied</h3>
+      <h3>Search failed</h3>
       <p class="sheet-note">
-        Denied, timeout and unavailable each get their own sentence.
+        The Proxy or the Search provider didn’t answer. The query stays in the
+        field so the visitor can search again.
       </p>
       <div class="pair">
         <figure class="scheme-light">
@@ -8554,6 +8555,126 @@
                 <div class="picker-row">
                   <input
                     id="p27-q"
+                    type="search"
+                    name="q"
+                    value="Utrecht"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="submit" class="button button-primary">
+                    Search
+                  </button>
+                </div>
+              </form>
+              <button type="button" class="button button-secondary locate">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  class="lucide lucide-navigation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Use my location
+              </button>
+              <p class="picker-message" role="status">
+                Search isn’t working right now. Try again in a moment.
+              </p>
+
+              <p class="credit">
+                Search by <a href="https://open-meteo.com/">Open-Meteo</a>,
+                place names from
+                <a href="https://www.geonames.org/">GeoNames</a> (<a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  >CC BY 4.0</a
+                >)
+              </p>
+            </div>
+          </div>
+        </figure>
+        <figure class="scheme-dark">
+          <figcaption>Dark</figcaption>
+          <div class="weather" style="inline-size: 390px">
+            <div class="picker">
+              <form
+                class="picker-search"
+                role="search"
+                aria-label="Choose a location"
+              >
+                <label for="p28-q">Location</label>
+                <div class="picker-row">
+                  <input
+                    id="p28-q"
+                    type="search"
+                    name="q"
+                    value="Utrecht"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="submit" class="button button-primary">
+                    Search
+                  </button>
+                </div>
+              </form>
+              <button type="button" class="button button-secondary locate">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  class="lucide lucide-navigation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Use my location
+              </button>
+              <p class="picker-message" role="status">
+                Search isn’t working right now. Try again in a moment.
+              </p>
+
+              <p class="credit">
+                Search by <a href="https://open-meteo.com/">Open-Meteo</a>,
+                place names from
+                <a href="https://www.geonames.org/">GeoNames</a> (<a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  >CC BY 4.0</a
+                >)
+              </p>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+    <section class="specimen">
+      <h3>Location denied</h3>
+      <p class="sheet-note">
+        The visitor or the browser blocked location access.
+      </p>
+      <div class="pair">
+        <figure class="scheme-light">
+          <figcaption>Light</figcaption>
+          <div class="weather" style="inline-size: 390px">
+            <div class="picker">
+              <form
+                class="picker-search"
+                role="search"
+                aria-label="Choose a location"
+              >
+                <label for="p29-q">Location</label>
+                <div class="picker-row">
+                  <input
+                    id="p29-q"
                     type="search"
                     name="q"
                     value=""
@@ -8607,10 +8728,10 @@
                 role="search"
                 aria-label="Choose a location"
               >
-                <label for="p28-q">Location</label>
+                <label for="p30-q">Location</label>
                 <div class="picker-row">
                   <input
-                    id="p28-q"
+                    id="p30-q"
                     type="search"
                     name="q"
                     value=""
@@ -8658,6 +8779,247 @@
       </div>
     </section>
     <section class="specimen">
+      <h3>Location timed out</h3>
+      <p class="sheet-note">The device didn’t report a position in time.</p>
+      <div class="pair">
+        <figure class="scheme-light">
+          <figcaption>Light</figcaption>
+          <div class="weather" style="inline-size: 390px">
+            <div class="picker">
+              <form
+                class="picker-search"
+                role="search"
+                aria-label="Choose a location"
+              >
+                <label for="p31-q">Location</label>
+                <div class="picker-row">
+                  <input
+                    id="p31-q"
+                    type="search"
+                    name="q"
+                    value=""
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="submit" class="button button-primary">
+                    Search
+                  </button>
+                </div>
+              </form>
+              <button type="button" class="button button-secondary locate">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  class="lucide lucide-navigation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Use my location
+              </button>
+              <p class="picker-message" role="status">
+                Finding your location took too long. Try again.
+              </p>
+
+              <p class="credit">
+                Search by <a href="https://open-meteo.com/">Open-Meteo</a>,
+                place names from
+                <a href="https://www.geonames.org/">GeoNames</a> (<a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  >CC BY 4.0</a
+                >)
+              </p>
+            </div>
+          </div>
+        </figure>
+        <figure class="scheme-dark">
+          <figcaption>Dark</figcaption>
+          <div class="weather" style="inline-size: 390px">
+            <div class="picker">
+              <form
+                class="picker-search"
+                role="search"
+                aria-label="Choose a location"
+              >
+                <label for="p32-q">Location</label>
+                <div class="picker-row">
+                  <input
+                    id="p32-q"
+                    type="search"
+                    name="q"
+                    value=""
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="submit" class="button button-primary">
+                    Search
+                  </button>
+                </div>
+              </form>
+              <button type="button" class="button button-secondary locate">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  class="lucide lucide-navigation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Use my location
+              </button>
+              <p class="picker-message" role="status">
+                Finding your location took too long. Try again.
+              </p>
+
+              <p class="credit">
+                Search by <a href="https://open-meteo.com/">Open-Meteo</a>,
+                place names from
+                <a href="https://www.geonames.org/">GeoNames</a> (<a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  >CC BY 4.0</a
+                >)
+              </p>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+    <section class="specimen">
+      <h3>Location unavailable</h3>
+      <p class="sheet-note">
+        The device has no position to give, for example without GPS or network
+        location.
+      </p>
+      <div class="pair">
+        <figure class="scheme-light">
+          <figcaption>Light</figcaption>
+          <div class="weather" style="inline-size: 390px">
+            <div class="picker">
+              <form
+                class="picker-search"
+                role="search"
+                aria-label="Choose a location"
+              >
+                <label for="p33-q">Location</label>
+                <div class="picker-row">
+                  <input
+                    id="p33-q"
+                    type="search"
+                    name="q"
+                    value=""
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="submit" class="button button-primary">
+                    Search
+                  </button>
+                </div>
+              </form>
+              <button type="button" class="button button-secondary locate">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  class="lucide lucide-navigation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Use my location
+              </button>
+              <p class="picker-message" role="status">
+                Your device couldn’t find its location. Try again or search by
+                name.
+              </p>
+
+              <p class="credit">
+                Search by <a href="https://open-meteo.com/">Open-Meteo</a>,
+                place names from
+                <a href="https://www.geonames.org/">GeoNames</a> (<a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  >CC BY 4.0</a
+                >)
+              </p>
+            </div>
+          </div>
+        </figure>
+        <figure class="scheme-dark">
+          <figcaption>Dark</figcaption>
+          <div class="weather" style="inline-size: 390px">
+            <div class="picker">
+              <form
+                class="picker-search"
+                role="search"
+                aria-label="Choose a location"
+              >
+                <label for="p34-q">Location</label>
+                <div class="picker-row">
+                  <input
+                    id="p34-q"
+                    type="search"
+                    name="q"
+                    value=""
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                  <button type="submit" class="button button-primary">
+                    Search
+                  </button>
+                </div>
+              </form>
+              <button type="button" class="button button-secondary locate">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  class="lucide lucide-navigation"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Use my location
+              </button>
+              <p class="picker-message" role="status">
+                Your device couldn’t find its location. Try again or search by
+                name.
+              </p>
+
+              <p class="credit">
+                Search by <a href="https://open-meteo.com/">Open-Meteo</a>,
+                place names from
+                <a href="https://www.geonames.org/">GeoNames</a> (<a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  >CC BY 4.0</a
+                >)
+              </p>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+    <section class="specimen">
       <h3>Narrow sidebar</h3>
       <p class="sheet-note">
         Below 20rem the Search button drops under the field.
@@ -8672,10 +9034,10 @@
                 role="search"
                 aria-label="Choose a location"
               >
-                <label for="p29-q">Location</label>
+                <label for="p35-q">Location</label>
                 <div class="picker-row">
                   <input
-                    id="p29-q"
+                    id="p35-q"
                     type="search"
                     name="q"
                     value="Paris"
@@ -8747,10 +9109,10 @@
                 role="search"
                 aria-label="Choose a location"
               >
-                <label for="p30-q">Location</label>
+                <label for="p36-q">Location</label>
                 <div class="picker-row">
                   <input
-                    id="p30-q"
+                    id="p36-q"
                     type="search"
                     name="q"
                     value="Paris"
