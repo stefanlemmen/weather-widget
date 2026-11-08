@@ -6,25 +6,50 @@ import {
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
+import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { type: "json" };
+import recordedReverseGeocoding from "../fixtures/reverse-nieuwegein.json" with { type: "json" };
 import { createProxy } from "../src/index.ts";
 
 const TEST_KEY = "test-key-that-must-stay-secret";
 const liveEnvironment = { OPENWEATHER_API_KEY: TEST_KEY };
-const RECORDED_TEMPERATURE = 5.09;
+
+const CURRENT_PATH = "/data/4.0/onecall/current";
+const HOURLY_PATH = "/data/4.0/onecall/timeline/1h";
+const REVERSE_GEOCODING_PATH = "/geo/1.0/reverse";
+
+const RECORDED_NIEUWEGEIN_FORECAST = {
+  location: { name: "Nieuwegein", timeZone: "Europe/Amsterdam" },
+  parts: {
+    current: {
+      status: "ok",
+      data: {
+        temperatureCelsius: 8.85,
+        feelsLikeCelsius: 6.93,
+        windSpeedMetresPerSecond: 3.35,
+        windDirectionDegrees: 198,
+        precipitationChance: 0.85,
+        observedAt: "2026-11-08T09:41:44.000Z",
+      },
+    },
+  },
+};
 
 const jsonResponse = (body: unknown, status = 200) =>
   Response.json(body, { status });
 
-const recordingFetch = (respond: () => Promise<Response>) => {
+type Respond = (url: URL) => Promise<Response>;
+
+const recordingFetch = (respond: Respond) => {
   const requestedUrls: URL[] = [];
   const fetch: typeof globalThis.fetch = (input) => {
-    requestedUrls.push(new URL(input instanceof Request ? input.url : input));
-    return respond();
+    const url = new URL(input instanceof Request ? input.url : input);
+    requestedUrls.push(url);
+    return respond(url);
   };
   return { fetch, requestedUrls };
 };
 
-const proxyAnswering = (respond: () => Promise<Response>) => {
+const proxyAnswering = (respond: Respond) => {
   const weatherProvider = recordingFetch(respond);
   const proxy = createProxy(liveEnvironment, {
     fetch: weatherProvider.fetch,
@@ -32,10 +57,24 @@ const proxyAnswering = (respond: () => Promise<Response>) => {
   return { proxy, requestedUrls: weatherProvider.requestedUrls };
 };
 
-const healthyProxy = () =>
-  proxyAnswering(() =>
-    Promise.resolve(jsonResponse(recordedCurrentConditions)),
-  );
+const RECORDED_RESPONSES: Readonly<Record<string, unknown>> = {
+  [CURRENT_PATH]: recordedCurrentConditions,
+  [HOURLY_PATH]: recordedHourlyForecast,
+  [REVERSE_GEOCODING_PATH]: recordedReverseGeocoding,
+};
+
+const answerFromRecordings: Respond = (url) =>
+  Promise.resolve(jsonResponse(RECORDED_RESPONSES[url.pathname], 200));
+
+const answerFromRecordingsExcept =
+  (pathname: string, respond: Respond): Respond =>
+  (url) =>
+    url.pathname === pathname ? respond(url) : answerFromRecordings(url);
+
+const healthyProxy = () => proxyAnswering(answerFromRecordings);
+
+const requestedPath = (urls: readonly URL[], pathname: string) =>
+  urls.find((url) => url.pathname === pathname);
 
 const expectProblemDetails = async (response: Response, status: number) => {
   expect(response.status).toBe(status);
@@ -49,7 +88,7 @@ const expectProblemDetails = async (response: Response, status: number) => {
 };
 
 describe("the forecast route", () => {
-  it("answers with the current temperature from the Weather provider", async () => {
+  it("answers with the Location and its Current conditions from the Weather provider", async () => {
     const { proxy } = healthyProxy();
 
     const response = await proxy.request(
@@ -57,31 +96,82 @@ describe("the forecast route", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(v.parse(ForecastResponseSchema, await response.json())).toEqual({
-      parts: {
-        current: {
-          status: "ok",
-          data: { temperatureCelsius: RECORDED_TEMPERATURE },
-        },
-      },
-    });
+    expect(v.parse(ForecastResponseSchema, await response.json())).toEqual(
+      RECORDED_NIEUWEGEIN_FORECAST,
+    );
   });
 
-  it("asks the Weather provider's current endpoint for metric data at coordinates rounded to 2 decimals", async () => {
+  it.each([
+    ["current", CURRENT_PATH],
+    ["hourly", HOURLY_PATH],
+  ])(
+    "asks the Weather provider's %s endpoint for metric data at coordinates rounded to 2 decimals",
+    async (_, pathname) => {
+      const { proxy, requestedUrls } = healthyProxy();
+
+      await proxy.request("/api/forecast?latitude=52.0349&longitude=-5.0751");
+
+      const url = requestedPath(requestedUrls, pathname);
+      expect(url?.origin).toBe("https://api.openweathermap.org");
+      expect(url?.searchParams.get("lat")).toBe("52.03");
+      expect(url?.searchParams.get("lon")).toBe("-5.08");
+      expect(url?.searchParams.get("units")).toBe("metric");
+      expect(url?.searchParams.get("appid")).toBe(TEST_KEY);
+    },
+  );
+
+  it("asks reverse geocoding for one name at coordinates rounded to 2 decimals", async () => {
     const { proxy, requestedUrls } = healthyProxy();
 
     await proxy.request("/api/forecast?latitude=52.0349&longitude=-5.0751");
 
-    expect(requestedUrls).toHaveLength(1);
-    const [url] = requestedUrls;
-    expect(`${url?.origin ?? ""}${url?.pathname ?? ""}`).toBe(
-      "https://api.openweathermap.org/data/4.0/onecall/current",
-    );
+    const url = requestedPath(requestedUrls, REVERSE_GEOCODING_PATH);
+    expect(url?.origin).toBe("https://api.openweathermap.org");
     expect(url?.searchParams.get("lat")).toBe("52.03");
     expect(url?.searchParams.get("lon")).toBe("-5.08");
-    expect(url?.searchParams.get("units")).toBe("metric");
+    expect(url?.searchParams.get("limit")).toBe("1");
     expect(url?.searchParams.get("appid")).toBe(TEST_KEY);
   });
+
+  it("asks the Weather provider once per endpoint", async () => {
+    const { proxy, requestedUrls } = healthyProxy();
+
+    await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
+
+    expect(requestedUrls.map((url) => url.pathname).sort()).toEqual(
+      [CURRENT_PATH, HOURLY_PATH, REVERSE_GEOCODING_PATH].sort(),
+    );
+  });
+
+  it.each([
+    [
+      "fails",
+      () => Promise.resolve(jsonResponse({ cod: 500, message: "oops" }, 500)),
+    ],
+    ["finds no name", () => Promise.resolve(jsonResponse([]))],
+    [
+      "answers with an unexpected shape",
+      () => Promise.resolve(jsonResponse({ name: 5 })),
+    ],
+    ["can't be reached", () => Promise.reject(new TypeError("fetch failed"))],
+  ])(
+    "answers without a Location name and keeps the Forecast when reverse geocoding %s",
+    async (_, respond) => {
+      const { proxy } = proxyAnswering(
+        answerFromRecordingsExcept(REVERSE_GEOCODING_PATH, respond),
+      );
+
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08",
+      );
+
+      expect(response.status).toBe(200);
+      expect(v.parse(ForecastResponseSchema, await response.json())).toEqual({
+        ...RECORDED_NIEUWEGEIN_FORECAST,
+        location: { ...RECORDED_NIEUWEGEIN_FORECAST.location, name: null },
+      });
+    },
+  );
 
   it("keeps the Weather provider's key out of the response", async () => {
     const { proxy } = healthyProxy();
@@ -138,7 +228,7 @@ describe("the forecast route", () => {
     expect(response.status).toBe(200);
   });
 
-  it.each([
+  const PROVIDER_FAILURES: readonly (readonly [string, Respond])[] = [
     [
       "answers with a server error",
       () =>
@@ -169,10 +259,30 @@ describe("the forecast route", () => {
       () => Promise.resolve(new Response("<html>oops</html>")),
     ],
     ["can't be reached", () => Promise.reject(new TypeError("fetch failed"))],
-  ])(
-    "answers 503 Problem Details when the Weather provider %s",
-    async (_, respond) => {
-      const { proxy } = proxyAnswering(respond);
+  ];
+
+  it.each([
+    ["a negative wind speed", CURRENT_PATH, { wind_speed: -1 }],
+    ["a wind direction above 360 degrees", CURRENT_PATH, { wind_deg: 361 }],
+    ["a chance of precipitation above 1", HOURLY_PATH, { pop: 1.5 }],
+  ] as const)(
+    "answers 503 Problem Details when the Weather provider reports %s",
+    async (_, pathname, outOfRange) => {
+      const recorded =
+        pathname === CURRENT_PATH
+          ? recordedCurrentConditions
+          : recordedHourlyForecast;
+      const [first, ...rest] = recorded.data;
+      const { proxy } = proxyAnswering(
+        answerFromRecordingsExcept(pathname, () =>
+          Promise.resolve(
+            jsonResponse({
+              ...recorded,
+              data: [{ ...first, ...outOfRange }, ...rest],
+            }),
+          ),
+        ),
+      );
 
       const response = await proxy.request(
         "/api/forecast?latitude=52.03&longitude=5.08",
@@ -182,15 +292,63 @@ describe("the forecast route", () => {
     },
   );
 
-  it("answers 503 Problem Details when the Weather provider doesn't answer in time", async () => {
-    const neverAnswering: typeof globalThis.fetch = (_, init) =>
-      new Promise((_resolve, reject) => {
+  const FORECAST_ENDPOINTS = [
+    ["current", CURRENT_PATH],
+    ["hourly", HOURLY_PATH],
+  ] as const;
+
+  it.each(
+    FORECAST_ENDPOINTS.flatMap(([endpoint, pathname]) =>
+      PROVIDER_FAILURES.map(
+        ([failure, respond]) => [endpoint, failure, pathname, respond] as const,
+      ),
+    ),
+  )(
+    "answers 503 Problem Details when the Weather provider's %s endpoint %s",
+    async (_endpoint, _failure, pathname, respond) => {
+      const { proxy } = proxyAnswering(
+        answerFromRecordingsExcept(pathname, respond),
+      );
+
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08",
+      );
+
+      await expectProblemDetails(response, 503);
+    },
+  );
+
+  const timingOut =
+    (pathname: string): typeof globalThis.fetch =>
+    (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      if (url.pathname !== pathname) return answerFromRecordings(url);
+      return new Promise((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => {
           reject(new DOMException("The operation timed out.", "TimeoutError"));
         });
       });
+    };
+
+  it.each(FORECAST_ENDPOINTS)(
+    "answers 503 Problem Details when the Weather provider's %s endpoint doesn't answer in time",
+    async (_, pathname) => {
+      const proxy = createProxy(liveEnvironment, {
+        fetch: timingOut(pathname),
+        weatherProviderTimeoutMs: 10,
+      });
+
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08",
+      );
+
+      await expectProblemDetails(response, 503);
+    },
+  );
+
+  it("answers without a Location name when reverse geocoding doesn't answer in time", async () => {
     const proxy = createProxy(liveEnvironment, {
-      fetch: neverAnswering,
+      fetch: timingOut(REVERSE_GEOCODING_PATH),
       weatherProviderTimeoutMs: 10,
     });
 
@@ -198,7 +356,10 @@ describe("the forecast route", () => {
       "/api/forecast?latitude=52.03&longitude=5.08",
     );
 
-    await expectProblemDetails(response, 503);
+    expect(response.status).toBe(200);
+    expect(
+      v.parse(ForecastResponseSchema, await response.json()).location.name,
+    ).toBeNull();
   });
 });
 
@@ -216,14 +377,9 @@ describe("the Proxy in fixture mode", () => {
       "/api/forecast?latitude=52.03&longitude=5.08",
     );
 
-    expect(v.parse(ForecastResponseSchema, await response.json())).toEqual({
-      parts: {
-        current: {
-          status: "ok",
-          data: { temperatureCelsius: RECORDED_TEMPERATURE },
-        },
-      },
-    });
+    expect(v.parse(ForecastResponseSchema, await response.json())).toEqual(
+      RECORDED_NIEUWEGEIN_FORECAST,
+    );
     expect(weatherProvider.requestedUrls).toHaveLength(0);
   });
 
