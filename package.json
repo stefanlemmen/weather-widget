@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "pnpm --recursive --parallel --if-present dev",
     "build": "pnpm --recursive --if-present build && node scripts/write-vercel-output.ts",
-    "typecheck": "tsc --noEmit && pnpm --recursive --if-present typecheck",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p e2e && pnpm --recursive --if-present typecheck",
     "lint": "eslint --flag unstable_native_nodejs_ts_config .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
