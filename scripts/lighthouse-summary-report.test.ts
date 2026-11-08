@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isLighthouseRunFile,
   renderLighthouseSummary,
   type LighthouseRun,
 } from "./lighthouse-summary-report.ts";
@@ -10,6 +11,7 @@ const REACT = "http://localhost:4173/react/";
 const run = (
   finalUrl: string,
   scores: Readonly<Record<string, number | null>>,
+  audits: LighthouseRun["audits"] = {},
 ): LighthouseRun => ({
   finalUrl,
   categories: Object.fromEntries(
@@ -18,6 +20,31 @@ const run = (
       { title: id === "seo" ? "SEO" : "Performance", score },
     ]),
   ),
+  audits,
+});
+
+const measured = ({
+  lcp,
+  cls,
+  tbt,
+  fcp,
+  speedIndex,
+  scriptBytes,
+  totalBytes,
+}: Readonly<Record<string, number>>): LighthouseRun["audits"] => ({
+  "largest-contentful-paint": { numericValue: lcp },
+  "cumulative-layout-shift": { numericValue: cls },
+  "total-blocking-time": { numericValue: tbt },
+  "first-contentful-paint": { numericValue: fcp },
+  "speed-index": { numericValue: speedIndex },
+  "resource-summary": {
+    details: {
+      items: [
+        { resourceType: "total", transferSize: totalBytes ?? 0 },
+        { resourceType: "script", transferSize: scriptBytes ?? 0 },
+      ],
+    },
+  },
 });
 
 const passingResults = {
@@ -58,7 +85,7 @@ describe("the Lighthouse job summary", () => {
       ],
     });
 
-    expect(summary).toContain("Median score of 3 runs per URL.");
+    expect(summary).toContain("Median of 3 runs per URL.");
     expect(summary).toContain("| /vanilla/ | 90 | 100 |");
   });
 
@@ -73,6 +100,54 @@ describe("the Lighthouse job summary", () => {
 
     expect(summary).toContain("| /vanilla/ | 100 | 100 |");
     expect(summary).toContain("| /react/ | 80 | 100 | – |");
+  });
+
+  it("shows the metrics behind the Performance score and the page weight per URL", () => {
+    const summary = renderLighthouseSummary({
+      ...passingResults,
+      runs: [
+        run(
+          VANILLA,
+          { performance: 1 },
+          measured({
+            lcp: 609.5888,
+            cls: 0.0421,
+            tbt: 12.4,
+            fcp: 512,
+            speedIndex: 1480,
+            scriptBytes: 23_453,
+            totalBytes: 25_171,
+          }),
+        ),
+      ],
+    });
+
+    expect(summary).toContain(
+      "| URL | LCP | CLS | TBT | FCP | Speed Index | Script size | Total size |",
+    );
+    expect(summary).toContain(
+      "| /vanilla/ | 0.6 s | 0.042 | 12 ms | 0.5 s | 1.5 s | 22.9 KiB | 24.6 KiB |",
+    );
+  });
+
+  it("shows the median of each metric across the runs for a URL", () => {
+    const summary = renderLighthouseSummary({
+      ...passingResults,
+      runs: [3000, 1200, 2000].map((lcp) =>
+        run(VANILLA, { performance: 1 }, measured({ lcp })),
+      ),
+    });
+
+    expect(summary).toMatch(/\| \/vanilla\/ \| 2 s \|/);
+  });
+
+  it("shows a dash for a metric Lighthouse couldn't measure", () => {
+    const summary = renderLighthouseSummary({
+      ...passingResults,
+      runs: [run(VANILLA, { performance: 1 })],
+    });
+
+    expect(summary).toContain("| /vanilla/ | – | – | – | – | – | – | – |");
   });
 
   it("shows a dash for a category Lighthouse couldn't score", () => {
@@ -145,5 +220,23 @@ describe("the Lighthouse job summary", () => {
 
   it("ends with a blank line so the next summary on the page starts its own block", () => {
     expect(renderLighthouseSummary(passingResults).endsWith("\n\n")).toBe(true);
+  });
+});
+
+describe("a Lighthouse run file in .lighthouseci/", () => {
+  it.each(["lhr-1762592000000.json", "lhr-1762592000000-123456.json"])(
+    "is recognised by the name %s",
+    (name) => {
+      expect(isLighthouseRunFile(name)).toBe(true);
+    },
+  );
+
+  it.each([
+    "lhr-1762592000000.html",
+    "lhr-1762592000000-123456.html",
+    "assertion-results.json",
+    "links.json",
+  ])("isn't confused with %s", (name) => {
+    expect(isLighthouseRunFile(name)).toBe(false);
   });
 });

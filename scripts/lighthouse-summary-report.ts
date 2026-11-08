@@ -1,12 +1,34 @@
 import * as v from "valibot";
 import { markdownTable } from "./markdown.ts";
 
+const NumericAuditSchema = v.optional(
+  v.object({ numericValue: v.optional(v.number()) }),
+);
+
 export const LighthouseRunSchema = v.object({
   finalUrl: v.string(),
   categories: v.record(
     v.string(),
     v.object({ title: v.string(), score: v.nullable(v.number()) }),
   ),
+  audits: v.object({
+    "largest-contentful-paint": NumericAuditSchema,
+    "cumulative-layout-shift": NumericAuditSchema,
+    "total-blocking-time": NumericAuditSchema,
+    "first-contentful-paint": NumericAuditSchema,
+    "speed-index": NumericAuditSchema,
+    "resource-summary": v.optional(
+      v.object({
+        details: v.optional(
+          v.object({
+            items: v.array(
+              v.object({ resourceType: v.string(), transferSize: v.number() }),
+            ),
+          }),
+        ),
+      }),
+    ),
+  }),
 });
 
 export type LighthouseRun = v.InferOutput<typeof LighthouseRunSchema>;
@@ -46,6 +68,86 @@ const groupByUrl = (runs: readonly LighthouseRun[]) => {
 
 const median = (values: readonly number[]) =>
   values.toSorted((a, b) => a - b)[Math.floor(values.length / 2)];
+
+type NumericAuditId = Exclude<
+  keyof LighthouseRun["audits"],
+  "resource-summary"
+>;
+
+const BYTES_PER_KIBIBYTE = 1024;
+const MILLISECONDS_PER_SECOND = 1000;
+
+const formatNumber = (value: number, maximumFractionDigits: number) =>
+  new Intl.NumberFormat("en", { maximumFractionDigits }).format(value);
+
+const seconds = (milliseconds: number) =>
+  `${formatNumber(milliseconds / MILLISECONDS_PER_SECOND, 1)} s`;
+const milliseconds = (value: number) => `${formatNumber(value, 0)} ms`;
+const unitless = (value: number) => formatNumber(value, 3);
+const kibibytes = (bytes: number) =>
+  `${formatNumber(bytes / BYTES_PER_KIBIBYTE, 1)} KiB`;
+
+const numericValueOf = (id: NumericAuditId) => (run: LighthouseRun) =>
+  run.audits[id]?.numericValue;
+
+const transferSizeOf = (resourceType: string) => (run: LighthouseRun) =>
+  run.audits["resource-summary"]?.details?.items.find(
+    (item) => item.resourceType === resourceType,
+  )?.transferSize;
+
+const METRICS: readonly {
+  readonly title: string;
+  readonly valueOf: (run: LighthouseRun) => number | undefined;
+  readonly format: (value: number) => string;
+}[] = [
+  {
+    title: "LCP",
+    valueOf: numericValueOf("largest-contentful-paint"),
+    format: seconds,
+  },
+  {
+    title: "CLS",
+    valueOf: numericValueOf("cumulative-layout-shift"),
+    format: unitless,
+  },
+  {
+    title: "TBT",
+    valueOf: numericValueOf("total-blocking-time"),
+    format: milliseconds,
+  },
+  {
+    title: "FCP",
+    valueOf: numericValueOf("first-contentful-paint"),
+    format: seconds,
+  },
+  {
+    title: "Speed Index",
+    valueOf: numericValueOf("speed-index"),
+    format: seconds,
+  },
+  {
+    title: "Script size",
+    valueOf: transferSizeOf("script"),
+    format: kibibytes,
+  },
+  { title: "Total size", valueOf: transferSizeOf("total"), format: kibibytes },
+];
+
+const metricCell = (
+  runs: readonly LighthouseRun[],
+  metric: (typeof METRICS)[number],
+) => {
+  const values = runs
+    .map(metric.valueOf)
+    .filter((value) => value !== undefined);
+  const value = median(values);
+  return value === undefined ? NO_VALUE : metric.format(value);
+};
+
+const RUN_FILE_PATTERN = /^lhr-\d+(-\d+)?\.json$/;
+
+export const isLighthouseRunFile = (name: string) =>
+  RUN_FILE_PATTERN.test(name);
 
 const pathOf = (url: string) => new URL(url).pathname;
 
@@ -107,7 +209,7 @@ export const renderLighthouseSummary = (results: LighthouseResults) => {
   return [
     "## Lighthouse",
     "",
-    `Median score of ${String(runsPerUrl)} runs per URL.`,
+    `Median of ${String(runsPerUrl)} runs per URL.`,
     "",
     markdownTable(
       ["URL", ...categories.map(([, category]) => category.title), "Report"],
@@ -119,6 +221,14 @@ export const renderLighthouseSummary = (results: LighthouseResults) => {
           report ? `[report](${report})` : NO_VALUE,
         ];
       }),
+    ),
+    "",
+    markdownTable(
+      ["URL", ...METRICS.map((metric) => metric.title)],
+      [...runsByUrl].map(([url, runs]) => [
+        urlCell(url, results.sourceUrl),
+        ...METRICS.map((metric) => metricCell(runs, metric)),
+      ]),
     ),
     "",
     ...budgetLines(results),

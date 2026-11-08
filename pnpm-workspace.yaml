@@ -2,6 +2,6 @@ packages:
   - packages/*
   - hosts/*
 
-minimumReleaseAge: 10080
+minimumReleaseAge: 4320
 strictDepBuilds: true
 saveExact: true
