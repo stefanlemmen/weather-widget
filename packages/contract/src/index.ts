@@ -36,9 +36,21 @@ export type ForecastQuery = v.InferOutput<typeof ForecastQuerySchema>;
 
 export const CurrentConditionsSchema = v.object({
   temperatureCelsius: v.number(),
+  feelsLikeCelsius: v.number(),
+  windSpeedMetresPerSecond: v.pipe(v.number(), v.minValue(0)),
+  windDirectionDegrees: v.pipe(v.number(), v.minValue(0), v.maxValue(360)),
+  precipitationChance: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+  observedAt: v.pipe(v.string(), v.isoTimestamp()),
 });
 
 export type CurrentConditions = v.InferOutput<typeof CurrentConditionsSchema>;
+
+export const LocationSchema = v.object({
+  name: v.nullable(v.pipe(v.string(), v.nonEmpty())),
+  timeZone: v.pipe(v.string(), v.nonEmpty()),
+});
+
+export type Location = v.InferOutput<typeof LocationSchema>;
 
 const forecastPartResult = <TData extends v.GenericSchema>(data: TData) =>
   v.variant("status", [
@@ -47,6 +59,7 @@ const forecastPartResult = <TData extends v.GenericSchema>(data: TData) =>
   ]);
 
 export const ForecastResponseSchema = v.object({
+  location: LocationSchema,
   parts: v.object({
     current: forecastPartResult(CurrentConditionsSchema),
   }),

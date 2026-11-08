@@ -1,5 +1,55 @@
+export const COMPASS_POINTS = [
+  "N",
+  "NNE",
+  "NE",
+  "ENE",
+  "E",
+  "ESE",
+  "SE",
+  "SSE",
+  "S",
+  "SSW",
+  "SW",
+  "WSW",
+  "W",
+  "WNW",
+  "NW",
+  "NNW",
+] as const;
+
+export type CompassPoint = (typeof COMPASS_POINTS)[number];
+
 export const MESSAGES = {
   loading: "Loading forecast",
   forecastUnavailable: "Forecast unavailable",
   tryAgain: "Try again",
+  feelsLike: "Feels like",
+  wind: "Wind",
+  chanceOfPrecipitation: "Chance of precipitation",
+  calm: "Calm",
+  updatedAt: "Updated at",
+  weatherDataFrom: "Weather data from",
+  weatherProviderName: "OpenWeather",
+  windFrom: (speed: string, direction: string) =>
+    `${speed} from the ${direction}`,
+  coordinateHeard: (degrees: string, direction: string) =>
+    `${degrees} degrees ${direction}`,
+  compassPoints: {
+    N: "north",
+    NNE: "north-northeast",
+    NE: "northeast",
+    ENE: "east-northeast",
+    E: "east",
+    ESE: "east-southeast",
+    SE: "southeast",
+    SSE: "south-southeast",
+    S: "south",
+    SSW: "south-southwest",
+    SW: "southwest",
+    WSW: "west-southwest",
+    W: "west",
+    WNW: "west-northwest",
+    NW: "northwest",
+    NNW: "north-northwest",
+  } satisfies Record<CompassPoint, string>,
 } as const;

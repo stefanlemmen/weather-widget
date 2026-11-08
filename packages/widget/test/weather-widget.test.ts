@@ -1,5 +1,7 @@
 import type {
+  CurrentConditions,
   ForecastResponse,
+  Location,
   ProblemDetails,
 } from "@weather-widget/contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,11 +10,35 @@ import "../src/index.ts";
 
 const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
 
-const forecastWithTemperature = (
-  temperatureCelsius: number,
+const RECORDED_CONDITIONS: CurrentConditions = {
+  temperatureCelsius: 8.85,
+  feelsLikeCelsius: 6.93,
+  windSpeedMetresPerSecond: 3.35,
+  windDirectionDegrees: 198,
+  precipitationChance: 0.85,
+  observedAt: "2026-11-08T09:41:44.000Z",
+};
+
+const NIEUWEGEIN_LOCATION: Location = {
+  name: "Nieuwegein",
+  timeZone: "Europe/Amsterdam",
+};
+
+const forecastWith = (
+  conditions: Partial<CurrentConditions> = {},
+  location: Partial<Location> = {},
 ): ForecastResponse => ({
-  parts: { current: { status: "ok", data: { temperatureCelsius } } },
+  location: { ...NIEUWEGEIN_LOCATION, ...location },
+  parts: {
+    current: {
+      status: "ok",
+      data: { ...RECORDED_CONDITIONS, ...conditions },
+    },
+  },
 });
+
+const forecastWithTemperature = (temperatureCelsius: number) =>
+  forecastWith({ temperatureCelsius });
 
 const unavailable: ProblemDetails = {
   type: "about:blank",
@@ -128,12 +154,12 @@ describe("<weather-widget>", () => {
   it('fetches again when the visitor presses "Try again"', async () => {
     fakeProxy
       .mockImplementationOnce(() => respondWith(unavailable, 503))
-      .mockImplementationOnce(() => respondWith(forecastWithTemperature(7)));
+      .mockImplementationOnce(() => respondWith(forecastWithTemperature(11)));
     renderWidget(NIEUWEGEIN);
 
     await page.getByRole("button", { name: "Try again" }).click();
 
-    await expect.element(page.getByText("7°C")).toBeVisible();
+    await expect.element(page.getByText("11°C")).toBeVisible();
     expect(fakeProxy).toHaveBeenCalledTimes(2);
   });
 
@@ -190,9 +216,13 @@ describe("<weather-widget>", () => {
     widget.latitude = 52.03;
     widget.longitude = 5.08;
     widget.proxyUrl = "https://proxy.example/api";
+    widget.locationName = "Home";
     document.body.append(widget);
 
     await expect.element(page.getByText("5°C")).toBeVisible();
+    await expect
+      .element(page.getByRole("heading", { level: 2 }))
+      .toHaveTextContent("Home");
     expect(requestedUrls()[0]?.href).toBe(
       "https://proxy.example/api/forecast?latitude=52.03&longitude=5.08",
     );
@@ -288,5 +318,226 @@ describe("<weather-widget>", () => {
       .element(page.getByRole("button", { name: "Try again" }))
       .toBeVisible();
     expect(liveRegion.element().querySelector("button")).toBeNull();
+  });
+
+  describe("Current conditions", () => {
+    beforeEach(() => {
+      fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+    });
+
+    it("shows the feels-like temperature, wind and chance of precipitation", async () => {
+      renderWidget(NIEUWEGEIN);
+
+      await expect.element(page.getByText("Feels like")).toBeVisible();
+      expect(
+        page.getByText("Feels like").element().nextElementSibling,
+      ).toHaveTextContent("7°C");
+      expect(
+        page.getByText("Wind", { exact: true }).element().nextElementSibling,
+      ).toHaveTextContent("12 km/h SSW");
+      expect(
+        page.getByText("Chance of precipitation").element().nextElementSibling,
+      ).toHaveTextContent("85%");
+    });
+
+    it("shows when the Weather provider observed them, in the Location's local time", async () => {
+      renderWidget(NIEUWEGEIN);
+
+      const updated = page.getByText("Updated at");
+      await expect.element(updated).toHaveTextContent("Updated at 10:41 AM");
+      expect(updated.element().querySelector("time")?.dateTime).toBe(
+        "2026-11-08T09:41:44.000Z",
+      );
+    });
+
+    it("credits OpenWeather with a visible link", async () => {
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByRole("link", { name: "OpenWeather" }))
+        .toHaveAttribute("href", "https://openweathermap.org/");
+    });
+
+    it("tells screen readers the temperatures, units and wind in full", async () => {
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByText("9 degrees Celsius"))
+        .toBeInTheDocument();
+      expect(page.getByText("9°C").element()).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+      expect(page.getByText("7 degrees Celsius").query()).not.toBeNull();
+      expect(
+        page
+          .getByText("12 kilometers per hour from the south-southwest")
+          .query(),
+      ).not.toBeNull();
+      expect(page.getByText("12 km/h SSW").element()).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
+    });
+
+    it.each([
+      [0, "N", "north"],
+      [11.24, "N", "north"],
+      [11.25, "NNE", "north-northeast"],
+      [90, "E", "east"],
+      [198, "SSW", "south-southwest"],
+      [348.75, "N", "north"],
+      [360, "N", "north"],
+    ])(
+      "names wind from %d degrees %s",
+      async (windDirectionDegrees, short, spoken) => {
+        fakeProxy.mockImplementation(() =>
+          respondWith(forecastWith({ windDirectionDegrees })),
+        );
+
+        renderWidget(NIEUWEGEIN);
+
+        await expect
+          .element(page.getByText(`12 km/h ${short}`, { exact: true }))
+          .toBeInTheDocument();
+        expect(
+          page
+            .getByText(`12 kilometers per hour from the ${spoken}`, {
+              exact: true,
+            })
+            .query(),
+        ).not.toBeNull();
+      },
+    );
+  });
+
+  describe("calm air", () => {
+    it.each([
+      ["no wind", 0],
+      ["wind under half a kilometer per hour", 0.13],
+    ])(
+      "shows Calm without a direction for %s",
+      async (_, windSpeedMetresPerSecond) => {
+        fakeProxy.mockImplementation(() =>
+          respondWith(forecastWith({ windSpeedMetresPerSecond })),
+        );
+
+        renderWidget(NIEUWEGEIN);
+
+        await expect
+          .element(page.getByText("Wind", { exact: true }))
+          .toBeVisible();
+        expect(
+          page.getByText("Wind", { exact: true }).element().nextElementSibling,
+        ).toHaveTextContent(/^\s*Calm\s*$/);
+      },
+    );
+
+    it("shows speed and direction from half a kilometer per hour", async () => {
+      fakeProxy.mockImplementation(() =>
+        respondWith(forecastWith({ windSpeedMetresPerSecond: 0.14 })),
+      );
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByText("1 km/h SSW", { exact: true }))
+        .toBeInTheDocument();
+    });
+  });
+
+  describe("the Location's name", () => {
+    it("names the Location with the name the Proxy found", async () => {
+      fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toHaveTextContent("Nieuwegein");
+    });
+
+    it("prefers the name the Host page sets in location-name", async () => {
+      fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+      renderWidget({ ...NIEUWEGEIN, "location-name": "Home" });
+
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toHaveTextContent("Home");
+    });
+
+    it("ignores a blank location-name", async () => {
+      fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+      renderWidget({ ...NIEUWEGEIN, "location-name": "   " });
+
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toHaveTextContent("Nieuwegein");
+    });
+
+    it("updates the name when the Host page changes location-name", async () => {
+      fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+      const widget = renderWidget({ ...NIEUWEGEIN, "location-name": "Home" });
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toHaveTextContent("Home");
+
+      widget.removeAttribute("location-name");
+
+      await expect
+        .element(page.getByRole("heading", { level: 2 }))
+        .toHaveTextContent("Nieuwegein");
+      expect(fakeProxy).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+      [
+        { latitude: "52.03", longitude: "5.08" },
+        "52.03° N, 5.08° E",
+        "52.03 degrees north, 5.08 degrees east",
+      ],
+      [
+        { latitude: "-33.87", longitude: "-70.6" },
+        "33.87° S, 70.60° W",
+        "33.87 degrees south, 70.60 degrees west",
+      ],
+      [
+        { latitude: "0", longitude: "0" },
+        "0.00° N, 0.00° E",
+        "0.00 degrees north, 0.00 degrees east",
+      ],
+    ])(
+      "names the Location by its coordinates when the Proxy found no name (%o)",
+      async (coordinates, shown, heard) => {
+        fakeProxy.mockImplementation(() =>
+          respondWith(forecastWith({}, { name: null })),
+        );
+
+        renderWidget(coordinates);
+
+        await expect
+          .element(page.getByRole("heading", { level: 2 }))
+          .toHaveTextContent(shown);
+        expect(
+          page.getByText(shown, { exact: true }).element(),
+        ).toHaveAttribute("aria-hidden", "true");
+        expect(page.getByText(heard, { exact: true }).query()).not.toBeNull();
+      },
+    );
+
+    it("announces the Location's name with its temperature", async () => {
+      fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+      renderWidget(NIEUWEGEIN);
+
+      await expect
+        .element(page.getByRole("status"))
+        .toHaveTextContent(/Nieuwegein.*9 degrees Celsius/);
+      expect(page.getByRole("status").element()).not.toHaveTextContent(
+        "Feels like",
+      );
+    });
   });
 });

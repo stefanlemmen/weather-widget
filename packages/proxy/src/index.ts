@@ -56,7 +56,7 @@ export const createProxy = (
   dependencies: ProxyDependencies = { fetch: globalThis.fetch },
 ): Hono => {
   const environment = parseEnvironment(rawEnvironment);
-  const fetchCurrentConditions = createLiveWeatherProvider(
+  const fetchForecast = createLiveWeatherProvider(
     environment.mode === WEATHER_PROVIDER_MODES.fixtures
       ? {
           key: FIXTURE_KEY,
@@ -96,11 +96,11 @@ export const createProxy = (
         });
       }
 
-      const current = await fetchCurrentConditions({
+      const forecast = await fetchForecast({
         latitude: roundCoordinate(query.output.latitude),
         longitude: roundCoordinate(query.output.longitude),
       });
-      if (current.status === "error") {
+      if (forecast.status === "error") {
         return problem(context, {
           type: UNTYPED_PROBLEM,
           title: "Forecast unavailable",
@@ -111,7 +111,8 @@ export const createProxy = (
 
       context.header("cache-control", FORECAST_CACHE_CONTROL);
       return context.json({
-        parts: { current },
+        location: forecast.data.location,
+        parts: { current: { status: "ok", data: forecast.data.current } },
       } satisfies ForecastResponse);
     });
 };
