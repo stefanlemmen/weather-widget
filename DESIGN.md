@@ -392,7 +392,7 @@ Sizes follow their context: up to 160px in Current conditions, 60px for facts in
 
 ## Conditions
 
-Eleven Conditions. Day and night variants differ where the sun or moon shows. Covered skies and precipitation use one icon for both, because no sun or moon would be visible. The Proxy maps OpenWeather condition codes to a Condition and a day or night flag (#10).
+Eleven Conditions, plus Unknown as the fallback for any code the Proxy doesn't recognise. Day and night variants differ where the sun or moon shows. Covered skies and precipitation use one icon for both, because no sun or moon would be visible. The Proxy maps OpenWeather condition codes to a Condition and a day or night flag (#10).
 
 | Condition     | Key             | Day icon            | Night icon            | OpenWeather codes            |
 | ------------- | --------------- | ------------------- | --------------------- | ---------------------------- |
@@ -407,8 +407,9 @@ Eleven Conditions. Day and night variants differ where the sun or moon shows. Co
 | Sleet         | `sleet`         | `sleet`             | `sleet`               | 511, 611–616                 |
 | Snow          | `snow`          | `snow`              | `snow`                | 600–602, 620–622             |
 | Thunderstorm  | `thunderstorm`  | `thunderstorms-day` | `thunderstorms-night` | 200–232, 771, 781            |
+| Unknown       | `unknown`       | `not-available`     | `not-available`       | any other code               |
 
-Overcast uses the single-cloud `cloudy` icon. Meteocons' own `overcast` icon puts a second cloud behind the first, and at 40px that reads as a moon. Squalls (771) and tornadoes (781) map to Thunderstorm, the closest severe Condition in the set. Freezing rain (511) maps to Sleet. Day or night follows the Location's local time: OpenWeather's icon suffix (`d` or `n`) for hours, and day for the Daily forecast.
+Unknown uses the full-size Meteocons `not-available` icon, so it sits in an hour or day like any Condition, and its label reads "Unknown". The Widget never guesses weather it doesn't have. Overcast uses the single-cloud `cloudy` icon. Meteocons' own `overcast` icon puts a second cloud behind the first, and at 40px that reads as a moon. Squalls (771) and tornadoes (781) map to Thunderstorm, the closest severe Condition in the set. Freezing rain (511) maps to Sleet. Day or night follows the Location's local time: OpenWeather's icon suffix (`d` or `n`) for hours, and day for the Daily forecast.
 
 ## Do's and don'ts
 
