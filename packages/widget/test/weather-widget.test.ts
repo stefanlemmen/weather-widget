@@ -111,6 +111,10 @@ const forecastFailing = (...failed: readonly ForecastPart[]) => {
 const shownMessage = (text: string) =>
   page.getByRole("paragraph").filter({ hasText: text });
 
+const announcement = () => page.getByRole("status");
+
+const locationName = () => page.getByRole("heading", { level: 2 });
+
 const respondWith = (body: unknown, status = 200) =>
   Promise.resolve(Response.json(body, { status }));
 
@@ -191,9 +195,7 @@ describe("<weather-widget>", () => {
 
     renderWidget(NIEUWEGEIN);
 
-    await expect
-      .element(page.getByRole("status"))
-      .toHaveTextContent("Loading forecast");
+    await expect.element(announcement()).toHaveTextContent("Loading forecast");
   });
 
   it.each([
@@ -265,14 +267,14 @@ describe("<weather-widget>", () => {
       const tryAgain = await pressTryAgain(widget);
 
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent("Loading forecast");
       expect(focusedIn(widget)).toBe(tryAgain);
 
       answer(Response.json(unavailable, { status: 503 }));
 
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent("Forecast unavailable");
       expect(focusedIn(widget)).toBe(tryAgain);
     });
@@ -285,7 +287,7 @@ describe("<weather-widget>", () => {
 
       answer(Response.json(fullForecast()));
 
-      const name = page.getByRole("heading", { level: 2 });
+      const name = locationName();
       await expect.element(name).toBeVisible();
       await vi.waitFor(() => {
         expect(focusedIn(widget)).toBe(name.element());
@@ -300,11 +302,11 @@ describe("<weather-widget>", () => {
 
       answer(Response.json(fullForecast()));
 
-      const name = page.getByRole("heading", { level: 2 });
+      const name = locationName();
       await vi.waitFor(() => {
         expect(focusedIn(widget)).toBe(name.element());
       });
-      expect(page.getByRole("status").element().textContent.trim()).toBe("");
+      expect(announcement().element().textContent.trim()).toBe("");
     });
 
     it("still announces the failed parts when focus moves to the name", async () => {
@@ -316,11 +318,9 @@ describe("<weather-widget>", () => {
       answer(Response.json(forecastFailing("daily")));
 
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent(/^Daily forecast unavailable$/);
-      expect(focusedIn(widget)).toBe(
-        page.getByRole("heading", { level: 2 }).element(),
-      );
+      expect(focusedIn(widget)).toBe(locationName().element());
     });
 
     it("keeps the announcement when the Host page renames the Location after focus moved", async () => {
@@ -329,7 +329,7 @@ describe("<weather-widget>", () => {
       const answer = answerLater();
       await pressTryAgain(widget);
       answer(Response.json(fullForecast()));
-      const name = page.getByRole("heading", { level: 2 });
+      const name = locationName();
       await vi.waitFor(() => {
         expect(focusedIn(widget)).toBe(name.element());
       });
@@ -337,7 +337,7 @@ describe("<weather-widget>", () => {
       widget.setAttribute("location-name", "Home");
 
       await expect.element(name).toHaveTextContent("Home");
-      expect(page.getByRole("status").element().textContent.trim()).toBe("");
+      expect(announcement().element().textContent.trim()).toBe("");
     });
 
     it("stays where the visitor moved it while the Widget fetched", async () => {
@@ -351,13 +351,11 @@ describe("<weather-widget>", () => {
 
       answer(Response.json(fullForecast()));
 
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toBeVisible();
+      await expect.element(locationName()).toBeVisible();
       await widget.updateComplete;
       expect(document.activeElement).toBe(elsewhere);
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent("Forecast for Nieuwegein, updated at 10:41 AM");
     });
 
@@ -367,7 +365,7 @@ describe("<weather-widget>", () => {
       answerLater();
       await page.getByRole("button", { name: "Try again" }).click();
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent("Loading forecast");
 
       await userEvent.keyboard("{Enter}");
@@ -434,9 +432,7 @@ describe("<weather-widget>", () => {
     document.body.append(widget);
 
     await expect.element(page.getByText("5°C")).toBeVisible();
-    await expect
-      .element(page.getByRole("heading", { level: 2 }))
-      .toHaveTextContent("Home");
+    await expect.element(locationName()).toHaveTextContent("Home");
     expect(requestedUrls()[0]?.href).toBe(
       `https://proxy.example/api/forecast?latitude=52.03&longitude=5.08&parts=${encodeURIComponent(ALL_PARTS)}`,
     );
@@ -457,7 +453,7 @@ describe("<weather-widget>", () => {
       await widget.updateComplete;
 
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent("Forecast unavailable");
       expect(
         page.getByRole("button", { name: "Try again" }).query(),
@@ -501,7 +497,7 @@ describe("<weather-widget>", () => {
         }),
     );
     renderWidget(NIEUWEGEIN);
-    const liveRegion = page.getByRole("status");
+    const liveRegion = announcement();
     await expect.element(liveRegion).toHaveTextContent("Loading forecast");
     const regionWhileLoading = liveRegion.element();
 
@@ -520,7 +516,7 @@ describe("<weather-widget>", () => {
         }),
     );
     renderWidget(NIEUWEGEIN);
-    const liveRegion = page.getByRole("status");
+    const liveRegion = announcement();
     await expect.element(liveRegion).toHaveTextContent("Loading forecast");
     const regionWhileLoading = liveRegion.element();
 
@@ -677,9 +673,7 @@ describe("<weather-widget>", () => {
 
       renderWidget(NIEUWEGEIN);
 
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toHaveTextContent("Nieuwegein");
+      await expect.element(locationName()).toHaveTextContent("Nieuwegein");
     });
 
     it("prefers the name the Host page sets in location-name", async () => {
@@ -687,9 +681,7 @@ describe("<weather-widget>", () => {
 
       renderWidget({ ...NIEUWEGEIN, "location-name": "Home" });
 
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toHaveTextContent("Home");
+      await expect.element(locationName()).toHaveTextContent("Home");
     });
 
     it("ignores a blank location-name", async () => {
@@ -697,23 +689,17 @@ describe("<weather-widget>", () => {
 
       renderWidget({ ...NIEUWEGEIN, "location-name": "   " });
 
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toHaveTextContent("Nieuwegein");
+      await expect.element(locationName()).toHaveTextContent("Nieuwegein");
     });
 
     it("updates the name when the Host page changes location-name", async () => {
       fakeProxy.mockImplementation(() => respondWith(forecastWith()));
       const widget = renderWidget({ ...NIEUWEGEIN, "location-name": "Home" });
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toHaveTextContent("Home");
+      await expect.element(locationName()).toHaveTextContent("Home");
 
       widget.removeAttribute("location-name");
 
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toHaveTextContent("Nieuwegein");
+      await expect.element(locationName()).toHaveTextContent("Nieuwegein");
       expect(fakeProxy).toHaveBeenCalledOnce();
     });
 
@@ -742,9 +728,7 @@ describe("<weather-widget>", () => {
 
         renderWidget(coordinates);
 
-        await expect
-          .element(page.getByRole("heading", { level: 2 }))
-          .toHaveTextContent(shown);
+        await expect.element(locationName()).toHaveTextContent(shown);
         expect(
           page.getByText(shown, { exact: true }).element(),
         ).toHaveAttribute("aria-hidden", "true");
@@ -758,7 +742,7 @@ describe("<weather-widget>", () => {
       renderWidget(NIEUWEGEIN);
 
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent("Forecast for Nieuwegein, updated at 10:41 AM");
     });
 
@@ -770,7 +754,7 @@ describe("<weather-widget>", () => {
       renderWidget(NIEUWEGEIN);
 
       await expect
-        .element(page.getByRole("status"))
+        .element(announcement())
         .toHaveTextContent(
           "Forecast for 52.03 degrees north, 5.08 degrees east, updated at 10:41 AM",
         );
@@ -1006,9 +990,7 @@ describe("Forecast parts", () => {
 
       renderWidget({ ...NIEUWEGEIN, parts });
 
-      await expect
-        .element(page.getByRole("heading", { level: 2 }))
-        .toBeVisible();
+      await expect.element(locationName()).toBeVisible();
       expect(shownParts()).toBe(requested);
       expect(requestedUrls()[0]?.searchParams.get("parts")).toBe(requested);
     },
@@ -1069,7 +1051,7 @@ describe("Forecast parts", () => {
     renderWidget({ ...NIEUWEGEIN, parts: "current daily" });
 
     await expect
-      .element(page.getByRole("status"))
+      .element(announcement())
       .toHaveTextContent("Forecast unavailable");
   });
 
@@ -1116,7 +1098,7 @@ describe("Forecast parts", () => {
     renderWidget(NIEUWEGEIN);
 
     await expect
-      .element(page.getByRole("status"))
+      .element(announcement())
       .toHaveTextContent(
         "Forecast for Nieuwegein, updated at 10:41 AM. Hourly forecast unavailable. Daily forecast unavailable",
       );
@@ -1128,7 +1110,7 @@ describe("Forecast parts", () => {
     renderWidget(NIEUWEGEIN);
 
     await expect
-      .element(page.getByRole("status"))
+      .element(announcement())
       .toHaveTextContent(
         /^Forecast for Nieuwegein\. Current conditions unavailable$/,
       );
@@ -1145,7 +1127,7 @@ describe("Forecast parts", () => {
       .element(page.getByRole("button", { name: "Try again" }))
       .toBeVisible();
     await expect
-      .element(page.getByRole("status"))
+      .element(announcement())
       .toHaveTextContent("Forecast unavailable");
   });
 
