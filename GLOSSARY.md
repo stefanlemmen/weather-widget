@@ -17,7 +17,7 @@ A Host page we build ourselves in one framework to show how Widgets are embedded
 _Avoid_: Demo app, showcase, playground
 
 **Location**:
-The place a Forecast is for, always handed to the Widget by its Host page.
+The place a Forecast is for. It has coordinates, a name and a time zone, and its Host page always hands it to the Widget.
 _Avoid_: City, place, position
 
 **Location picker**:
