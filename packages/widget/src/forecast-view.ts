@@ -7,18 +7,9 @@ import type {
   Result,
 } from "@weather-widget/contract";
 import { html, nothing, type TemplateResult } from "lit";
-import {
-  formatChance,
-  formatHour,
-  formatTemperature,
-  formatTime,
-  formatWeekday,
-  formatWind,
-  type Spoken,
-} from "./format.ts";
+import type { Formatter, Spoken } from "./format.ts";
 import type { Forecast } from "./forecast-client.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";
-import { MESSAGES } from "./messages.ts";
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
 
@@ -31,30 +22,36 @@ const spoken = (text: Spoken | string) =>
 export const heard = (text: Spoken | string) =>
   typeof text === "string" ? text : text.heard;
 
-const chance = (precipitationChance: number) =>
-  html`<span class="visually-hidden">${MESSAGES.chanceOfPrecipitation}</span>
-    ${formatChance(precipitationChance)}`;
+const chance = (format: Formatter, precipitationChance: number) =>
+  html`<span class="visually-hidden"
+      >${format.messages.chanceOfPrecipitation}</span
+    >
+    ${format.chance(precipitationChance)}`;
 
 const shownOrUnavailable = <TData>(
+  format: Formatter,
   part: ForecastPart,
   result: Result<TData>,
   show: (data: TData) => TemplateResult,
 ) =>
   result.status === "ok"
     ? show(result.data)
-    : html`<p>${MESSAGES.partUnavailable[part]}</p>`;
+    : html`<p>${format.messages.partUnavailable[part]}</p>`;
 
-const currentConditionsDetails = (current: CurrentConditions) =>
+const currentConditionsDetails = (
+  format: Formatter,
+  current: CurrentConditions,
+) =>
   html`<dl>
     <div>
-      <dt>${MESSAGES.feelsLike}</dt>
-      <dd>${spoken(formatTemperature(current.feelsLikeCelsius))}</dd>
+      <dt>${format.messages.feelsLike}</dt>
+      <dd>${spoken(format.temperature(current.feelsLikeCelsius))}</dd>
     </div>
     <div>
-      <dt>${MESSAGES.wind}</dt>
+      <dt>${format.messages.wind}</dt>
       <dd>
         ${spoken(
-          formatWind(
+          format.wind(
             current.windSpeedMetresPerSecond,
             current.windDirectionDegrees,
           ),
@@ -65,31 +62,37 @@ const currentConditionsDetails = (current: CurrentConditions) =>
       current.precipitationChance === null
         ? nothing
         : html`<div>
-            <dt>${MESSAGES.chanceOfPrecipitation}</dt>
-            <dd>${formatChance(current.precipitationChance)}</dd>
+            <dt>${format.messages.chanceOfPrecipitation}</dt>
+            <dd>${format.chance(current.precipitationChance)}</dd>
           </div>`
     }
   </dl>`;
 
-const currentConditions = (current: Result<CurrentConditions>) =>
+const currentConditions = (
+  format: Formatter,
+  current: Result<CurrentConditions>,
+) =>
   shownOrUnavailable(
+    format,
     "current",
     current,
     (conditions) =>
       html`<p class="temperature">
-          ${spoken(formatTemperature(conditions.temperatureCelsius))}
+          ${spoken(format.temperature(conditions.temperatureCelsius))}
         </p>
-        ${currentConditionsDetails(conditions)}`,
+        ${currentConditionsDetails(format, conditions)}`,
   );
 
 const hourlyForecast = (
+  format: Formatter,
   hourly: Result<HourlyForecast>,
   { timeZone }: Location,
   now: Date,
 ) =>
   html`<section>
-    <h3 id="hourly-heading">${MESSAGES.nextHours}</h3>
+    <h3 id="hourly-heading">${format.messages.nextHours}</h3>
     ${shownOrUnavailable(
+      format,
       "hourly",
       hourly,
       (hours) =>
@@ -98,13 +101,13 @@ const hourlyForecast = (
             (hour) =>
               html`<li>
                 <time datetime=${hour.startsAt}
-                  >${formatHour(hour.startsAt, timeZone)}</time
+                  >${format.hour(hour.startsAt, timeZone)}</time
                 >
-                <span>${MESSAGES.conditions[hour.condition]}</span>
+                <span>${format.messages.conditions[hour.condition]}</span>
                 <span
-                  >${spoken(formatTemperature(hour.temperatureCelsius))}</span
+                  >${spoken(format.temperature(hour.temperatureCelsius))}</span
                 >
-                <span>${chance(hour.precipitationChance)}</span>
+                <span>${chance(format, hour.precipitationChance)}</span>
               </li>`,
           )}
         </ol>`,
@@ -112,13 +115,15 @@ const hourlyForecast = (
   </section>`;
 
 const dailyForecast = (
+  format: Formatter,
   daily: Result<DailyForecast>,
   { timeZone }: Location,
   now: Date,
 ) =>
   html`<section>
-    <h3 id="daily-heading">${MESSAGES.nextDays}</h3>
+    <h3 id="daily-heading">${format.messages.nextDays}</h3>
     ${shownOrUnavailable(
+      format,
       "daily",
       daily,
       (days) =>
@@ -126,19 +131,19 @@ const dailyForecast = (
           ${upcomingDays(days, timeZone, now).map(
             (day) =>
               html`<li>
-                <abbr title=${formatWeekday(day.date, "long")}
-                  >${formatWeekday(day.date, "short")}</abbr
+                <abbr title=${format.weekday(day.date, "long")}
+                  >${format.weekday(day.date, "short")}</abbr
                 >
-                <span>${MESSAGES.conditions[day.condition]}</span>
+                <span>${format.messages.conditions[day.condition]}</span>
                 <span
-                  ><span class="visually-hidden">${MESSAGES.low}</span>
-                  ${spoken(formatTemperature(day.lowCelsius))}</span
+                  ><span class="visually-hidden">${format.messages.low}</span>
+                  ${spoken(format.temperature(day.lowCelsius))}</span
                 >
                 <span
-                  ><span class="visually-hidden">${MESSAGES.high}</span>
-                  ${spoken(formatTemperature(day.highCelsius))}</span
+                  ><span class="visually-hidden">${format.messages.high}</span>
+                  ${spoken(format.temperature(day.highCelsius))}</span
                 >
-                <span>${chance(day.precipitationChance)}</span>
+                <span>${chance(format, day.precipitationChance)}</span>
               </li>`,
           )}
         </ol>`,
@@ -148,29 +153,34 @@ const dailyForecast = (
 export const observedAt = ({ current }: Forecast) =>
   current?.status === "ok" ? current.data.observedAt : undefined;
 
-const footer = (forecast: Forecast) => {
+const footer = (format: Formatter, forecast: Forecast) => {
   const observed = observedAt(forecast);
   return html`${
       observed
         ? html`<p>
-            ${MESSAGES.updatedAt}
+            ${format.messages.updatedAt}
             <time datetime=${observed}
-              >${formatTime(observed, forecast.location.timeZone)}</time
+              >${format.time(observed, forecast.location.timeZone)}</time
             >
           </p>`
         : nothing
     }
     <p>
-      ${MESSAGES.weatherDataFrom}
-      <a href=${OPENWEATHER_URL}>${MESSAGES.weatherProviderName}</a>
+      ${format.messages.weatherDataFrom}
+      <a href=${OPENWEATHER_URL}>${format.messages.weatherProviderName}</a>
     </p>`;
 };
 
-export const forecastView = (forecast: Forecast, name: Spoken | string) => {
+export const forecastView = (
+  format: Formatter,
+  forecast: Forecast,
+  name: Spoken | string,
+) => {
   const { current, hourly, daily, location } = forecast;
   const now = new Date();
   return html`<h2 tabindex="-1">${spoken(name)}</h2>
-    ${current ? currentConditions(current) : nothing}
-    ${hourly ? hourlyForecast(hourly, location, now) : nothing}
-    ${daily ? dailyForecast(daily, location, now) : nothing} ${footer(forecast)}`;
+    ${current ? currentConditions(format, current) : nothing}
+    ${hourly ? hourlyForecast(format, hourly, location, now) : nothing}
+    ${daily ? dailyForecast(format, daily, location, now) : nothing}
+    ${footer(format, forecast)}`;
 };

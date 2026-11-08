@@ -265,7 +265,7 @@ describe("<weather-widget>", () => {
 
   it.each([
     [12.5, "13°C"],
-    [-3.4, "-3°C"],
+    [-3.4, "−3°C"],
     [-0.4, "0°C"],
   ])("rounds %d °C to %s", async (temperature, shown) => {
     fakeProxy.mockImplementation(() =>
@@ -503,11 +503,14 @@ describe("<weather-widget>", () => {
     widget.proxyUrl = "https://proxy.example/api";
     widget.locationName = "Home";
     widget.parts = "current hourly daily";
+    widget.locale = "nl";
+    widget.units = "imperial";
     document.body.append(widget);
     nearViewport(widget);
 
-    await expect.element(page.getByText("5°C")).toBeVisible();
+    await expect.element(page.getByText("41°F")).toBeVisible();
     await expect.element(locationName()).toHaveTextContent("Home");
+    expect(page.getByText("Gevoelstemperatuur").query()).not.toBeNull();
     expect(requestedUrls()[0]?.href).toBe(
       `https://proxy.example/api/forecast?latitude=52.03&longitude=5.08&parts=${encodeURIComponent(ALL_PARTS)}`,
     );
@@ -549,7 +552,7 @@ describe("<weather-widget>", () => {
 
       renderWidget({ latitude, longitude });
 
-      await expect.element(page.getByText("-30°C")).toBeVisible();
+      await expect.element(page.getByText("−30°C")).toBeVisible();
     },
   );
 
@@ -1469,5 +1472,259 @@ describe("loading", () => {
       expect(fakeProxy).toHaveBeenCalledTimes(1);
       await expect.element(page.getByText("5°C")).toBeVisible();
     });
+  });
+});
+
+describe("locale", () => {
+  const DUTCH = { ...NIEUWEGEIN, locale: "nl" };
+
+  it("shows Current conditions in Dutch, with Dutch numbers and the Location's local time", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget(DUTCH);
+
+    await expect
+      .element(announcement())
+      .toHaveTextContent(
+        "Weersverwachting voor Nieuwegein, bijgewerkt om 10:41",
+      );
+    expect(
+      page.getByText("Gevoelstemperatuur").element().nextElementSibling,
+    ).toHaveTextContent("7°C");
+    expect(
+      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+    ).toHaveTextContent("12 km/u ZZW");
+    expect(
+      page.getByText("Kans op neerslag").element().nextElementSibling,
+    ).toHaveTextContent("85%");
+    await expect
+      .element(shownMessage("Bijgewerkt om"))
+      .toHaveTextContent("Bijgewerkt om 10:41");
+    await expect
+      .element(page.getByRole("link", { name: "OpenWeather" }))
+      .toBeVisible();
+    expect(shownMessage("Weergegevens van").query()).not.toBeNull();
+  });
+
+  it("shows the Hourly and Daily forecast in Dutch, with hours on the 24-hour clock and Dutch day names", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(DUTCH);
+
+    const hours = page.getByRole("list", { name: "Komende 12 uur" });
+    const days = page.getByRole("list", { name: "Komende 5 dagen" });
+    await expect.element(hours).toBeVisible();
+    expect(hours.getByRole("listitem").elements()[0]).toHaveTextContent(
+      /10:00.*Regen.*31°C.*Kans op neerslag\s*85%/,
+    );
+    expect(textsOf(hours, "time").slice(0, 3)).toEqual([
+      "10:00",
+      "11:00",
+      "12:00",
+    ]);
+    const firstDay = days.getByRole("listitem").first();
+    expect(firstDay.element()).toHaveTextContent(
+      /zo.*Regen.*Laagste\s*21°C.*Hoogste\s*50°C/,
+    );
+    expect(firstDay.element().querySelector("abbr")?.title).toBe("zondag");
+  });
+
+  it("tells screen readers the temperatures, wind and coordinates in full in Dutch", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastWith({}, { name: null })),
+    );
+
+    renderWidget(DUTCH);
+
+    await expect
+      .element(page.getByText("9 graden Celsius"))
+      .toBeInTheDocument();
+    expect(
+      page.getByText("12 kilometer per uur uit het zuidzuidwesten").query(),
+    ).not.toBeNull();
+    await expect.element(locationName()).toHaveTextContent("52,03° N, 5,08° O");
+    expect(announcement().element()).toHaveTextContent(
+      "Weersverwachting voor 52,03 graden noorderbreedte, 5,08 graden oosterlengte, bijgewerkt om 10:41",
+    );
+  });
+
+  it("tells screen readers the Widget's text is in the locale's language", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget(DUTCH);
+
+    await expect.element(locationName()).toBeVisible();
+    expect(
+      locationName().element().closest("[lang]")?.getAttribute("lang"),
+    ).toBe("nl");
+    expect(
+      announcement().element().closest("[lang]")?.getAttribute("lang"),
+    ).toBe("nl");
+  });
+
+  it('shows "Weersverwachting niet beschikbaar" and "Opnieuw proberen" when the Proxy fails', async () => {
+    fakeProxy.mockImplementation(() => respondWith(unavailable, 503));
+
+    renderWidget(DUTCH);
+
+    await expect
+      .element(page.getByRole("button", { name: "Opnieuw proberen" }))
+      .toBeVisible();
+    expect(
+      shownMessage("Weersverwachting niet beschikbaar").query(),
+    ).not.toBeNull();
+  });
+
+  it.each([
+    ["absent", {}],
+    ["unsupported", { locale: "fr" }],
+    ["a regional variant", { locale: "en-GB" }],
+    ["in capitals", { locale: "NL" }],
+    ["empty", { locale: "" }],
+  ])("shows English when the locale is %s", async (_, attributes) => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget({ ...NIEUWEGEIN, ...attributes });
+
+    await expect
+      .element(announcement())
+      .toHaveTextContent("Forecast for Nieuwegein, updated at 10:41 AM");
+    expect(
+      locationName().element().closest("[lang]")?.getAttribute("lang"),
+    ).toBe("en");
+  });
+
+  it("switches language without asking the Proxy again when the Host page changes the locale", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+    const widget = renderWidget(NIEUWEGEIN);
+    await expect.element(page.getByText("Feels like")).toBeVisible();
+
+    widget.setAttribute("locale", "nl");
+
+    await expect.element(page.getByText("Gevoelstemperatuur")).toBeVisible();
+    expect(fakeProxy).toHaveBeenCalledOnce();
+  });
+});
+
+describe("units", () => {
+  const IMPERIAL = { ...NIEUWEGEIN, units: "imperial" };
+
+  it("converts temperatures to Fahrenheit and wind speed to miles per hour", async () => {
+    fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+    renderWidget(IMPERIAL);
+
+    await expect.element(page.getByText("48°F")).toBeVisible();
+    expect(
+      page.getByText("Feels like").element().nextElementSibling,
+    ).toHaveTextContent("44°F");
+    expect(
+      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+    ).toHaveTextContent("7 mph SSW");
+    expect(
+      hourlyForecast().getByRole("listitem").elements()[0],
+    ).toHaveTextContent(/10 AM.*87°F/);
+    expect(
+      dailyForecast().getByRole("listitem").elements()[0],
+    ).toHaveTextContent(/Low\s*69°F.*High\s*123°F/);
+  });
+
+  it("writes negative temperatures with a true minus sign in either unit", async () => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastWithTemperature(-20.6)),
+    );
+
+    renderWidget(IMPERIAL);
+
+    await expect.element(page.getByText("−5°F")).toBeVisible();
+    expect(page.getByText("-5°F").query()).toBeNull();
+  });
+
+  it("tells screen readers the imperial units in full", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget(IMPERIAL);
+
+    await expect
+      .element(page.getByText("48 degrees Fahrenheit"))
+      .toBeInTheDocument();
+    expect(
+      page.getByText("7 miles per hour from the south-southwest").query(),
+    ).not.toBeNull();
+  });
+
+  it.each([
+    ["Calm under half a mile per hour", 0.22, "Calm"],
+    ["1 mph from half a mile per hour", 0.23, "1 mph SSW"],
+  ])("shows %s", async (_, windSpeedMetresPerSecond, shown) => {
+    fakeProxy.mockImplementation(() =>
+      respondWith(forecastWith({ windSpeedMetresPerSecond })),
+    );
+
+    renderWidget(IMPERIAL);
+
+    await expect.element(locationName()).toBeVisible();
+    expect(
+      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+    ).toHaveTextContent(shown);
+  });
+
+  it("combines imperial units with the Dutch locale", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget({ ...IMPERIAL, locale: "nl" });
+
+    await expect
+      .element(page.getByText("48 graden Fahrenheit"))
+      .toBeInTheDocument();
+    expect(
+      page.getByText("Wind", { exact: true }).element().nextElementSibling,
+    ).toHaveTextContent("7 mi/h ZZW");
+  });
+
+  it.each([
+    ["absent", {}],
+    ["unsupported", { units: "kelvin" }],
+    ["in capitals", { units: "IMPERIAL" }],
+    ["empty", { units: "" }],
+  ])("shows metric units when units is %s", async (_, attributes) => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget({ ...NIEUWEGEIN, ...attributes });
+
+    await expect.element(page.getByText("9°C")).toBeVisible();
+  });
+
+  it("converts without asking the Proxy again when the Host page changes the units", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+    const widget = renderWidget(NIEUWEGEIN);
+    await expect.element(page.getByText("9°C")).toBeVisible();
+
+    widget.setAttribute("units", "imperial");
+
+    await expect.element(page.getByText("48°F")).toBeVisible();
+    expect(fakeProxy).toHaveBeenCalledOnce();
+  });
+});
+
+describe("the Proxy request", () => {
+  it("is the same for Widgets that differ only in locale and units, so they share one cache entry", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    for (const locale of ["en", "nl"]) {
+      for (const units of ["metric", "imperial"]) {
+        renderWidget({ ...NIEUWEGEIN, locale, units });
+      }
+    }
+
+    await vi.waitFor(() => {
+      expect(fakeProxy).toHaveBeenCalledTimes(4);
+    });
+    expect(new Set(requestedUrls().map((url) => url.href)).size).toBe(1);
+    expect([...(requestedUrls()[0]?.searchParams.keys() ?? [])]).toEqual([
+      "latitude",
+      "longitude",
+      "parts",
+    ]);
   });
 });

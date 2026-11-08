@@ -3,24 +3,83 @@ import { expect, test } from "@playwright/test";
 const RECORDED_NIEUWEGEIN_TEMPERATURE = "9°C";
 const RECORDED_NIEUWEGEIN_NAME = "Nieuwegein";
 const RECORDED_AT = new Date("2026-11-08T09:41:44Z");
+const RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT = "48°F";
 
 test.describe("the vanilla Example host", () => {
   test("shows the Current conditions for the Widget's Location", async ({
     page,
   }) => {
     await page.goto("/vanilla/");
+    const widget = page.locator("weather-widget").first();
 
     await expect(
-      page.getByRole("heading", { level: 2, name: RECORDED_NIEUWEGEIN_NAME }),
+      widget.getByRole("heading", { level: 2, name: RECORDED_NIEUWEGEIN_NAME }),
     ).toBeVisible();
-    await expect(page.getByRole("status")).toContainText(
+    await expect(widget.getByRole("status")).toContainText(
       `Forecast for ${RECORDED_NIEUWEGEIN_NAME}`,
     );
     await expect(
-      page.getByText(RECORDED_NIEUWEGEIN_TEMPERATURE, { exact: true }).first(),
+      widget
+        .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE, { exact: true })
+        .first(),
     ).toBeVisible();
-    await expect(page.getByText("Feels like")).toBeVisible();
-    await expect(page.getByRole("link", { name: "OpenWeather" })).toBeVisible();
+    await expect(widget.getByText("Feels like")).toBeVisible();
+    await expect(
+      widget.getByRole("link", { name: "OpenWeather" }),
+    ).toBeVisible();
+  });
+
+  test("shows a Dutch Widget", async ({ page }) => {
+    await page.clock.setFixedTime(RECORDED_AT);
+    await page.goto("/vanilla/");
+    const widget = page.locator('weather-widget[locale="nl"]');
+    await widget.scrollIntoViewIfNeeded();
+
+    await expect(widget.getByRole("status")).toContainText(
+      `Weersverwachting voor ${RECORDED_NIEUWEGEIN_NAME}`,
+    );
+    await expect(widget.getByText("Gevoelstemperatuur")).toBeVisible();
+    await expect(
+      widget
+        .getByRole("list", { name: "Komende 5 dagen" })
+        .getByRole("listitem")
+        .first(),
+    ).toContainText("zo");
+  });
+
+  test("shows an imperial Widget", async ({ page }) => {
+    await page.goto("/vanilla/");
+    const widget = page.locator('weather-widget[units="imperial"]');
+    await widget.scrollIntoViewIfNeeded();
+
+    await expect(
+      widget
+        .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT, { exact: true })
+        .first(),
+    ).toBeVisible();
+  });
+
+  test("asks the Proxy one shared request for Widgets that differ only in locale and units", async ({
+    page,
+  }) => {
+    const forecastUrls: string[] = [];
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/forecast") {
+        forecastUrls.push(request.url());
+      }
+    });
+
+    await page.goto("/vanilla/");
+    const widgets = page.locator("weather-widget");
+    await expect(widgets).toHaveCount(3);
+    for (const widget of await widgets.all()) {
+      await widget.scrollIntoViewIfNeeded();
+    }
+    await expect
+      .poll(() => forecastUrls.length, { timeout: 10_000 })
+      .toBeGreaterThanOrEqual(3);
+
+    expect(new Set(forecastUrls).size).toBe(1);
   });
 
   test("shows the Hourly and Daily forecast in the Location's local time", async ({
@@ -29,10 +88,11 @@ test.describe("the vanilla Example host", () => {
     await page.clock.setFixedTime(RECORDED_AT);
     await page.goto("/vanilla/");
 
-    const hours = page
+    const widget = page.locator("weather-widget").first();
+    const hours = widget
       .getByRole("list", { name: "Next 12 hours" })
       .getByRole("listitem");
-    const days = page
+    const days = widget
       .getByRole("list", { name: "Next 5 days" })
       .getByRole("listitem");
     await expect(hours).toHaveCount(12);
