@@ -141,7 +141,8 @@ export class WeatherWidget extends LitElement {
         ? {
             ...forecast,
             nameTakesFocus:
-              fetching === RETRYING && this.shadowRoot?.activeElement != null,
+              fetching.status === "retrying" &&
+              this.shadowRoot?.activeElement != null,
           }
         : forecast;
   }
