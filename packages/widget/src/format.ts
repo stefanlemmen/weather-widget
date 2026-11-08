@@ -58,11 +58,14 @@ export const formatterFor = (locale: Locale, units: Units): Formatter => {
       signDisplay: "negative",
     });
 
-  const withMinusSign = (format: Intl.NumberFormat) => (value: number) =>
-    format.format(value).replace(HYPHEN_MINUS, MINUS_SIGN);
+  const temperatureFormat = (unitDisplay: "short" | "long") => {
+    const format = unitFormat(temperature.unit, unitDisplay);
+    return (value: number) =>
+      format.format(value).replace(HYPHEN_MINUS, MINUS_SIGN);
+  };
 
-  const temperatureShort = unitFormat(temperature.unit, "short");
-  const temperatureLong = unitFormat(temperature.unit, "long");
+  const temperatureShort = temperatureFormat("short");
+  const temperatureLong = temperatureFormat("long");
   const speedShort = unitFormat(speed.unit, "short");
   const speedLong = unitFormat(speed.unit, "long");
   const percentFormat = new Intl.NumberFormat(locale, { style: "percent" });
@@ -90,8 +93,8 @@ export const formatterFor = (locale: Locale, units: Units): Formatter => {
     temperature: (celsius) => {
       const shownTemperature = temperature.fromMetric(celsius);
       return {
-        shown: withMinusSign(temperatureShort)(shownTemperature),
-        heard: withMinusSign(temperatureLong)(shownTemperature),
+        shown: temperatureShort(shownTemperature),
+        heard: temperatureLong(shownTemperature),
       };
     },
     wind: (metresPerSecond, directionDegrees) => {
