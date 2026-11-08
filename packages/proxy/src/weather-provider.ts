@@ -15,19 +15,7 @@ import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { t
 import recordedReverseGeocoding from "../fixtures/reverse-nieuwegein.json" with { type: "json" };
 
 const WEATHER_PROVIDER_ORIGIN = "https://api.openweathermap.org";
-export const WEATHER_PROVIDER_CURRENT_URL = `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/current`;
-export const WEATHER_PROVIDER_HOURLY_URL = `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/timeline/1h`;
-export const WEATHER_PROVIDER_DAILY_URL = `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/timeline/1day`;
-export const WEATHER_PROVIDER_REVERSE_GEOCODING_URL = `${WEATHER_PROVIDER_ORIGIN}/geo/1.0/reverse`;
 export const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
-const WEATHER_PROVIDER_CALLS = {
-  current: "current",
-  hourly: "hourly",
-  daily: "daily",
-  reverseGeocoding: "reverse geocoding",
-} as const;
-type WeatherProviderCall =
-  (typeof WEATHER_PROVIDER_CALLS)[keyof typeof WEATHER_PROVIDER_CALLS];
 const TIMEOUT_ERROR = "TimeoutError";
 const FAILURE_REASONS = {
   timedOut: "timed out",
@@ -148,6 +136,46 @@ const ReverseGeocodingResponseSchema = v.union([
   ),
 ]);
 
+interface WeatherProviderCall<TSchema extends v.GenericSchema> {
+  readonly name: string;
+  readonly url: string;
+  readonly schema: TSchema;
+}
+
+const WEATHER_PROVIDER_CALLS = {
+  current: {
+    name: "current",
+    url: `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/current`,
+    schema: CurrentResponseSchema,
+  },
+  hourly: {
+    name: "hourly",
+    url: `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/timeline/1h`,
+    schema: HourlyResponseSchema,
+  },
+  daily: {
+    name: "daily",
+    url: `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/timeline/1day`,
+    schema: DailyResponseSchema,
+  },
+  reverseGeocoding: {
+    name: "reverse geocoding",
+    url: `${WEATHER_PROVIDER_ORIGIN}/geo/1.0/reverse`,
+    schema: ReverseGeocodingResponseSchema,
+  },
+} satisfies Record<string, WeatherProviderCall<v.GenericSchema>>;
+
+type ResponseOf<TCall extends keyof typeof WEATHER_PROVIDER_CALLS> = Result<
+  v.InferOutput<(typeof WEATHER_PROVIDER_CALLS)[TCall]["schema"]>
+>;
+
+interface WeatherProviderResponses {
+  readonly current: ResponseOf<"current"> | undefined;
+  readonly hourly: ResponseOf<"hourly"> | undefined;
+  readonly daily: ResponseOf<"daily"> | undefined;
+  readonly name: ResponseOf<"reverseGeocoding">;
+}
+
 export type FetchForecast = (
   coordinates: Coordinates,
   parts: readonly ForecastPart[],
@@ -164,8 +192,11 @@ const failureReason = (error: unknown): FailureReason => {
   return FAILURE_REASONS.unreachable;
 };
 
-const callFailed = (call: WeatherProviderCall, reason: FailureReason) => {
-  console.error(`Weather provider ${call} call failed: ${reason}`);
+const callFailed = (
+  call: WeatherProviderCall<v.GenericSchema>,
+  reason: FailureReason,
+) => {
+  console.error(`Weather provider ${call.name} call failed: ${reason}`);
   return FAILED;
 };
 
@@ -181,6 +212,43 @@ const timeZoneOf = (
   response: Result<{ readonly timeZone: string }> | undefined,
 ) => (response?.status === "ok" ? response.data.timeZone : undefined);
 
+const forecastFrom = (
+  requested: readonly ForecastPart[],
+  { current, hourly, daily, name }: WeatherProviderResponses,
+): Result<ForecastResponse> => {
+  const requestedHourly = requested.includes("hourly") ? hourly : undefined;
+  const timeZoneOfASucceededPart =
+    timeZoneOf(current) ?? timeZoneOf(requestedHourly) ?? timeZoneOf(daily);
+  if (timeZoneOfASucceededPart === undefined) return FAILED;
+
+  const comingHourPrecipitationChance =
+    hourly?.status === "ok"
+      ? (hourly.data.hours[0]?.precipitationChance ?? null)
+      : null;
+
+  return {
+    status: "ok",
+    data: {
+      location: {
+        name: name.status === "ok" ? name.data : null,
+        timeZone: timeZoneOfASucceededPart,
+      },
+      parts: {
+        ...(current && {
+          current: partFrom(current, ({ conditions }) => ({
+            ...conditions,
+            precipitationChance: comingHourPrecipitationChance,
+          })),
+        }),
+        ...(requestedHourly && {
+          hourly: partFrom(requestedHourly, ({ hours }) => hours),
+        }),
+        ...(daily && { daily: partFrom(daily, ({ days }) => days) }),
+      },
+    },
+  };
+};
+
 export interface WeatherProviderOptions {
   readonly key: string;
   readonly fetch: typeof globalThis.fetch;
@@ -191,12 +259,10 @@ export const createLiveWeatherProvider = (
   options: WeatherProviderOptions,
 ): FetchForecast => {
   const fetchParsed = async <TSchema extends v.GenericSchema>(
-    call: WeatherProviderCall,
-    endpoint: string,
+    call: WeatherProviderCall<TSchema>,
     parameters: Readonly<Record<string, string>>,
-    schema: TSchema,
   ): Promise<Result<v.InferOutput<TSchema>>> => {
-    const url = new URL(endpoint);
+    const url = new URL(call.url);
     url.search = new URLSearchParams({
       ...parameters,
       appid: options.key,
@@ -208,7 +274,7 @@ export const createLiveWeatherProvider = (
       if (!response.ok) {
         return callFailed(call, httpStatusReason(response.status));
       }
-      const parsed = v.safeParse(schema, await response.json());
+      const parsed = v.safeParse(call.schema, await response.json());
       return parsed.success
         ? { status: "ok", data: parsed.output }
         : callFailed(call, FAILURE_REASONS.unexpectedResponse);
@@ -221,77 +287,32 @@ export const createLiveWeatherProvider = (
     const at = { lat: String(latitude), lon: String(longitude) };
     const metricAt = { ...at, units: METRIC_UNITS };
     const wants = (part: ForecastPart) => parts.includes(part);
+    const hourlyNeededForCurrentPrecipitation = wants("current");
     const [current, hourly, daily, name] = await Promise.all([
       wants("current")
-        ? fetchParsed(
-            WEATHER_PROVIDER_CALLS.current,
-            WEATHER_PROVIDER_CURRENT_URL,
-            metricAt,
-            CurrentResponseSchema,
-          )
+        ? fetchParsed(WEATHER_PROVIDER_CALLS.current, metricAt)
         : SKIPPED,
-      wants("current") || wants("hourly")
-        ? fetchParsed(
-            WEATHER_PROVIDER_CALLS.hourly,
-            WEATHER_PROVIDER_HOURLY_URL,
-            metricAt,
-            HourlyResponseSchema,
-          )
+      wants("hourly") || hourlyNeededForCurrentPrecipitation
+        ? fetchParsed(WEATHER_PROVIDER_CALLS.hourly, metricAt)
         : SKIPPED,
       wants("daily")
-        ? fetchParsed(
-            WEATHER_PROVIDER_CALLS.daily,
-            WEATHER_PROVIDER_DAILY_URL,
-            metricAt,
-            DailyResponseSchema,
-          )
+        ? fetchParsed(WEATHER_PROVIDER_CALLS.daily, metricAt)
         : SKIPPED,
-      fetchParsed(
-        WEATHER_PROVIDER_CALLS.reverseGeocoding,
-        WEATHER_PROVIDER_REVERSE_GEOCODING_URL,
-        { ...at, limit: NAMES_WANTED },
-        ReverseGeocodingResponseSchema,
-      ),
+      fetchParsed(WEATHER_PROVIDER_CALLS.reverseGeocoding, {
+        ...at,
+        limit: NAMES_WANTED,
+      }),
     ]);
-    const timeZoneOfASucceededPart =
-      timeZoneOf(current) ??
-      (wants("hourly") ? timeZoneOf(hourly) : undefined) ??
-      timeZoneOf(daily);
-    if (timeZoneOfASucceededPart === undefined) return FAILED;
-
-    const comingHourPrecipitationChance =
-      hourly?.status === "ok"
-        ? (hourly.data.hours[0]?.precipitationChance ?? null)
-        : null;
-
-    return {
-      status: "ok",
-      data: {
-        location: {
-          name: name.status === "ok" ? name.data : null,
-          timeZone: timeZoneOfASucceededPart,
-        },
-        parts: {
-          ...(current && {
-            current: partFrom(current, ({ conditions }) => ({
-              ...conditions,
-              precipitationChance: comingHourPrecipitationChance,
-            })),
-          }),
-          ...(wants("hourly") &&
-            hourly && { hourly: partFrom(hourly, ({ hours }) => hours) }),
-          ...(daily && { daily: partFrom(daily, ({ days }) => days) }),
-        },
-      },
-    };
+    return forecastFrom(parts, { current, hourly, daily, name });
   };
 };
 
 const RECORDED_RESPONSES: Readonly<Record<string, unknown>> = {
-  [new URL(WEATHER_PROVIDER_CURRENT_URL).pathname]: recordedCurrentConditions,
-  [new URL(WEATHER_PROVIDER_HOURLY_URL).pathname]: recordedHourlyForecast,
-  [new URL(WEATHER_PROVIDER_DAILY_URL).pathname]: recordedDailyForecast,
-  [new URL(WEATHER_PROVIDER_REVERSE_GEOCODING_URL).pathname]:
+  [new URL(WEATHER_PROVIDER_CALLS.current.url).pathname]:
+    recordedCurrentConditions,
+  [new URL(WEATHER_PROVIDER_CALLS.hourly.url).pathname]: recordedHourlyForecast,
+  [new URL(WEATHER_PROVIDER_CALLS.daily.url).pathname]: recordedDailyForecast,
+  [new URL(WEATHER_PROVIDER_CALLS.reverseGeocoding.url).pathname]:
     recordedReverseGeocoding,
 };
 
