@@ -127,7 +127,7 @@ components:
 
 # Design System: Weather Widget
 
-The reference sheet `docs/design/reference.html` draws every state below with `docs/design/widget.css` and sample data, at four widths and in both color schemes. Serve the folder over HTTP to view it (`python3 -m http.server` in `docs/design`), because browsers don't load CSS masks from `file://`.
+The reference sheet `docs/design/index.html` draws every state below with `docs/design/style.css` and sample data, at four widths and in both color schemes. Serve the folder over HTTP to view it (`python3 -m http.server` in `docs/design`), because browsers don't load CSS masks from `file://`.
 
 ## Overview
 
@@ -436,7 +436,7 @@ Overcast uses the single-cloud `cloudy` icon. Meteocons' own `overcast` icon put
 
 Build requirements the reference sheet can't show, for #6 to #12.
 
-- **Shadow DOM:** `widget.css` uses `.weather` where the component uses `:host`. Keep `color-scheme: light dark` on `:host` so `light-dark()` follows the visitor; a Host page can force a scheme with `color-scheme` on the element.
+- **Shadow DOM:** `style.css` uses `.weather` where the component uses `:host`. Keep `color-scheme: light dark` on `:host` so `light-dark()` follows the visitor; a Host page can force a scheme with `color-scheme` on the element.
 - **Font:** the Widget never loads a font. A `@font-face` inside a shadow root doesn't apply, and loading fonts would add a request to every Host page. The Example hosts self-host Lexend (variable, 400 to 800) and declare it in the document. Elsewhere the Widget falls back to `system-ui`.
 - **Icons:** `@meteocons/svg` (animated) and `@meteocons/svg-static` (static), both `3.0.0-next.10`, MIT, no install scripts. That is a pre-release, published 2026-04-12; the only stable release (`0.1.0`) predates the monochrome set. Adding them needs the owner's approval as a dependency (#10), with the pre-release named in that approval. Inline the SVG markup so `currentColor` applies, and pick the static or animated variant from `matchMedia("(prefers-reduced-motion: reduce)")`, listening for changes. The reference sheet uses CSS masks instead, which only works over HTTP.
 - **Wind direction:** the compass needle sits in a `rotate(0 64 64)` group, pointing north-east at 0 degrees. Rotate it by the wind direction plus 135 degrees, so a south-west wind (225) points north-east and every needle points where the wind blows to. Drop the needle's sway animation under reduced motion.
