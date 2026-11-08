@@ -392,9 +392,19 @@ describe("Forecast parts", () => {
     ["current,hourly,daily", [CURRENT_PATH, HOURLY_PATH, DAILY_PATH]],
   ] as const;
 
-  it.each(PROVIDER_PATHS_FOR_PARTS)(
+  const { current, hourly, daily } = RECORDED_NIEUWEGEIN_FORECAST.parts;
+
+  it.each([
+    ["current", { current }],
+    ["hourly", { hourly }],
+    ["daily", { daily }],
+    ["current,hourly", { current, hourly }],
+    ["current,daily", { current, daily }],
+    ["hourly,daily", { hourly, daily }],
+    ["current,hourly,daily", { current, hourly, daily }],
+  ])(
     "answers parts=%s with exactly those Forecast parts",
-    async (parts) => {
+    async (parts, expectedParts) => {
       const { proxy } = healthyProxy();
 
       const response = await proxy.request(
@@ -403,15 +413,10 @@ describe("Forecast parts", () => {
 
       expect(response.status).toBe(200);
       const forecast = v.parse(ForecastResponseSchema, await response.json());
-      expect(Object.keys(forecast.parts)).toEqual(parts.split(","));
-      expect(forecast.location).toEqual(RECORDED_NIEUWEGEIN_FORECAST.location);
-      expect(forecast.parts).toEqual(
-        Object.fromEntries(
-          Object.entries(RECORDED_NIEUWEGEIN_FORECAST.parts).filter(([part]) =>
-            parts.split(",").includes(part),
-          ),
-        ),
-      );
+      expect(forecast).toEqual({
+        location: RECORDED_NIEUWEGEIN_FORECAST.location,
+        parts: expectedParts,
+      });
     },
   );
 
