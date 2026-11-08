@@ -1,5 +1,6 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
   WIDGET_MODULE_DIRECTORY,
   WIDGET_MODULE_FILE,
@@ -14,11 +15,18 @@ export default defineConfig({
     },
     outDir: `../../dist/${WIDGET_MODULE_DIRECTORY}`,
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        minify: true,
+        comments: { legal: true, annotation: false, jsdoc: false },
+      },
+    },
   },
   optimizeDeps: {
     include: ["lit", "valibot"],
   },
   test: {
+    ...vitestCiReporting("Widget"),
     browser: {
       enabled: true,
       provider: playwright(),
