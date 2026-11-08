@@ -37,6 +37,7 @@ export default defineConfig({
   },
   test: {
     ...vitestCiReporting("Widget"),
+    setupFiles: ["test/support.ts"],
     browser: {
       enabled: true,
       provider: playwright(),
