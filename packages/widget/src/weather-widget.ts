@@ -8,6 +8,7 @@ import * as v from "valibot";
 import { formatCoordinates, formatTime, type Spoken } from "./format.ts";
 import {
   fetchForecast,
+  keepsShownParts,
   refreshedForecast,
   requestedParts,
   type Forecast,
@@ -241,7 +242,9 @@ export class WeatherWidget extends LitElement {
       ...refreshedForecast(shown, forecast),
       status: "ok",
       nameTakesFocus: false,
-      receivedAt: Date.now(),
+      receivedAt: keepsShownParts(shown, forecast)
+        ? shown.receivedAt
+        : Date.now(),
     };
   }
 

@@ -1364,6 +1364,20 @@ describe("loading", () => {
       setVisibility("visible");
     };
 
+    const fifteenDegreesWithoutDailyForecast = () => {
+      const failing = forecastFailing("daily");
+      return {
+        ...failing,
+        parts: {
+          ...failing.parts,
+          current: {
+            status: "ok",
+            data: { ...RECORDED_CONDITIONS, temperatureCelsius: 15 },
+          },
+        },
+      };
+    };
+
     const showingFiveDegrees = async () => {
       fakeProxy.mockImplementationOnce(() =>
         respondWith(forecastWithTemperature(5)),
@@ -1415,18 +1429,8 @@ describe("loading", () => {
       renderWidget(NIEUWEGEIN);
       const days = page.getByRole("list", { name: "Next 5 days" });
       await expect.element(days).toBeVisible();
-      const failing = forecastFailing("daily");
       fakeProxy.mockImplementationOnce(() =>
-        respondWith({
-          ...failing,
-          parts: {
-            ...failing.parts,
-            current: {
-              status: "ok",
-              data: { ...RECORDED_CONDITIONS, temperatureCelsius: 15 },
-            },
-          },
-        }),
+        respondWith(fifteenDegreesWithoutDailyForecast()),
       );
 
       comeBackAfter(11);
@@ -1436,6 +1440,24 @@ describe("loading", () => {
       await expect
         .element(shownMessage("Daily forecast unavailable"))
         .not.toBeInTheDocument();
+    });
+
+    it("tries again next time when the refresh couldn't get every part", async () => {
+      fakeProxy.mockImplementationOnce(() => respondWith(fullForecast()));
+      renderWidget(NIEUWEGEIN);
+      await expect.element(locationName()).toBeVisible();
+      fakeProxy.mockImplementationOnce(() =>
+        respondWith(fifteenDegreesWithoutDailyForecast()),
+      );
+      comeBackAfter(11);
+      await expect.element(page.getByText("15°C")).toBeVisible();
+      fakeProxy.mockImplementationOnce(() => respondWith(fullForecast()));
+
+      comeBackAfter(13);
+
+      await vi.waitFor(() => {
+        expect(fakeProxy).toHaveBeenCalledTimes(3);
+      });
     });
 
     it("keeps the Forecast without fetching when it is 10 minutes old or less", async () => {

@@ -92,10 +92,18 @@ export const fetchForecast = async (
   }
 };
 
+const isKept = (
+  shown: Result<unknown> | undefined,
+  fresh: Result<unknown> | undefined,
+) => fresh?.status === "error" && shown?.status === "ok";
+
 const keptPart = <TData>(
   shown: Result<TData> | undefined,
   fresh: Result<TData> | undefined,
-) => (fresh?.status === "error" && shown?.status === "ok" ? shown : fresh);
+) => (isKept(shown, fresh) ? shown : fresh);
+
+export const keepsShownParts = (shown: Forecast, fresh: Forecast) =>
+  FORECAST_PARTS.some((part) => isKept(shown[part], fresh[part]));
 
 export const refreshedForecast = (
   shown: Forecast,
