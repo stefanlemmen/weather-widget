@@ -75,7 +75,7 @@ export const CurrentConditionsSchema = v.object({
   feelsLikeCelsius: v.number(),
   windSpeedMetresPerSecond: v.pipe(v.number(), v.minValue(0)),
   windDirectionDegrees: v.pipe(v.number(), v.minValue(0), v.maxValue(360)),
-  precipitationChance: ChanceSchema,
+  precipitationChance: v.nullable(ChanceSchema),
   observedAt: v.pipe(v.string(), v.isoTimestamp()),
 });
 
@@ -118,22 +118,22 @@ export const LocationSchema = v.object({
 
 export type Location = v.InferOutput<typeof LocationSchema>;
 
-const forecastPartResult = <TData extends v.GenericSchema>(data: TData) =>
+const resultSchema = <TData extends v.GenericSchema>(data: TData) =>
   v.variant("status", [
     v.object({ status: v.literal("ok"), data }),
     v.object({ status: v.literal("error") }),
   ]);
 
-export type ForecastPartResult<TData> =
+export type Result<TData> =
   | { readonly status: "ok"; readonly data: TData }
   | { readonly status: "error" };
 
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,
   parts: v.object({
-    current: v.optional(forecastPartResult(CurrentConditionsSchema)),
-    hourly: v.optional(forecastPartResult(HourlyForecastSchema)),
-    daily: v.optional(forecastPartResult(DailyForecastSchema)),
+    current: v.optional(resultSchema(CurrentConditionsSchema)),
+    hourly: v.optional(resultSchema(HourlyForecastSchema)),
+    daily: v.optional(resultSchema(DailyForecastSchema)),
   }),
 });
 

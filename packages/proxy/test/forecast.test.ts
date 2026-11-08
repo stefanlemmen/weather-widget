@@ -4,7 +4,7 @@ import {
   ProblemDetailsSchema,
 } from "@weather-widget/contract";
 import * as v from "valibot";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
 import recordedDailyForecast from "../fixtures/daily-nieuwegein.json" with { type: "json" };
 import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { type: "json" };
@@ -271,6 +271,22 @@ describe("the forecast route", () => {
     ["can't be reached", () => Promise.reject(new TypeError("fetch failed"))],
   ];
 
+  const { current, hourly, daily } = RECORDED_NIEUWEGEIN_FORECAST.parts;
+  const FAILED_PART = { status: "error" };
+
+  const PARTS_WHEN_FAILING = {
+    [CURRENT_PATH]: { current: FAILED_PART, hourly, daily },
+    [HOURLY_PATH]: {
+      current: {
+        ...current,
+        data: { ...current.data, precipitationChance: null },
+      },
+      hourly: FAILED_PART,
+      daily,
+    },
+    [DAILY_PATH]: { current, hourly, daily: FAILED_PART },
+  };
+
   it.each([
     ["a negative wind speed", CURRENT_PATH, { wind_speed: -1 }],
     ["a wind direction above 360 degrees", CURRENT_PATH, { wind_deg: 361 }],
@@ -282,7 +298,7 @@ describe("the forecast route", () => {
       { temp: { min: 11, max: 10 } },
     ],
   ] as const)(
-    "answers 503 Problem Details when the Weather provider reports %s",
+    "fails only the Forecast parts that need an endpoint reporting %s",
     async (_, pathname, outOfRange) => {
       const recorded: { readonly data: readonly object[] } = {
         [CURRENT_PATH]: recordedCurrentConditions,
@@ -305,27 +321,52 @@ describe("the forecast route", () => {
         "/api/forecast?latitude=52.03&longitude=5.08",
       );
 
-      await expectProblemDetails(response, 503);
+      expect(response.status).toBe(200);
+      expect(
+        v.parse(ForecastResponseSchema, await response.json()).parts,
+      ).toEqual(PARTS_WHEN_FAILING[pathname]);
     },
   );
 
   const FORECAST_ENDPOINTS = [
-    ["current", CURRENT_PATH],
-    ["hourly", HOURLY_PATH],
-    ["daily", DAILY_PATH],
+    ["current", CURRENT_PATH, PARTS_WHEN_FAILING[CURRENT_PATH]],
+    ["hourly", HOURLY_PATH, PARTS_WHEN_FAILING[HOURLY_PATH]],
+    ["daily", DAILY_PATH, PARTS_WHEN_FAILING[DAILY_PATH]],
   ] as const;
 
   it.each(
-    FORECAST_ENDPOINTS.flatMap(([endpoint, pathname]) =>
+    FORECAST_ENDPOINTS.flatMap(([endpoint, pathname, expectedParts]) =>
       PROVIDER_FAILURES.map(
-        ([failure, respond]) => [endpoint, failure, pathname, respond] as const,
+        ([failure, respond]) =>
+          [endpoint, failure, pathname, respond, expectedParts] as const,
       ),
     ),
   )(
-    "answers 503 Problem Details when the Weather provider's %s endpoint %s",
-    async (_endpoint, _failure, pathname, respond) => {
+    "fails only the Forecast parts that need the Weather provider's %s endpoint when it %s",
+    async (_endpoint, _failure, pathname, respond, expectedParts) => {
       const { proxy } = proxyAnswering(
         answerFromRecordingsExcept(pathname, respond),
+      );
+
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08",
+      );
+
+      expect(response.status).toBe(200);
+      expect(v.parse(ForecastResponseSchema, await response.json())).toEqual({
+        location: RECORDED_NIEUWEGEIN_FORECAST.location,
+        parts: expectedParts,
+      });
+    },
+  );
+
+  it.each(PROVIDER_FAILURES)(
+    "answers 503 Problem Details when every Forecast endpoint %s",
+    async (_, respond) => {
+      const { proxy } = proxyAnswering((url) =>
+        url.pathname === REVERSE_GEOCODING_PATH
+          ? answerFromRecordings(url)
+          : respond(url),
       );
 
       const response = await proxy.request(
@@ -335,6 +376,43 @@ describe("the forecast route", () => {
       await expectProblemDetails(response, 503);
     },
   );
+
+  it.each([
+    ["current", CURRENT_PATH],
+    ["hourly", HOURLY_PATH],
+    ["daily", DAILY_PATH],
+  ])(
+    "answers 503 Problem Details when parts=%s and its only endpoint fails",
+    async (parts, pathname) => {
+      const { proxy } = proxyAnswering(
+        answerFromRecordingsExcept(pathname, () =>
+          Promise.resolve(jsonResponse({ cod: 500 }, 500)),
+        ),
+      );
+
+      const response = await proxy.request(
+        `/api/forecast?latitude=52.03&longitude=5.08&parts=${parts}`,
+      );
+
+      await expectProblemDetails(response, 503);
+    },
+  );
+
+  it("lets the CDN cache a partial forecast for only a minute and serve it stale for an hour on errors", async () => {
+    const { proxy } = proxyAnswering(
+      answerFromRecordingsExcept(DAILY_PATH, () =>
+        Promise.resolve(jsonResponse({ cod: 500 }, 500)),
+      ),
+    );
+
+    const response = await proxy.request(
+      "/api/forecast?latitude=52.03&longitude=5.08",
+    );
+
+    expect(response.headers.get("cache-control")).toBe(
+      "public, max-age=0, s-maxage=60, stale-if-error=3600",
+    );
+  });
 
   const timingOut =
     (pathname: string): typeof globalThis.fetch =>
@@ -349,8 +427,8 @@ describe("the forecast route", () => {
     };
 
   it.each(FORECAST_ENDPOINTS)(
-    "answers 503 Problem Details when the Weather provider's %s endpoint doesn't answer in time",
-    async (_, pathname) => {
+    "fails only the Forecast parts that need the Weather provider's %s endpoint when it doesn't answer in time",
+    async (_, pathname, expectedParts) => {
       const proxy = createProxy(liveEnvironment, {
         fetch: timingOut(pathname),
         weatherProviderTimeoutMs: 10,
@@ -360,7 +438,10 @@ describe("the forecast route", () => {
         "/api/forecast?latitude=52.03&longitude=5.08",
       );
 
-      await expectProblemDetails(response, 503);
+      expect(response.status).toBe(200);
+      expect(
+        v.parse(ForecastResponseSchema, await response.json()).parts,
+      ).toEqual(expectedParts);
     },
   );
 
@@ -378,6 +459,107 @@ describe("the forecast route", () => {
     expect(
       v.parse(ForecastResponseSchema, await response.json()).location.name,
     ).toBeNull();
+  });
+
+  describe("logs", () => {
+    const errorLog = vi.fn();
+    const logged = () => errorLog.mock.calls.flat().join("\n");
+
+    beforeEach(() => {
+      errorLog.mockReset();
+      vi.spyOn(console, "error").mockImplementation(errorLog);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("logs nothing when every Weather provider call succeeds", async () => {
+      const { proxy } = healthyProxy();
+
+      await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
+
+      expect(errorLog).not.toHaveBeenCalled();
+    });
+
+    it.each(PROVIDER_FAILURES)(
+      "logs which Weather provider call failed when it %s, without coordinates or the key",
+      async (_, respond) => {
+        const { proxy } = proxyAnswering(
+          answerFromRecordingsExcept(DAILY_PATH, respond),
+        );
+
+        await proxy.request("/api/forecast?latitude=52.0349&longitude=-5.0751");
+
+        expect(errorLog).toHaveBeenCalledOnce();
+        expect(logged()).toContain("daily");
+        for (const secret of ["52.0", "5.07", "5.08", TEST_KEY]) {
+          expect(logged()).not.toContain(secret);
+        }
+      },
+    );
+
+    it.each([
+      [
+        "answers with a server error",
+        () => Promise.resolve(jsonResponse({ cod: 500 }, 500)),
+        "HTTP 500",
+      ],
+      [
+        "rejects the key",
+        () => Promise.resolve(jsonResponse({ cod: 401 }, 401)),
+        "HTTP 401",
+      ],
+      [
+        "answers with an unexpected shape",
+        () => Promise.resolve(jsonResponse({ data: [] })),
+        "unexpected response",
+      ],
+      [
+        "answers with something other than JSON",
+        () => Promise.resolve(new Response("<html>oops</html>")),
+        "unexpected response",
+      ],
+      [
+        "can't be reached",
+        () => Promise.reject(new TypeError("fetch failed")),
+        "unreachable",
+      ],
+    ] as const)(
+      "logs why a call failed when it %s",
+      async (_, respond, reason) => {
+        const { proxy } = proxyAnswering(
+          answerFromRecordingsExcept(DAILY_PATH, respond),
+        );
+
+        await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
+
+        expect(logged()).toContain(reason);
+      },
+    );
+
+    it("logs a Weather provider call that doesn't answer in time", async () => {
+      const proxy = createProxy(liveEnvironment, {
+        fetch: timingOut(DAILY_PATH),
+        weatherProviderTimeoutMs: 10,
+      });
+
+      await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
+
+      expect(logged()).toContain("timed out");
+    });
+
+    it("doesn't log a Location without a name", async () => {
+      const { proxy } = proxyAnswering(
+        answerFromRecordingsExcept(REVERSE_GEOCODING_PATH, () =>
+          Promise.resolve(jsonResponse([])),
+        ),
+      );
+
+      await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
+
+      expect(errorLog).not.toHaveBeenCalled();
+    });
   });
 });
 

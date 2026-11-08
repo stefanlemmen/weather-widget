@@ -305,7 +305,7 @@ The name is the `location-name` attribute when set, otherwise the Proxy's name, 
 
 ### Live region
 
-Each Widget has one visually hidden `role="status"` element, outside the Forecast markup so re-rendering never removes it. It announces a new Forecast ("Forecast for Nieuwegein, updated at 2:52 PM"), a failed part ("Daily forecast unavailable") and the error state ("Forecast unavailable"). A background refresh that fails announces nothing, because the Forecast on screen stays.
+Each Widget has one visually hidden `role="status"` element, outside the Forecast markup so re-rendering never removes it. It announces a new Forecast ("Forecast for Nieuwegein, updated at 2:52 PM"), a failed part ("Daily forecast unavailable") and the error state ("Forecast unavailable"). A background refresh that fails announces nothing, because the Forecast on screen stays. After a successful "Try again", focus moves to the Location's name and screen readers read it out, so the live region announces only the failed parts.
 
 ### Facts
 
