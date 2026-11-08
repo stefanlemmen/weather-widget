@@ -5,10 +5,7 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
-import recordedDailyForecast from "../fixtures/daily-nieuwegein.json" with { type: "json" };
-import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { type: "json" };
-import recordedReverseGeocoding from "../fixtures/reverse-nieuwegein.json" with { type: "json" };
+import { RECORDED_RESPONSES } from "../fixtures/recorded-responses.ts";
 import { createProxy } from "../src/index.ts";
 import {
   RECORDED_NIEUWEGEIN_DAYS,
@@ -67,15 +64,15 @@ const proxyAnswering = (respond: Respond) => {
   return { proxy, requestedUrls: weatherProvider.requestedUrls };
 };
 
-const RECORDED_RESPONSES: Readonly<Record<string, unknown>> = {
-  [CURRENT_PATH]: recordedCurrentConditions,
-  [HOURLY_PATH]: recordedHourlyForecast,
-  [DAILY_PATH]: recordedDailyForecast,
-  [REVERSE_GEOCODING_PATH]: recordedReverseGeocoding,
+const RECORDED_RESPONSES_BY_PATH: Readonly<Record<string, unknown>> = {
+  [CURRENT_PATH]: RECORDED_RESPONSES.current,
+  [HOURLY_PATH]: RECORDED_RESPONSES.hourly,
+  [DAILY_PATH]: RECORDED_RESPONSES.daily,
+  [REVERSE_GEOCODING_PATH]: RECORDED_RESPONSES.reverseGeocoding,
 };
 
 const answerFromRecordings: Respond = (url) =>
-  Promise.resolve(jsonResponse(RECORDED_RESPONSES[url.pathname], 200));
+  Promise.resolve(jsonResponse(RECORDED_RESPONSES_BY_PATH[url.pathname], 200));
 
 const answerFromRecordingsExcept =
   (pathname: string, respond: Respond): Respond =>
@@ -303,9 +300,9 @@ describe("the forecast route", () => {
     "fails only the Forecast parts that need an endpoint reporting %s",
     async (_, pathname, outOfRange) => {
       const recorded: { readonly data: readonly object[] } = {
-        [CURRENT_PATH]: recordedCurrentConditions,
-        [HOURLY_PATH]: recordedHourlyForecast,
-        [DAILY_PATH]: recordedDailyForecast,
+        [CURRENT_PATH]: RECORDED_RESPONSES.current,
+        [HOURLY_PATH]: RECORDED_RESPONSES.hourly,
+        [DAILY_PATH]: RECORDED_RESPONSES.daily,
       }[pathname];
       const [first, ...rest] = recorded.data;
       const { proxy } = proxyAnswering(
@@ -645,7 +642,7 @@ describe("Forecast parts", () => {
     const { proxy } = proxyAnswering(
       answerFromRecordingsExcept(DAILY_PATH, () =>
         Promise.resolve(
-          jsonResponse({ ...recordedDailyForecast, timezone: "Asia/Tokyo" }),
+          jsonResponse({ ...RECORDED_RESPONSES.daily, timezone: "Asia/Tokyo" }),
         ),
       ),
     );
@@ -662,12 +659,12 @@ describe("Forecast parts", () => {
 
 describe("the Daily forecast", () => {
   const dailyAnswering = (timezone: string, dts: readonly number[]) => {
-    const [first] = recordedDailyForecast.data;
+    const [first] = RECORDED_RESPONSES.daily.data;
     return proxyAnswering(
       answerFromRecordingsExcept(DAILY_PATH, () =>
         Promise.resolve(
           jsonResponse({
-            ...recordedDailyForecast,
+            ...RECORDED_RESPONSES.daily,
             timezone,
             data: dts.map((dt) => ({ ...first, dt })),
           }),
@@ -720,9 +717,9 @@ describe("Conditions", () => {
   ] as const;
 
   const hourlyWithCode = (id: number) => {
-    const [first, ...rest] = recordedHourlyForecast.data;
+    const [first, ...rest] = RECORDED_RESPONSES.hourly.data;
     return {
-      ...recordedHourlyForecast,
+      ...RECORDED_RESPONSES.hourly,
       data: [{ ...first, weather: [{ ...first?.weather[0], id }] }, ...rest],
     };
   };
@@ -756,7 +753,7 @@ describe("Conditions", () => {
 });
 
 describe("day or night", () => {
-  const { sunrise, sunset } = recordedCurrentConditions.data[0] ?? {
+  const { sunrise, sunset } = RECORDED_RESPONSES.current.data[0] ?? {
     sunrise: 0,
     sunset: 0,
   };
@@ -794,9 +791,9 @@ describe("day or night", () => {
   it.each(AROUND_SUNRISE_AND_SUNSET)(
     "takes an hour %s as %s from the Weather provider's icon",
     async (_, dt, icon, daylight) => {
-      const [first, ...rest] = recordedHourlyForecast.data;
+      const [first, ...rest] = RECORDED_RESPONSES.hourly.data;
       const { hourly } = await forecastAnswering(HOURLY_PATH, {
-        ...recordedHourlyForecast,
+        ...RECORDED_RESPONSES.hourly,
         data: [...(first ? [withWeatherAt(first, dt, icon)] : []), ...rest],
       });
 
@@ -809,9 +806,9 @@ describe("day or night", () => {
   it.each(AROUND_SUNRISE_AND_SUNSET)(
     "takes Current conditions observed %s as %s from the Weather provider's icon",
     async (_, dt, icon, daylight) => {
-      const [now] = recordedCurrentConditions.data;
+      const [now] = RECORDED_RESPONSES.current.data;
       const { current } = await forecastAnswering(CURRENT_PATH, {
-        ...recordedCurrentConditions,
+        ...RECORDED_RESPONSES.current,
         data: now ? [withWeatherAt(now, dt, icon)] : [],
       });
 
@@ -820,8 +817,8 @@ describe("day or night", () => {
   );
   it("takes the Daily forecast's Conditions without the Weather provider's day or night", async () => {
     const { daily } = await forecastAnswering(DAILY_PATH, {
-      ...recordedDailyForecast,
-      data: recordedDailyForecast.data.map((day) => ({
+      ...RECORDED_RESPONSES.daily,
+      data: RECORDED_RESPONSES.daily.data.map((day) => ({
         ...day,
         weather: [{ id: 800 }],
       })),

@@ -15,17 +15,10 @@ import {
 } from "@weather-widget/contract";
 import { Hono, type Context } from "hono";
 import * as v from "valibot";
+import { parseEnvironment, type RawEnvironment } from "./environment.ts";
 import {
-  parseEnvironment,
-  WEATHER_PROVIDER_MODES,
-  type Environment,
-  type RawEnvironment,
-} from "./environment.ts";
-import {
-  createLiveWeatherProvider,
-  fixtureFetch,
-  WEATHER_PROVIDER_TIMEOUT_MS,
-  type WeatherProviderOptions,
+  createWeatherProvider,
+  type WeatherProviderDependencies,
 } from "./weather-provider.ts";
 
 export { PROXY_BASE_PATH };
@@ -35,7 +28,6 @@ export const FORECAST_CACHE_CONTROL =
 export const PARTIAL_FORECAST_CACHE_CONTROL =
   "public, max-age=0, s-maxage=60, stale-if-error=3600";
 const NO_STORE = "no-store";
-const FIXTURE_KEY = "fixtures";
 const COORDINATE_DECIMALS = 2;
 
 type ProblemResponse = ProblemDetails & { readonly status: 400 | 404 | 503 };
@@ -65,10 +57,7 @@ const FORECAST_UNAVAILABLE: ProblemResponse = {
   detail: "The Weather provider could not be reached. Try again later.",
 };
 
-export interface ProxyDependencies {
-  readonly fetch: typeof globalThis.fetch;
-  readonly weatherProviderTimeoutMs?: number;
-}
+export type ProxyDependencies = WeatherProviderDependencies;
 
 const problem = (context: Context, details: ProblemResponse) => {
   context.header("cache-control", NO_STORE);
@@ -90,23 +79,6 @@ const roundCoordinates = ({
   longitude: roundCoordinate(longitude),
 });
 
-const weatherProviderOptions = (
-  environment: Environment,
-  dependencies: ProxyDependencies,
-): WeatherProviderOptions =>
-  environment.mode === WEATHER_PROVIDER_MODES.fixtures
-    ? {
-        key: FIXTURE_KEY,
-        fetch: fixtureFetch,
-        timeoutMs: WEATHER_PROVIDER_TIMEOUT_MS,
-      }
-    : {
-        key: environment.weatherProviderKey,
-        fetch: dependencies.fetch,
-        timeoutMs:
-          dependencies.weatherProviderTimeoutMs ?? WEATHER_PROVIDER_TIMEOUT_MS,
-      };
-
 const isPartial = ({ parts }: ForecastResponse) =>
   Object.values(parts).some((part) => part?.status === "error");
 
@@ -114,8 +86,9 @@ export const createProxy = (
   rawEnvironment: RawEnvironment,
   dependencies: ProxyDependencies = { fetch: globalThis.fetch },
 ): Hono => {
-  const fetchForecast = createLiveWeatherProvider(
-    weatherProviderOptions(parseEnvironment(rawEnvironment), dependencies),
+  const fetchForecast = createWeatherProvider(
+    parseEnvironment(rawEnvironment),
+    dependencies,
   );
 
   const proxy = new Hono().basePath(PROXY_BASE_PATH);
