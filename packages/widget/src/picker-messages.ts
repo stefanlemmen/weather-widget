@@ -1,8 +1,6 @@
 import type { Locale } from "@weather-widget/contract";
 
-export const LOCATION_ERRORS = ["denied", "timedOut", "unavailable"] as const;
-
-export type LocationError = (typeof LOCATION_ERRORS)[number];
+export type LocationError = "denied" | "timedOut" | "unavailable";
 
 export interface PickerMessages {
   readonly chooseALocation: string;
