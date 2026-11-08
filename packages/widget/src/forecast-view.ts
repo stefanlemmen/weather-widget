@@ -19,6 +19,11 @@ import type { Motion } from "./motion-preference.ts";
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
 
+export interface ViewContext {
+  readonly format: Formatter;
+  readonly motion: Motion;
+}
+
 const spoken = (text: Spoken | string) =>
   typeof text === "string"
     ? text
@@ -75,9 +80,8 @@ const currentConditionsDetails = (
   </dl>`;
 
 const currentConditions = (
-  format: Formatter,
+  { format, motion }: ViewContext,
   current: Result<CurrentConditions>,
-  motion: Motion,
 ) =>
   shownOrUnavailable(
     format,
@@ -99,11 +103,10 @@ const currentConditions = (
   );
 
 const hourlyForecast = (
-  format: Formatter,
+  { format, motion }: ViewContext,
   hourly: Result<HourlyForecast>,
   { timeZone }: Location,
   now: Date,
-  motion: Motion,
 ) =>
   html`<section class="hourly">
     <h3 id="hourly-heading">${format.messages.nextHours}</h3>
@@ -134,11 +137,10 @@ const hourlyForecast = (
   </section>`;
 
 const dailyForecast = (
-  format: Formatter,
+  { format, motion }: ViewContext,
   daily: Result<DailyForecast>,
   { timeZone }: Location,
   now: Date,
-  motion: Motion,
 ) =>
   html`<section class="daily">
     <h3 id="daily-heading">${format.messages.nextDays}</h3>
@@ -200,16 +202,15 @@ const footer = (format: Formatter, forecast: Forecast) => {
 };
 
 export const forecastView = (
-  format: Formatter,
+  context: ViewContext,
   forecast: Forecast,
   name: Spoken | string,
-  motion: Motion,
 ) => {
   const { current, hourly, daily, location } = forecast;
   const now = new Date();
   return html`<h2 tabindex="-1">${spoken(name)}</h2>
-    ${current ? currentConditions(format, current, motion) : nothing}
-    ${hourly ? hourlyForecast(format, hourly, location, now, motion) : nothing}
-    ${daily ? dailyForecast(format, daily, location, now, motion) : nothing}
-    ${footer(format, forecast)}`;
+    ${current ? currentConditions(context, current) : nothing}
+    ${hourly ? hourlyForecast(context, hourly, location, now) : nothing}
+    ${daily ? dailyForecast(context, daily, location, now) : nothing}
+    ${footer(context.format, forecast)}`;
 };

@@ -379,10 +379,9 @@ export class WeatherWidget extends LitElement {
     );
     return html`<div class="skeleton" aria-hidden="true" inert>
       ${forecastView(
-        this.#format,
+        { format: this.#format, motion: STILL },
         placeholder,
         this.#locationName(placeholder),
-        STILL,
       )}
     </div>`;
   }
@@ -393,10 +392,9 @@ export class WeatherWidget extends LitElement {
         return this.#skeleton();
       case "ok":
         return forecastView(
-          this.#format,
+          { format: this.#format, motion: this.#motionPreference.motion },
           this.forecast,
           this.#locationName(this.forecast),
-          this.#motionPreference.motion,
         );
       case "error":
       case "retrying":
