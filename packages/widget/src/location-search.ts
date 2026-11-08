@@ -2,14 +2,14 @@ import {
   LOCATIONS_PATH,
   LocationsResponseSchema,
   type FoundLocation,
-  type Locale,
+  type LocationsQuery,
   type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
 
 const FAILED = { status: "error" } as const;
 
-const locationsUrl = (proxyUrl: string, name: string, locale: Locale) => {
+const locationsUrl = (proxyUrl: string, { name, locale }: LocationsQuery) => {
   const url = new URL(`${proxyUrl}${LOCATIONS_PATH}`, document.baseURI);
   url.search = new URLSearchParams({ name, locale }).toString();
   return url;
@@ -17,12 +17,11 @@ const locationsUrl = (proxyUrl: string, name: string, locale: Locale) => {
 
 export const findLocations = async (
   proxyUrl: string,
-  name: string,
-  locale: Locale,
+  query: LocationsQuery,
   signal: AbortSignal,
 ): Promise<Result<readonly FoundLocation[]>> => {
   try {
-    const response = await fetch(locationsUrl(proxyUrl, name, locale), {
+    const response = await fetch(locationsUrl(proxyUrl, query), {
       signal,
     });
     if (!response.ok) return FAILED;

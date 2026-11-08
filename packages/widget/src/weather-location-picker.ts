@@ -1,7 +1,10 @@
 import {
+  DEFAULT_LOCALE,
   PROXY_BASE_PATH,
   roundCoordinates,
+  type Coordinates,
   type FoundLocation,
+  type Locale,
 } from "@weather-widget/contract";
 import { html, LitElement, nothing, type PropertyValues } from "lit";
 import { parseLocale } from "./locale.ts";
@@ -16,23 +19,32 @@ import { pickerStyles } from "./picker-styles.ts";
 export const WEATHER_LOCATION_PICKER_TAG = "weather-location-picker";
 export const LOCATION_SELECT_EVENT = "location-select";
 
-export interface LocationSelectDetail {
-  readonly latitude: number;
-  readonly longitude: number;
+export type LocationSelectDetail = Coordinates & {
   readonly name: string | null;
-}
+};
+
+const SEARCH_FIELD_ID = "search-term";
+const SEARCH_FIELD_NAME = "q";
+
+const CREDIT_LINKS = {
+  openMeteo: "https://open-meteo.com/",
+  geoNames: "https://www.geonames.org/",
+  ccBy: "https://creativecommons.org/licenses/by/4.0/",
+} as const;
+
+const DEVICE_LOCATION_TIMEOUT_MS = 10_000;
+const DEVICE_LOCATION_MAX_AGE_MS = 5 * 60 * 1000;
 
 const DEVICE_LOCATION_OPTIONS: PositionOptions = {
-  timeout: 10_000,
-  maximumAge: 5 * 60 * 1000,
+  timeout: DEVICE_LOCATION_TIMEOUT_MS,
+  maximumAge: DEVICE_LOCATION_MAX_AGE_MS,
 };
 
-const LOCATION_ERRORS_BY_CODE: Readonly<Record<number, LocationError>> = {
-  [GeolocationPositionError.PERMISSION_DENIED]: "denied",
-  [GeolocationPositionError.TIMEOUT]: "timedOut",
+const locationErrorOf = (error: GeolocationPositionError): LocationError => {
+  if (error.code === error.PERMISSION_DENIED) return "denied";
+  if (error.code === error.TIMEOUT) return "timedOut";
+  return "unavailable";
 };
-
-const UNAVAILABLE: LocationError = "unavailable";
 
 type Message =
   | { readonly kind: "none" }
@@ -89,7 +101,8 @@ export class WeatherLocationPicker extends LitElement {
   declare locale: string | undefined;
   declare proxyUrl: string;
 
-  #messages: PickerMessages = PICKER_MESSAGES.en;
+  #locale: Locale = DEFAULT_LOCALE;
+  #messages: PickerMessages = PICKER_MESSAGES[DEFAULT_LOCALE];
   #found: readonly FoundLocation[] = [];
   #message: Message = NO_MESSAGE;
   #locating = false;
@@ -107,24 +120,25 @@ export class WeatherLocationPicker extends LitElement {
 
   protected override willUpdate(changed: PropertyValues<this>) {
     if (changed.has("locale")) {
-      this.#messages = PICKER_MESSAGES[parseLocale(this.locale)];
+      this.#locale = parseLocale(this.locale);
+      this.#messages = PICKER_MESSAGES[this.#locale];
     }
   }
 
-  #show(found: readonly FoundLocation[], message: Message) {
+  #showResults(found: readonly FoundLocation[], message: Message) {
     this.#found = found;
     this.#message = message;
     this.requestUpdate();
   }
 
-  #say(message: Message) {
-    this.#show(this.#found, message);
+  #announce(message: Message) {
+    this.#showResults(this.#found, message);
   }
 
   readonly #onSubmit = async (event: SubmitEvent) => {
     event.preventDefault();
     if (!(event.currentTarget instanceof HTMLFormElement)) return;
-    const term = new FormData(event.currentTarget).get("q");
+    const term = new FormData(event.currentTarget).get(SEARCH_FIELD_NAME);
     const name = typeof term === "string" ? term.trim() : "";
     if (name === "") return;
 
@@ -133,18 +147,20 @@ export class WeatherLocationPicker extends LitElement {
     this.#search = search;
     const found = await findLocations(
       this.proxyUrl,
-      name,
-      parseLocale(this.locale),
+      { name, locale: this.#locale },
       search.signal,
     );
     if (search.signal.aborted) return;
 
     if (found.status === "error") {
-      this.#show([], { kind: "searchFailed" });
+      this.#showResults([], { kind: "searchFailed" });
     } else if (found.data.length === 0) {
-      this.#show([], { kind: "noneFound", term: name });
+      this.#showResults([], { kind: "noneFound", term: name });
     } else {
-      this.#show(found.data, { kind: "found", count: found.data.length });
+      this.#showResults(found.data, {
+        kind: "found",
+        count: found.data.length,
+      });
     }
   };
 
@@ -161,18 +177,18 @@ export class WeatherLocationPicker extends LitElement {
   readonly #onLocate = () => {
     if (this.#locating) return;
     this.#locating = true;
-    this.#say({ kind: "locating" });
+    this.#announce({ kind: "locating" });
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         this.#locating = false;
-        this.#say(NO_MESSAGE);
+        this.#announce(NO_MESSAGE);
         this.#select({ ...roundCoordinates(coords), name: null });
       },
-      ({ code }) => {
+      (error) => {
         this.#locating = false;
-        this.#say({
+        this.#announce({
           kind: "locationError",
-          error: LOCATION_ERRORS_BY_CODE[code] ?? UNAVAILABLE,
+          error: locationErrorOf(error),
         });
       },
       DEVICE_LOCATION_OPTIONS,
@@ -224,18 +240,19 @@ export class WeatherLocationPicker extends LitElement {
 
   protected override render() {
     const messages = this.#messages;
-    return html`<div class="picker" lang=${parseLocale(this.locale)}>
+    const message = textOf(messages, this.#message);
+    return html`<div class="picker" lang=${this.#locale}>
       <form
         role="search"
         aria-label=${messages.chooseALocation}
         @submit=${this.#onSubmit}
       >
-        <label for="term">${messages.location}</label>
+        <label for=${SEARCH_FIELD_ID}>${messages.location}</label>
         <div class="picker-row">
           <input
-            id="term"
+            id=${SEARCH_FIELD_ID}
             type="search"
-            name="q"
+            name=${SEARCH_FIELD_NAME}
             autocomplete="off"
             spellcheck="false"
           />
@@ -245,16 +262,19 @@ export class WeatherLocationPicker extends LitElement {
         </div>
       </form>
       ${this.#locateButton()}
-      <p class="picker-message" role="status">
-        ${textOf(messages, this.#message)}
+      <p
+        class=${message === "" ? "picker-message is-empty" : "picker-message"}
+        role="status"
+      >
+        ${message}
       </p>
       ${this.#results()}
       <p class="credit">
         ${messages.creditSearchBy}
-        <a href="https://open-meteo.com/">Open-Meteo</a>,
+        <a href=${CREDIT_LINKS.openMeteo}>Open-Meteo</a>,
         ${messages.creditPlaceNamesFrom}
-        <a href="https://www.geonames.org/">GeoNames</a>
-        (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)
+        <a href=${CREDIT_LINKS.geoNames}>GeoNames</a>
+        (<a href=${CREDIT_LINKS.ccBy}>CC BY 4.0</a>)
       </p>
     </div>`;
   }

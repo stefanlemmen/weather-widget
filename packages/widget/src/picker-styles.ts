@@ -37,7 +37,7 @@ const picker = css`
     inline-size: 100%;
     min-block-size: var(--_target);
     padding: 0.5rem 0.75rem;
-    border: 1.5px solid color-mix(in oklab, var(--_ink) 55%, var(--_ground));
+    border: 1.5px solid var(--_field-border);
     border-radius: var(--_radius-control);
     background: var(--_ground);
     color: var(--_ink);
@@ -88,12 +88,8 @@ const picker = css`
     font-size: var(--_size-label);
   }
 
-  .picker-message:empty {
+  .picker-message.is-empty {
     position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
   }
 
   .picker-results {
