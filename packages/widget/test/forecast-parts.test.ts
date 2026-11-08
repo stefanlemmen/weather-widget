@@ -16,6 +16,7 @@ import {
   ALL_PARTS,
   hourlyForecast,
   dailyForecast,
+  weatherProviderCredit,
 } from "./support.ts";
 
 describe("Forecast parts", () => {
@@ -187,13 +188,14 @@ describe("Forecast parts", () => {
       .toHaveTextContent("Forecast unavailable");
   });
 
-  it("credits OpenWeather without Current conditions", async () => {
+  it("credits OpenWeather without Current conditions, with no update time", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
     renderWidget({ ...NIEUWEGEIN, parts: "daily" });
 
-    await expect
-      .element(page.getByRole("link", { name: "OpenWeather" }))
-      .toBeVisible();
+    await expect.element(weatherProviderCredit()).toBeVisible();
+    expect(
+      shownMessage("Weather data provided by OpenWeather").element(),
+    ).toHaveTextContent(/^\s*Weather data provided by OpenWeather\s*$/);
   });
 });
