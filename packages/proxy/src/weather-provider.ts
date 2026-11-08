@@ -10,14 +10,16 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
+import {
+  RECORDED_RESPONSES,
+  recordedFetchFor,
+} from "../fixtures/recorded-responses.ts";
 import { conditionFor } from "./conditions.ts";
-import recordedCurrentConditions from "../fixtures/current-nieuwegein.json" with { type: "json" };
-import recordedDailyForecast from "../fixtures/daily-nieuwegein.json" with { type: "json" };
-import recordedHourlyForecast from "../fixtures/hourly-nieuwegein.json" with { type: "json" };
-import recordedReverseGeocoding from "../fixtures/reverse-nieuwegein.json" with { type: "json" };
+import { WEATHER_PROVIDER_MODES, type Environment } from "./environment.ts";
 
 const WEATHER_PROVIDER_ORIGIN = "https://api.openweathermap.org";
-export const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
+const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
+const FIXTURE_KEY = "fixtures";
 const TIMEOUT_ERROR = "TimeoutError";
 const FAILURE_REASONS = {
   timedOut: "timed out",
@@ -235,13 +237,28 @@ const timeZoneOf = (
   response: Result<{ readonly timeZone: string }> | undefined,
 ) => (response?.status === "ok" ? response.data.timeZone : undefined);
 
+const HOURLY_USES = {
+  shown: "shown",
+  forCurrentPrecipitationChance: "forCurrentPrecipitationChance",
+  notFetched: "notFetched",
+} as const;
+type HourlyUse = (typeof HOURLY_USES)[keyof typeof HOURLY_USES];
+
+const hourlyUseFor = (parts: readonly ForecastPart[]): HourlyUse => {
+  if (parts.includes("hourly")) return HOURLY_USES.shown;
+  if (parts.includes("current")) {
+    return HOURLY_USES.forCurrentPrecipitationChance;
+  }
+  return HOURLY_USES.notFetched;
+};
+
 const forecastFrom = (
-  requested: readonly ForecastPart[],
+  hourlyUse: HourlyUse,
   { current, hourly, daily, name }: WeatherProviderResponses,
 ): Result<ForecastResponse> => {
-  const requestedHourly = requested.includes("hourly") ? hourly : undefined;
+  const shownHourly = hourlyUse === HOURLY_USES.shown ? hourly : undefined;
   const timeZoneOfASucceededPart =
-    timeZoneOf(current) ?? timeZoneOf(requestedHourly) ?? timeZoneOf(daily);
+    timeZoneOf(current) ?? timeZoneOf(shownHourly) ?? timeZoneOf(daily);
   if (timeZoneOfASucceededPart === undefined) return FAILED;
 
   const comingHourPrecipitationChance =
@@ -263,8 +280,8 @@ const forecastFrom = (
             precipitationChance: comingHourPrecipitationChance,
           })),
         }),
-        ...(requestedHourly && {
-          hourly: partFrom(requestedHourly, ({ hours }) => hours),
+        ...(shownHourly && {
+          hourly: partFrom(shownHourly, ({ hours }) => hours),
         }),
         ...(daily && { daily: partFrom(daily, ({ days }) => days) }),
       },
@@ -272,15 +289,18 @@ const forecastFrom = (
   };
 };
 
-export interface WeatherProviderOptions {
+interface WeatherProviderOptions {
   readonly key: string;
   readonly fetch: typeof globalThis.fetch;
   readonly timeoutMs: number;
 }
 
-export const createLiveWeatherProvider = (
-  options: WeatherProviderOptions,
-): FetchForecast => {
+export interface WeatherProviderDependencies {
+  readonly fetch: typeof globalThis.fetch;
+  readonly weatherProviderTimeoutMs?: number;
+}
+
+const fetchForecastWith = (options: WeatherProviderOptions): FetchForecast => {
   const fetchParsed = async <TSchema extends v.GenericSchema>(
     call: WeatherProviderCall<TSchema>,
     parameters: Readonly<Record<string, string>>,
@@ -310,12 +330,12 @@ export const createLiveWeatherProvider = (
     const at = { lat: String(latitude), lon: String(longitude) };
     const metricAt = { ...at, units: METRIC_UNITS };
     const wants = (part: ForecastPart) => parts.includes(part);
-    const hourlyNeededForCurrentPrecipitation = wants("current");
+    const hourlyUse = hourlyUseFor(parts);
     const [current, hourly, daily, name] = await Promise.all([
       wants("current")
         ? fetchParsed(WEATHER_PROVIDER_CALLS.current, metricAt)
         : SKIPPED,
-      wants("hourly") || hourlyNeededForCurrentPrecipitation
+      hourlyUse !== HOURLY_USES.notFetched
         ? fetchParsed(WEATHER_PROVIDER_CALLS.hourly, metricAt)
         : SKIPPED,
       wants("daily")
@@ -326,25 +346,38 @@ export const createLiveWeatherProvider = (
         limit: NAMES_WANTED,
       }),
     ]);
-    return forecastFrom(parts, { current, hourly, daily, name });
+    return forecastFrom(hourlyUse, { current, hourly, daily, name });
   };
 };
 
-const RECORDED_RESPONSES: Readonly<Record<string, unknown>> = {
-  [new URL(WEATHER_PROVIDER_CALLS.current.url).pathname]:
-    recordedCurrentConditions,
-  [new URL(WEATHER_PROVIDER_CALLS.hourly.url).pathname]: recordedHourlyForecast,
-  [new URL(WEATHER_PROVIDER_CALLS.daily.url).pathname]: recordedDailyForecast,
-  [new URL(WEATHER_PROVIDER_CALLS.reverseGeocoding.url).pathname]:
-    recordedReverseGeocoding,
-};
+const recordedFetch = recordedFetchFor([
+  [WEATHER_PROVIDER_CALLS.current.url, RECORDED_RESPONSES.current],
+  [WEATHER_PROVIDER_CALLS.hourly.url, RECORDED_RESPONSES.hourly],
+  [WEATHER_PROVIDER_CALLS.daily.url, RECORDED_RESPONSES.daily],
+  [
+    WEATHER_PROVIDER_CALLS.reverseGeocoding.url,
+    RECORDED_RESPONSES.reverseGeocoding,
+  ],
+]);
 
-export const fixtureFetch: typeof globalThis.fetch = (input) => {
-  const url = new URL(input instanceof Request ? input.url : input);
-  const recorded = RECORDED_RESPONSES[url.pathname];
-  return Promise.resolve(
-    recorded === undefined
-      ? new Response(null, { status: 404 })
-      : Response.json(recorded),
-  );
-};
+const optionsFor = (
+  environment: Environment,
+  dependencies: WeatherProviderDependencies,
+): WeatherProviderOptions =>
+  environment.mode === WEATHER_PROVIDER_MODES.fixtures
+    ? {
+        key: FIXTURE_KEY,
+        fetch: recordedFetch,
+        timeoutMs: WEATHER_PROVIDER_TIMEOUT_MS,
+      }
+    : {
+        key: environment.weatherProviderKey,
+        fetch: dependencies.fetch,
+        timeoutMs:
+          dependencies.weatherProviderTimeoutMs ?? WEATHER_PROVIDER_TIMEOUT_MS,
+      };
+
+export const createWeatherProvider = (
+  environment: Environment,
+  dependencies: WeatherProviderDependencies,
+): FetchForecast => fetchForecastWith(optionsFor(environment, dependencies));
