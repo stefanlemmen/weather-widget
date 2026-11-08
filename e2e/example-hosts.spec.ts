@@ -183,6 +183,47 @@ test.describe("the vanilla Example host", () => {
     );
   });
 
+  test("names each example Widget in a caption", async ({ page }) => {
+    await page.goto("/vanilla/");
+
+    for (const caption of [
+      "Choose a Location to show it in this Widget.",
+      'Dutch: locale="nl"',
+      'Imperial units: units="imperial"',
+      "Themed with five CSS custom properties",
+    ]) {
+      await expect(
+        page.getByRole("figure", { name: caption }).locator("weather-widget"),
+      ).toHaveCount(1);
+    }
+  });
+
+  test("keeps the Location picker and the Widgets apart", async ({ page }) => {
+    await page.goto("/vanilla/");
+
+    const components = page.locator("weather-location-picker, weather-widget");
+    await expect(components).toHaveCount(5);
+    const bounds = await Promise.all(
+      (await components.all()).map(async (component) => {
+        const box = await component.boundingBox();
+        if (!box) throw new Error("A component isn't shown");
+        return box;
+      }),
+    );
+    const touching = bounds.flatMap((one, index) =>
+      bounds
+        .slice(index + 1)
+        .filter(
+          (other) =>
+            one.x <= other.x + other.width &&
+            other.x <= one.x + one.width &&
+            one.y <= other.y + other.height &&
+            other.y <= one.y + one.height,
+        ),
+    );
+    expect(touching).toEqual([]);
+  });
+
   for (const colorScheme of ["light", "dark"] as const) {
     test(`passes axe in the ${colorScheme} scheme, the themed Widget included`, async ({
       page,

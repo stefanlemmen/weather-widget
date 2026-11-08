@@ -442,6 +442,7 @@ const layouts = css`
     }
 
     .daily ol {
+      max-inline-size: 40rem;
       grid-template-columns:
         minmax(3.5rem, 1fr) 2.25rem 2.5rem minmax(4rem, 14rem)
         2.5rem 2.75rem;

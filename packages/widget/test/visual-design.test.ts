@@ -20,6 +20,8 @@ const NARROW_SIDEBAR = "240px";
 const COLUMN = "390px";
 const WIDE_COLUMN = "600px";
 const WIDEST = "760px";
+const VERY_WIDE = "72rem";
+const DAILY_LIST_MAX_REM = 40;
 
 const CREAM_THEME = {
   "--weather-background": "#fffaf2",
@@ -367,6 +369,24 @@ describe("layout by the Widget's own width", () => {
         2,
       );
       expect(ranges[4]?.to).toBeCloseTo(1, 2);
+    });
+
+    it("keeps a day's values within 40rem of its name in a very wide Widget", async () => {
+      const widget = await renderAt(VERY_WIDE);
+
+      const remInPixels = Number.parseFloat(
+        getComputedStyle(document.documentElement).fontSize,
+      );
+      const days = daysOf(widget);
+      expect(days).toHaveLength(5);
+      for (const day of days) {
+        const { firstElementChild: name, lastElementChild: chance } = day;
+        if (!name || !chance) throw new Error("A day has no columns");
+        expect(
+          chance.getBoundingClientRect().right -
+            name.getBoundingClientRect().left,
+        ).toBeLessThanOrEqual(DAILY_LIST_MAX_REM * remInPixels);
+      }
     });
 
     it("hides the range bar from screen readers", async () => {

@@ -268,7 +268,7 @@ Twelve hours, all visible, in a grid of equal columns: 4, 6 or 12 per row, alway
 Five rows inside the tinted band, which runs to the Widget's edges (it cancels the inline padding and puts it back as its own padding). The list sets the columns and each row uses them as a subgrid, so the columns line up across the five days and the name and temperature columns are as wide as their widest value:
 
 - **Column:** day, icon (36px), low (right-aligned), range bar (flexible), high (right-aligned), chance of rain (right-aligned), with 10px gaps and 8px vertical padding. The range bar takes the spare width.
-- **Wide column:** day (at least 3.5rem, takes the spare width), icon (36px), low (2.5rem), range bar (4rem to 14rem), high (2.5rem), chance (2.75rem), so lows and highs don't drift apart.
+- **Wide column:** day (at least 3.5rem, takes the spare width), icon (36px), low (2.5rem), range bar (4rem to 14rem), high (2.5rem), chance (2.75rem), so lows and highs don't drift apart. The list is at most 40rem wide, so in a very wide Widget a day's values stay near its name; the band still runs to the edges.
 - **Below 24rem:** day, icon (32px), low, high and chance, with the spare width spread evenly over the gaps (at least 6px). The range bar is dropped, and lows and highs drop to 1rem, so "−12°" and "104°" still fit at 240px. The Daily forecast has its own breakpoint because at 20rem the range bar would be only a few pixels wide.
 
 The range bar shows the day's low to high as a filled segment on a scale shared by the five days.
