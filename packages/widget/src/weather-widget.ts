@@ -70,6 +70,7 @@ export class WeatherWidget extends LitElement {
       background-color: var(--_ground);
       color: var(--_ink);
       display: block;
+      container-type: inline-size;
       min-block-size: 6rem;
       font-family: system-ui, sans-serif;
     }
@@ -143,8 +144,14 @@ export class WeatherWidget extends LitElement {
       --_icon-size: 160px;
     }
 
-    li:has(abbr) {
+    .daily {
       --_icon-size: 36px;
+    }
+
+    @container (width < 24rem) {
+      .daily {
+        --_icon-size: 32px;
+      }
     }
 
     .skeleton .icon {

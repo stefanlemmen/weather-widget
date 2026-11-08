@@ -101,7 +101,7 @@ const hourlyForecast = (
   now: Date,
   motion: Motion,
 ) =>
-  html`<section>
+  html`<section class="hourly">
     <h3 id="hourly-heading">${format.messages.nextHours}</h3>
     ${shownOrUnavailable(
       format,
@@ -136,7 +136,7 @@ const dailyForecast = (
   now: Date,
   motion: Motion,
 ) =>
-  html`<section>
+  html`<section class="daily">
     <h3 id="daily-heading">${format.messages.nextDays}</h3>
     ${shownOrUnavailable(
       format,

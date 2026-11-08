@@ -1962,3 +1962,36 @@ describe("color scheme", () => {
     },
   );
 });
+
+describe("icon sizes", () => {
+  const sizeOf = (element: Element | undefined) => {
+    const { width, height } = element?.getBoundingClientRect() ?? {
+      width: 0,
+      height: 0,
+    };
+    return [width, height];
+  };
+
+  const firstIconIn = (list: ReturnType<typeof page.getByRole>) =>
+    list.getByRole("img").elements()[0];
+
+  it.each([
+    ["30rem", 40, 36],
+    ["23rem", 40, 32],
+  ])(
+    "draws hour icons at %s wide at %dpx and day icons at %dpx",
+    async (width, hourSize, daySize) => {
+      fakeProxy.mockImplementation(() => respondWith(fullForecast()));
+
+      const widget = renderWidget(NIEUWEGEIN);
+      widget.style.inlineSize = width;
+
+      await expect.element(dailyForecast()).toBeVisible();
+      expect(sizeOf(firstIconIn(hourlyForecast()))).toEqual([
+        hourSize,
+        hourSize,
+      ]);
+      expect(sizeOf(firstIconIn(dailyForecast()))).toEqual([daySize, daySize]);
+    },
+  );
+});
