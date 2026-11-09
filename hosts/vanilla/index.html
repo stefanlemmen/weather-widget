@@ -87,6 +87,14 @@
         min-inline-size: 0;
       }
 
+      main:has(
+          weather-widget:not(:defined),
+          weather-location-picker:not(:defined)
+        )
+        figure {
+        display: none;
+      }
+
       figcaption {
         color: color-mix(in oklab, CanvasText 72%, Canvas);
       }
