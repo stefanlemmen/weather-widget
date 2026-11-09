@@ -1,7 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { format, resolveConfig } from "prettier";
-import { METEOCONS_NOTICE } from "../src/build-output.ts";
 
 const METEOCON_NAMES = [
   "clear-day",
@@ -30,6 +29,12 @@ const ANIMATED_METEOCONS = "@meteocons/svg/monochrome";
 const STILL_METEOCONS = "@meteocons/svg-static/monochrome";
 const ICON_SVGS_MODULE = new URL("../src/icon-svgs.ts", import.meta.url);
 const OWN_ICONS = new URL("../src/icons/", import.meta.url);
+
+const METEOCONS_LICENSE = await readFile(
+  fileURLToPath(import.meta.resolve("@meteocons/svg/LICENSE")),
+  "utf8",
+);
+const METEOCONS_NOTICE = `/*! Meteocons (https://github.com/basmilius/meteocons)\n\n${METEOCONS_LICENSE}*/`;
 
 const readMeteocon = (directory: string, name: string) =>
   readFile(
