@@ -56,6 +56,9 @@ importers:
 
   hosts/vanilla:
     devDependencies:
+      '@weather-widget/location-picker':
+        specifier: workspace:*
+        version: link:../../packages/location-picker
       '@weather-widget/proxy':
         specifier: workspace:*
         version: link:../../packages/proxy
@@ -71,6 +74,28 @@ importers:
       valibot:
         specifier: 1.5.0
         version: 1.5.0(typescript@6.0.3)
+
+  packages/location-picker:
+    dependencies:
+      '@weather-widget/contract':
+        specifier: workspace:*
+        version: link:../contract
+      lit:
+        specifier: 3.3.3
+        version: 3.3.3
+      valibot:
+        specifier: 1.5.0
+        version: 1.5.0(typescript@6.0.3)
+    devDependencies:
+      '@vitest/browser-playwright':
+        specifier: 4.1.12
+        version: 4.1.12(playwright@1.64.1)(vite@8.3.5(@types/node@26.6.6))(vitest@4.1.12)
+      vite:
+        specifier: 8.3.5
+        version: 8.3.5(@types/node@26.6.6)
+      vitest:
+        specifier: 4.1.12
+        version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(@vitest/browser-playwright@4.1.12)(vite@8.3.5(@types/node@26.6.6))
 
   packages/proxy:
     dependencies:

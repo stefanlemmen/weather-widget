@@ -8,30 +8,19 @@ export const tokens = css`
     --_accent: var(--weather-accent, light-dark(#17703f, #6fdc9b));
     --_radius: var(--weather-radius, 12px);
     --_radius-control: calc(var(--_radius) * 0.5);
-    --_radius-bone: 4px;
-    --_radius-bar: 2px;
-    --_bar-height: 4px;
 
     --_ink-soft: color-mix(in oklab, var(--_ink) 82%, var(--_ground));
     --_ink-muted: color-mix(in oklab, var(--_ink) 66%, var(--_ground));
     --_band: color-mix(in oklab, var(--_ink) 6%, var(--_ground));
     --_track: color-mix(in oklab, var(--_ink) 16%, var(--_ground));
     --_field-border: color-mix(in oklab, var(--_ink) 55%, var(--_ground));
-    --_rain: color-mix(in oklab, #3b82f0 65%, var(--_ink));
 
-    --_size-display: clamp(3.5rem, 26.5cqi, 6.5rem);
-    --_size-headline: 1.75rem;
-    --_size-condition: 1.2rem;
-    --_size-title: 1rem;
-    --_size-value: 1.05rem;
     --_size-body: 1.0625rem;
     --_size-label: 0.85rem;
     --_size-footer: 0.8rem;
 
-    --_space-part: clamp(2rem, 12cqi, 3rem);
     --_space-group: 1.5rem;
     --_space-inset: clamp(1rem, 5cqi, 1.75rem);
-    --_space-indent: 0.75rem;
     --_target: 2.75rem;
   }
 `;
@@ -56,15 +45,6 @@ export const base = css`
     box-sizing: border-box;
   }
 
-  :where(h2, h3, p, ol, dl, dd) {
-    margin: 0;
-    padding: 0;
-  }
-
-  ol {
-    list-style: none;
-  }
-
   ::selection {
     background: var(--_accent);
     color: var(--_ground);
@@ -73,15 +53,6 @@ export const base = css`
   :focus-visible {
     outline: 2px solid var(--_accent);
     outline-offset: 3px;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   a {

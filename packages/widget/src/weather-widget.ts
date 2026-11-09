@@ -1,6 +1,7 @@
 import {
   CoordinatesSchema,
   DEFAULT_LOCALE,
+  parseLocale,
   PROXY_BASE_PATH,
 } from "@weather-widget/contract";
 import { html, LitElement, type PropertyValues } from "lit";
@@ -13,7 +14,6 @@ import {
   forecastAnnouncement,
   forecastView,
 } from "./forecast-view.ts";
-import { parseLocale } from "./locale.ts";
 import { MotionPreference, STILL } from "./motion-preference.ts";
 import { placeholderForecast } from "./skeleton.ts";
 import { DEFAULT_UNITS, parseUnits } from "./units.ts";

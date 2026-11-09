@@ -186,6 +186,14 @@ export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = "en";
 
+const LocaleWithFallbackSchema = v.fallback(
+  v.picklist(LOCALES),
+  DEFAULT_LOCALE,
+);
+
+export const parseLocale = (locale: unknown): Locale =>
+  v.parse(LocaleWithFallbackSchema, locale);
+
 export const LOCATIONS_PATH = "/locations";
 export const MAX_LOCATIONS_FOUND = 5;
 export const SEARCH_TERM_MAX_LENGTH = 100;
