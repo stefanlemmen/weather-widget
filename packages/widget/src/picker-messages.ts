@@ -8,8 +8,10 @@ export interface PickerMessages {
   readonly search: string;
   readonly useMyLocation: string;
   readonly locationsFound: string;
+  readonly searching: (term: string) => string;
   readonly foundCount: (count: number) => string;
   readonly noneFound: (term: string) => string;
+  readonly chosen: (name: string) => string;
   readonly searchFailed: string;
   readonly locating: string;
   readonly locationErrors: Readonly<Record<LocationError, string>>;
@@ -23,10 +25,12 @@ const en: PickerMessages = {
   search: "Search",
   useMyLocation: "Use my location",
   locationsFound: "Locations found",
+  searching: (term) => `Searching for “${term}”…`,
   foundCount: (count) =>
     count === 1 ? "1 location found" : `${String(count)} locations found`,
   noneFound: (term) =>
     `No locations found for “${term}”. Check the spelling or try a nearby town.`,
+  chosen: (name) => `${name} chosen`,
   searchFailed: "Search isn't working right now. Try again in a moment.",
   locating: "Finding your location…",
   locationErrors: {
@@ -46,10 +50,12 @@ const nl: PickerMessages = {
   search: "Zoeken",
   useMyLocation: "Gebruik mijn locatie",
   locationsFound: "Gevonden locaties",
+  searching: (term) => `Zoeken naar ‘${term}’…`,
   foundCount: (count) =>
     count === 1 ? "1 locatie gevonden" : `${String(count)} locaties gevonden`,
   noneFound: (term) =>
     `Geen locaties gevonden voor ‘${term}’. Controleer de spelling of probeer een plaats in de buurt.`,
+  chosen: (name) => `${name} gekozen`,
   searchFailed: "Zoeken werkt nu niet. Probeer het zo opnieuw.",
   locating: "Locatie bepalen…",
   locationErrors: {

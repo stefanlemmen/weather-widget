@@ -9,6 +9,11 @@ const WCAG_AA_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const DESKTOP_WIDTH = 1280;
 const SHOWN_PARTS = "h2, h3, p, li, dt, dd, a, button, input, label, .icon";
 const VIEWPORT_HEIGHT = 800;
+const MOBILE_VIEWPORT = { width: 412, height: 823 };
+const GOOD_LAYOUT_SHIFT = 0.1;
+const COMPONENT_MODULES = "**/weather-*.js";
+const SLOW_MODULE_DELAY_MS = 1000;
+const LAYOUT_SHIFT_KEY = "layoutShift";
 const ZOOM_LEVELS = [
   { zoom: "200%", width: DESKTOP_WIDTH / 2 },
   { zoom: "400%", width: DESKTOP_WIDTH / 4 },
@@ -181,6 +186,79 @@ test.describe("the vanilla Example host", () => {
       "font-family",
       /^Lexend/,
     );
+  });
+
+  test("names each example Widget in a caption", async ({ page }) => {
+    await page.goto("/vanilla/");
+
+    for (const caption of [
+      "Choose a Location to show it in this Widget.",
+      'Dutch: locale="nl"',
+      'Imperial units: units="imperial"',
+      "Themed with five CSS custom properties",
+    ]) {
+      await expect(
+        page.getByRole("figure", { name: caption }).locator("weather-widget"),
+      ).toHaveCount(1);
+    }
+  });
+
+  test("keeps the page still while its modules load slowly", async ({
+    page,
+  }) => {
+    await page.setViewportSize(MOBILE_VIEWPORT);
+    await page.route(COMPONENT_MODULES, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, SLOW_MODULE_DELAY_MS));
+      await route.continue();
+    });
+    await page.addInitScript((key) => {
+      let layoutShift = 0;
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if ("value" in entry && typeof entry.value === "number") {
+            layoutShift += entry.value;
+          }
+        }
+        Reflect.set(window, key, layoutShift);
+      }).observe({ type: "layout-shift", buffered: true });
+    }, LAYOUT_SHIFT_KEY);
+
+    await page.goto("/vanilla/");
+    await expect(
+      page.locator("weather-widget").first().getByRole("heading", { level: 2 }),
+    ).toBeVisible();
+
+    const layoutShift = await page.evaluate((key) => {
+      const measured: unknown = Reflect.get(window, key);
+      return typeof measured === "number" ? measured : 0;
+    }, LAYOUT_SHIFT_KEY);
+    expect(layoutShift).toBeLessThanOrEqual(GOOD_LAYOUT_SHIFT);
+  });
+
+  test("keeps the Location picker and the Widgets apart", async ({ page }) => {
+    await page.goto("/vanilla/");
+
+    const components = page.locator("weather-location-picker, weather-widget");
+    await expect(components).toHaveCount(5);
+    const bounds = await Promise.all(
+      (await components.all()).map(async (component) => {
+        const box = await component.boundingBox();
+        if (!box) throw new Error("A component isn't shown");
+        return box;
+      }),
+    );
+    const touching = bounds.flatMap((one, index) =>
+      bounds
+        .slice(index + 1)
+        .filter(
+          (other) =>
+            one.x <= other.x + other.width &&
+            other.x <= one.x + one.width &&
+            one.y <= other.y + other.height &&
+            other.y <= one.y + one.height,
+        ),
+    );
+    expect(touching).toEqual([]);
   });
 
   for (const colorScheme of ["light", "dark"] as const) {

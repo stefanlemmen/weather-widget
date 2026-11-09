@@ -268,7 +268,7 @@ Twelve hours, all visible, in a grid of equal columns: 4, 6 or 12 per row, alway
 Five rows inside the tinted band, which runs to the Widget's edges (it cancels the inline padding and puts it back as its own padding). The list sets the columns and each row uses them as a subgrid, so the columns line up across the five days and the name and temperature columns are as wide as their widest value:
 
 - **Column:** day, icon (36px), low (right-aligned), range bar (flexible), high (right-aligned), chance of rain (right-aligned), with 10px gaps and 8px vertical padding. The range bar takes the spare width.
-- **Wide column:** day (at least 3.5rem, takes the spare width), icon (36px), low (2.5rem), range bar (4rem to 14rem), high (2.5rem), chance (2.75rem), so lows and highs don't drift apart.
+- **Wide column:** day (at least 3.5rem, takes the spare width), icon (36px), low (2.5rem), range bar (4rem to 14rem), high (2.5rem), chance (2.75rem), so lows and highs don't drift apart. The list is at most 40rem wide, so in a very wide Widget a day's values stay near its name; the band still runs to the edges.
 - **Below 24rem:** day, icon (32px), low, high and chance, with the spare width spread evenly over the gaps (at least 6px). The range bar is dropped, and lows and highs drop to 1rem, so "−12°" and "104°" still fit at 240px. The Daily forecast has its own breakpoint because at 20rem the range bar would be only a few pixels wide.
 
 The range bar shows the day's low to high as a filled segment on a scale shared by the five days.
@@ -309,7 +309,7 @@ Each Widget has one visually hidden `role="status"` element, outside the Forecas
 
 ### Facts
 
-Feels like (thermometer), Wind (compass) and Chance of precipitation (raindrop): an icon, a label in ink muted and a value at 600. The Chance of precipitation value is rain blue.
+Feels like (thermometer), Wind (compass) and Chance of precipitation (raindrop): an icon, a label in ink muted and a value at 600. The Chance of precipitation value is rain blue. Fact labels and the Condition label hyphenate (`hyphens: auto`), so a long Dutch word such as "Gevoelstemperatuur" breaks with a hyphen in a narrow column. The Location's name never hyphenates.
 
 ### Hour
 
@@ -361,7 +361,7 @@ The picker is its own element and uses the same tokens, theming properties and r
 1. A search form (`role="search"`): the visible label "Location" (600), a text field and a primary "Search" button on one row. Below 20rem the button drops under the field.
 2. A secondary "Use my location" button with the Lucide `navigation` arrow. It renders only when the Geolocation API exists. While locating it is `aria-disabled="true"`, its cursor is `progress`, and the arrow pulses to 35% opacity (1.2s, alternate) under `prefers-reduced-motion: no-preference`.
 3. A `role="status"` message in ink soft at label size, hidden while empty.
-4. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color.
+4. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color. Choosing one cancels a running search, clears the list and moves focus back to the text field.
 5. The credit: "Search by Open-Meteo, place names from GeoNames (CC BY 4.0)", with links.
 
 The text field is 44px high with a 1.5px field-border outline, the body font (17px, so iOS doesn't zoom) and an accent caret. On focus its border turns accent and the focus ring sits 2px outside it.
@@ -370,7 +370,9 @@ The text field is 44px high with a 1.5px field-border outline, the body font (17
 
 | Situation            | Message                                                                    |
 | -------------------- | -------------------------------------------------------------------------- |
+| Searching            | "Searching for “Utrecht”…"                                                 |
 | Results              | "5 locations found"                                                        |
+| Chosen               | "Utrecht chosen"                                                           |
 | No results           | "No locations found for “Parjs”. Check the spelling or try a nearby town." |
 | Search failed        | "Search isn't working right now. Try again in a moment."                   |
 | Locating             | "Finding your location…"                                                   |

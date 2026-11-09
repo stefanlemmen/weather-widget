@@ -96,6 +96,7 @@ const currentConditions = css`
     font-weight: 500;
     text-align: center;
     text-wrap: balance;
+    hyphens: auto;
   }
 
   .condition .icon {
@@ -124,6 +125,7 @@ const currentConditions = css`
     justify-items: center;
     color: var(--_ink-muted);
     font-size: var(--_size-label);
+    hyphens: auto;
   }
 
   .fact .icon {
@@ -442,6 +444,7 @@ const layouts = css`
     }
 
     .daily ol {
+      max-inline-size: 40rem;
       grid-template-columns:
         minmax(3.5rem, 1fr) 2.25rem 2.5rem minmax(4rem, 14rem)
         2.5rem 2.75rem;
@@ -456,6 +459,14 @@ const layouts = css`
 `;
 
 const skeleton = css`
+  .skeleton {
+    --_ink: transparent;
+    --_ink-soft: transparent;
+    --_ink-muted: transparent;
+    --_rain: transparent;
+    --_accent: transparent;
+  }
+
   .skeleton,
   .skeleton * {
     color: transparent;

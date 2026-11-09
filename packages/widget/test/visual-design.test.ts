@@ -20,6 +20,8 @@ const NARROW_SIDEBAR = "240px";
 const COLUMN = "390px";
 const WIDE_COLUMN = "600px";
 const WIDEST = "760px";
+const VERY_WIDE = "72rem";
+const DAILY_LIST_MAX_REM = 40;
 
 const CREAM_THEME = {
   "--weather-background": "#fffaf2",
@@ -40,9 +42,13 @@ const computed = (property: "color" | "backgroundColor", cssColor: string) => {
 
 const colorOf = (cssColor: string) => computed("color", cssColor);
 
-const renderAt = async (inlineSize: string, forecast = fullForecast()) => {
+const renderAt = async (
+  inlineSize: string,
+  forecast = fullForecast(),
+  attributes: Readonly<Record<string, string>> = NIEUWEGEIN,
+) => {
   fakeProxy.mockImplementation(() => respondWith(forecast));
-  const widget = renderWidget(NIEUWEGEIN);
+  const widget = renderWidget(attributes);
   widget.style.inlineSize = inlineSize;
   await expect.element(locationName()).toBeVisible();
   return widget;
@@ -315,6 +321,23 @@ describe("layout by the Widget's own width", () => {
       }
     });
 
+    it("hyphenates long fact and Condition labels, but not the Location's name", async () => {
+      const widget = await renderAt(COLUMN, fullForecast(), {
+        ...NIEUWEGEIN,
+        locale: "nl",
+      });
+
+      const hyphensOf = (element: Element | null | undefined) =>
+        element ? getComputedStyle(element).hyphens : undefined;
+      expect(hyphensOf(page.getByText("Gevoelstemperatuur").element())).toBe(
+        "auto",
+      );
+      expect(hyphensOf(widget.shadowRoot?.querySelector(".condition"))).toBe(
+        "auto",
+      );
+      expect(hyphensOf(locationName().element())).toBe("manual");
+    });
+
     it("draws an icon beside each fact that screen readers skip", async () => {
       const widget = await renderAt(COLUMN);
 
@@ -367,6 +390,24 @@ describe("layout by the Widget's own width", () => {
         2,
       );
       expect(ranges[4]?.to).toBeCloseTo(1, 2);
+    });
+
+    it("keeps a day's values within 40rem of its name in a very wide Widget", async () => {
+      const widget = await renderAt(VERY_WIDE);
+
+      const remInPixels = Number.parseFloat(
+        getComputedStyle(document.documentElement).fontSize,
+      );
+      const days = daysOf(widget);
+      expect(days).toHaveLength(5);
+      for (const day of days) {
+        const { firstElementChild: name, lastElementChild: chance } = day;
+        if (!name || !chance) throw new Error("A day has no columns");
+        expect(
+          chance.getBoundingClientRect().right -
+            name.getBoundingClientRect().left,
+        ).toBeLessThanOrEqual(DAILY_LIST_MAX_REM * remInPixels);
+      }
     });
 
     it("hides the range bar from screen readers", async () => {

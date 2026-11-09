@@ -43,6 +43,75 @@
           U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
           U+2212, U+2215, U+FEFF, U+FFFD;
       }
+
+      :root {
+        --page-max-size: 72rem;
+        --page-gap: 2rem;
+        --caption-gap: 0.75rem;
+        --example-min-size: 18rem;
+        font-family: "Lexend", system-ui, sans-serif;
+        line-height: 1.4;
+      }
+
+      body {
+        margin: 0;
+        background-color: Canvas;
+        color: CanvasText;
+      }
+
+      main {
+        box-sizing: border-box;
+        max-inline-size: var(--page-max-size);
+        margin-inline: auto;
+        padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
+        display: grid;
+        gap: var(--page-gap);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.15;
+        text-wrap: balance;
+      }
+
+      figure {
+        margin: 0;
+        display: grid;
+        align-content: start;
+        gap: var(--caption-gap);
+      }
+
+      figure > * {
+        min-inline-size: 0;
+      }
+
+      main:has(
+          weather-widget:not(:defined),
+          weather-location-picker:not(:defined)
+        )
+        figure {
+        display: none;
+      }
+
+      figcaption {
+        color: color-mix(in oklab, CanvasText 72%, Canvas);
+      }
+
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+
+      .examples {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fit,
+          minmax(min(100%, var(--example-min-size)), 1fr)
+        );
+        gap: var(--page-gap);
+      }
     </style>
     <script type="module" src="/widget/weather-widget.js" vite-ignore></script>
     <script
@@ -64,33 +133,47 @@
   <body>
     <main>
       <h1>Weather Widget in plain HTML</h1>
-      <weather-location-picker></weather-location-picker>
-      <weather-widget
-        id="chosen-location"
-        latitude="52.03"
-        longitude="5.08"
-      ></weather-widget>
-      <weather-widget
-        latitude="52.03"
-        longitude="5.08"
-        locale="nl"
-      ></weather-widget>
-      <weather-widget
-        latitude="52.03"
-        longitude="5.08"
-        units="imperial"
-      ></weather-widget>
-      <weather-widget
-        latitude="52.03"
-        longitude="5.08"
-        style="
-          --weather-font: Georgia, serif;
-          --weather-background: #fffaf2;
-          --weather-ink: #2b1d16;
-          --weather-accent: #9c3412;
-          --weather-radius: 0;
-        "
-      ></weather-widget>
+      <figure>
+        <figcaption>Choose a Location to show it in this Widget.</figcaption>
+        <weather-location-picker></weather-location-picker>
+        <weather-widget
+          id="chosen-location"
+          latitude="52.03"
+          longitude="5.08"
+        ></weather-widget>
+      </figure>
+      <div class="examples">
+        <figure>
+          <figcaption>Dutch: <code>locale="nl"</code></figcaption>
+          <weather-widget
+            latitude="52.03"
+            longitude="5.08"
+            locale="nl"
+          ></weather-widget>
+        </figure>
+        <figure>
+          <figcaption>Imperial units: <code>units="imperial"</code></figcaption>
+          <weather-widget
+            latitude="52.03"
+            longitude="5.08"
+            units="imperial"
+          ></weather-widget>
+        </figure>
+        <figure>
+          <figcaption>Themed with five CSS custom properties</figcaption>
+          <weather-widget
+            latitude="52.03"
+            longitude="5.08"
+            style="
+              --weather-font: Georgia, serif;
+              --weather-background: #fffaf2;
+              --weather-ink: #2b1d16;
+              --weather-accent: #9c3412;
+              --weather-radius: 0;
+            "
+          ></weather-widget>
+        </figure>
+      </div>
     </main>
   </body>
 </html>

@@ -58,6 +58,17 @@ describe("locale", () => {
     );
   });
 
+  it("tells screen readers the Weather provider's credit is in English", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWith()));
+
+    renderWidget(DUTCH);
+
+    await expect.element(weatherProviderCredit()).toBeVisible();
+    expect(
+      weatherProviderCredit().element().closest("[lang]")?.getAttribute("lang"),
+    ).toBe("en");
+  });
+
   it("shows the Hourly and Daily forecast in Dutch, with hours on the 24-hour clock and Dutch day names", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 

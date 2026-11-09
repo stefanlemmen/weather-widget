@@ -232,6 +232,15 @@ describe("the Location picker's search", () => {
     await expect.element(message()).toHaveTextContent(announced);
   });
 
+  it("announces the search while the Proxy hasn't answered yet", async () => {
+    fakeProxy.mockImplementation(() => new Promise<Response>(() => undefined));
+    renderPicker();
+
+    await search(" Paris ");
+
+    await expect.element(message()).toHaveTextContent("Searching for “Paris”…");
+  });
+
   it("announces that it found nothing, with the term the visitor typed", async () => {
     answering(found());
     renderPicker();
@@ -295,6 +304,33 @@ describe("the Location picker's search", () => {
     const [event] = listener.mock.calls[0] ?? [];
     expect(event?.bubbles).toBe(true);
     expect(event?.composed).toBe(true);
+  });
+
+  it("confirms the chosen Location, clears the results and returns focus to the field", async () => {
+    answering(found(PARIS, PARIS_TEXAS));
+    const picker = renderPicker();
+    await search("Paris");
+
+    await userEvent.click(results().getByRole("button").nth(0));
+
+    await expect.element(message()).toHaveTextContent("Paris chosen");
+    await expect.element(results()).not.toBeInTheDocument();
+    await expectFocusOn(picker, field());
+  });
+
+  it("cancels a running search when the visitor chooses a Location", async () => {
+    fakeProxy
+      .mockImplementationOnce(() => respondWith(found(PARIS)))
+      .mockImplementationOnce(() => new Promise<Response>(() => undefined));
+    renderPicker();
+    await search("Paris");
+    await expect.element(results()).toBeVisible();
+    await search("Paris Texas");
+
+    await userEvent.click(results().getByRole("button").nth(0));
+
+    expect(fakeProxy.mock.calls[1]?.[1]?.signal?.aborted).toBe(true);
+    await expect.element(message()).toHaveTextContent("Paris chosen");
   });
 
   it("lets a keyboard user search and choose a Location in visual order", async () => {
@@ -475,6 +511,25 @@ describe("the Location picker's credit and locale", () => {
 
     await expect.element(message()).toHaveTextContent("1 locatie gevonden");
     expect(requestedUrls()[0]?.searchParams.get("locale")).toBe("nl");
+
+    await userEvent.click(
+      page.getByRole("list", { name: "Gevonden locaties" }).getByRole("button"),
+    );
+
+    await expect.element(message()).toHaveTextContent("Paris gekozen");
+  });
+
+  it("announces a running search in Dutch", async () => {
+    fakeProxy.mockImplementation(() => new Promise<Response>(() => undefined));
+    renderPicker({ locale: "nl" });
+
+    await userEvent.fill(
+      page.getByRole("searchbox", { name: "Locatie" }),
+      "Parijs",
+    );
+    await userEvent.click(page.getByRole("button", { name: "Zoeken" }));
+
+    await expect.element(message()).toHaveTextContent("Zoeken naar ‘Parijs’…");
   });
 
   it("falls back to English for an unknown locale", async () => {

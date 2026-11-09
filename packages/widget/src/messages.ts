@@ -2,6 +2,7 @@ import type { Condition, ForecastPart, Locale } from "@weather-widget/contract";
 import { DAYS_SHOWN, HOURS_SHOWN } from "./forecast-window.ts";
 
 const WEATHER_PROVIDER_CREDIT = "Weather data provided by OpenWeather";
+export const WEATHER_PROVIDER_CREDIT_LANGUAGE = "en";
 
 export const COMPASS_POINTS = [
   "N",

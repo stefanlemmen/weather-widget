@@ -22,6 +22,7 @@ import type { Formatter, Spoken } from "./format.ts";
 import type { Forecast } from "./forecast-client.ts";
 import type { ForecastState, ShownForecast } from "./forecast-loader.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";
+import { WEATHER_PROVIDER_CREDIT_LANGUAGE } from "./messages.ts";
 import type { Motion } from "./motion-preference.ts";
 
 const OPENWEATHER_URL = "https://openweathermap.org/";
@@ -285,7 +286,9 @@ const footer = (format: Formatter, observed?: Observed) =>
               ·`
           : nothing
       }
-      <a href=${OPENWEATHER_URL}>${format.messages.weatherProviderCredit}</a>
+      <a href=${OPENWEATHER_URL} lang=${WEATHER_PROVIDER_CREDIT_LANGUAGE}
+        >${format.messages.weatherProviderCredit}</a
+      >
     </p>
   </footer>`;
 

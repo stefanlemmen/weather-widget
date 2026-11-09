@@ -49,8 +49,10 @@ const locationErrorOf = (error: GeolocationPositionError): LocationError => {
 
 type Message =
   | { readonly kind: "none" }
+  | { readonly kind: "searching"; readonly term: string }
   | { readonly kind: "found"; readonly count: number }
   | { readonly kind: "noneFound"; readonly term: string }
+  | { readonly kind: "chosen"; readonly name: string }
   | { readonly kind: "searchFailed" }
   | { readonly kind: "locating" }
   | { readonly kind: "locationError"; readonly error: LocationError };
@@ -70,10 +72,14 @@ const textOf = (messages: PickerMessages, message: Message) => {
   switch (message.kind) {
     case "none":
       return "";
+    case "searching":
+      return messages.searching(message.term);
     case "found":
       return messages.foundCount(message.count);
     case "noneFound":
       return messages.noneFound(message.term);
+    case "chosen":
+      return messages.chosen(message.name);
     case "searchFailed":
       return messages.searchFailed;
     case "locating":
@@ -155,6 +161,7 @@ export class WeatherLocationPicker extends LitElement {
     this.#search?.abort();
     const search = new AbortController();
     this.#search = search;
+    this.#announce({ kind: "searching", term: name });
     const found = await findLocations(
       this.proxyUrl,
       { name, locale: this.#locale },
@@ -176,6 +183,16 @@ export class WeatherLocationPicker extends LitElement {
         composed: true,
       }),
     );
+  }
+
+  async #choose({ latitude, longitude, name }: FoundLocation) {
+    this.#search?.abort();
+    this.#select({ latitude, longitude, name });
+    this.#showResults([], { kind: "chosen", name });
+    await this.updateComplete;
+    this.renderRoot
+      .querySelector<HTMLInputElement>(`#${SEARCH_FIELD_ID}`)
+      ?.focus();
   }
 
   readonly #onLocate = () => {
@@ -224,11 +241,7 @@ export class WeatherLocationPicker extends LitElement {
             type="button"
             class="result"
             @click=${() => {
-              this.#select({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                name: location.name,
-              });
+              void this.#choose(location);
             }}
           >
             <span class="result-name">${location.name}</span>${
