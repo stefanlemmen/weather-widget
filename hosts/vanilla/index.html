@@ -38,15 +38,20 @@
 
       main {
         box-sizing: border-box;
-        max-inline-size: 45rem;
+        max-inline-size: 52rem;
         margin-inline: auto;
         padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 2rem;
       }
 
       main > * {
         min-inline-size: 0;
+      }
+
+      weather-widget {
+        max-inline-size: 100%;
       }
 
       main:has(
@@ -92,7 +97,7 @@
         "--weather-accent: light-dark(#9c3412, #f0936a)",
         "--weather-radius: 0",
       ];
-      const STYLE_SETTINGS = ["theme", "color-scheme"];
+      const STYLE_SETTINGS = ["width", "theme", "color-scheme"];
       const widget = document.querySelector("weather-widget");
 
       const setAttribute = (name, value) => {
@@ -122,10 +127,11 @@
       };
 
       const setStyle = () => {
-        const { theme, "color-scheme": colorScheme } = settings.elements;
+        const { width, theme, "color-scheme": colorScheme } = settings.elements;
         setAttribute(
           "style",
           [
+            `inline-size: ${width.value}px`,
             ...(theme.value ? THEMED_PRESET_STYLE : []),
             ...(colorScheme.value
               ? [`color-scheme: ${colorScheme.value}`]
@@ -212,9 +218,29 @@
             ><input type="radio" name="color-scheme" value="dark" /> Dark</label
           >
         </fieldset>
+        <fieldset>
+          <legend>Width</legend>
+          <label
+            ><input type="radio" name="width" value="240" /> 240 pixels</label
+          >
+          <label
+            ><input type="radio" name="width" value="390" checked /> 390
+            pixels</label
+          >
+          <label
+            ><input type="radio" name="width" value="640" /> 640 pixels</label
+          >
+          <label
+            ><input type="radio" name="width" value="760" /> 760 pixels</label
+          >
+        </fieldset>
       </form>
       <weather-location-picker></weather-location-picker>
-      <weather-widget latitude="52.03" longitude="5.08"></weather-widget>
+      <weather-widget
+        latitude="52.03"
+        longitude="5.08"
+        style="inline-size: 390px"
+      ></weather-widget>
     </main>
   </body>
 </html>
