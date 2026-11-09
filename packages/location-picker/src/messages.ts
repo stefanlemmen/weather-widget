@@ -2,7 +2,7 @@ import type { Locale } from "@weather-widget/contract";
 
 export type LocationError = "denied" | "timedOut" | "unavailable";
 
-export interface PickerMessages {
+export interface Messages {
   readonly chooseALocation: string;
   readonly location: string;
   readonly search: string;
@@ -19,7 +19,7 @@ export interface PickerMessages {
   readonly creditPlaceNamesFrom: string;
 }
 
-const en: PickerMessages = {
+const en: Messages = {
   chooseALocation: "Choose a location",
   location: "Location",
   search: "Search",
@@ -44,7 +44,7 @@ const en: PickerMessages = {
   creditPlaceNamesFrom: "place names from",
 };
 
-const nl: PickerMessages = {
+const nl: Messages = {
   chooseALocation: "Kies een locatie",
   location: "Locatie",
   search: "Zoeken",
@@ -68,7 +68,7 @@ const nl: PickerMessages = {
   creditPlaceNamesFrom: "plaatsnamen van",
 };
 
-export const PICKER_MESSAGES: Readonly<Record<Locale, PickerMessages>> = {
+export const MESSAGES: Readonly<Record<Locale, Messages>> = {
   en,
   nl,
 };

@@ -6,7 +6,7 @@ import {
 } from "@weather-widget/contract";
 import { html, LitElement, type PropertyValues } from "lit";
 import * as v from "valibot";
-import { formatterFor, type Formatter, type Spoken } from "./format.ts";
+import { formatterFor, type Formatter, type Spoken } from "./formatter.ts";
 import { requestedParts, type Forecast } from "./forecast-client.ts";
 import { ForecastLoader, type ForecastState } from "./forecast-loader.ts";
 import {
@@ -15,9 +15,9 @@ import {
   forecastView,
 } from "./forecast-view.ts";
 import { MotionPreference, STILL } from "./motion-preference.ts";
-import { placeholderForecast } from "./skeleton.ts";
+import { placeholderForecast } from "./forecast-skeleton.ts";
 import { DEFAULT_UNITS, parseUnits } from "./units.ts";
-import { widgetStyles } from "./widget-styles.ts";
+import { styles } from "./styles.ts";
 
 export const WEATHER_WIDGET_TAG = "weather-widget";
 
@@ -37,7 +37,7 @@ export class WeatherWidget extends LitElement {
     units: { type: String },
   };
 
-  static override styles = widgetStyles;
+  static override styles = styles;
 
   declare latitude: number | undefined;
   declare longitude: number | undefined;

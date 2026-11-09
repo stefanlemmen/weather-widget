@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   renderCheckSummary,
   type CheckResult,
-} from "./check-summary-report.ts";
+} from "../check-summary-report.ts";
 
 const result = (overrides: Partial<CheckResult>): CheckResult => ({
   name: "Type check",

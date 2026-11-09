@@ -3,7 +3,7 @@ import {
   isLighthouseRunFile,
   renderLighthouseSummary,
   type LighthouseRun,
-} from "./lighthouse-summary-report.ts";
+} from "../lighthouse-summary-report.ts";
 
 const VANILLA = "http://localhost:4173/vanilla/";
 const REACT = "http://localhost:4173/react/";

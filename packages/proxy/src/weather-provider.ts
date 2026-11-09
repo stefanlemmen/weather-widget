@@ -15,7 +15,7 @@ import {
   RECORDED_RESPONSES,
   recordedFetchFor,
 } from "../fixtures/recorded-responses.ts";
-import { conditionFor } from "./conditions.ts";
+import { conditionFor } from "./weather-provider-conditions.ts";
 import { PROVIDER_MODES, type Environment } from "./environment.ts";
 import {
   fetchParsedWith,

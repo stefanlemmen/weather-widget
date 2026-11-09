@@ -9,13 +9,9 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import { html, LitElement, nothing, type PropertyValues } from "lit";
-import { findLocations } from "./location-search.ts";
-import {
-  PICKER_MESSAGES,
-  type LocationError,
-  type PickerMessages,
-} from "./messages.ts";
-import { pickerStyles } from "./styles.ts";
+import { findLocations } from "./locations-client.ts";
+import { MESSAGES, type LocationError, type Messages } from "./messages.ts";
+import { styles } from "./styles.ts";
 
 export const WEATHER_LOCATION_PICKER_TAG = "weather-location-picker";
 export const LOCATION_SELECT_EVENT = "location-select";
@@ -68,7 +64,7 @@ const searchMessageFor = (
   return { kind: "found", count: found.data.length };
 };
 
-const textOf = (messages: PickerMessages, message: Message) => {
+const textOf = (messages: Messages, message: Message) => {
   switch (message.kind) {
     case "none":
       return "";
@@ -112,13 +108,13 @@ export class WeatherLocationPicker extends LitElement {
     proxyUrl: { type: String, attribute: "proxy-url" },
   };
 
-  static override styles = pickerStyles;
+  static override styles = styles;
 
   declare locale: string | undefined;
   declare proxyUrl: string;
 
   #locale: Locale = DEFAULT_LOCALE;
-  #messages: PickerMessages = PICKER_MESSAGES[DEFAULT_LOCALE];
+  #messages: Messages = MESSAGES[DEFAULT_LOCALE];
   #found: readonly FoundLocation[] = [];
   #message: Message = NO_MESSAGE;
   #locating = false;
@@ -137,7 +133,7 @@ export class WeatherLocationPicker extends LitElement {
   protected override willUpdate(changed: PropertyValues<this>) {
     if (changed.has("locale")) {
       this.#locale = parseLocale(this.locale);
-      this.#messages = PICKER_MESSAGES[this.#locale];
+      this.#messages = MESSAGES[this.#locale];
     }
   }
 

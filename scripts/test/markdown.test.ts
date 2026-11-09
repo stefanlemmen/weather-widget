@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownTable } from "./markdown.ts";
+import { markdownTable } from "../markdown.ts";
 
 describe("a markdown table", () => {
   it("renders a header, a separator and one line per row", () => {

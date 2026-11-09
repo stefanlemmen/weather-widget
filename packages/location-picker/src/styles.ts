@@ -146,4 +146,4 @@ const picker = css`
   }
 `;
 
-export const pickerStyles = [tokens, base, picker];
+export const styles = [tokens, base, picker];
