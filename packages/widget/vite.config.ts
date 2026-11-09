@@ -2,7 +2,6 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
-  METEOCONS_NOTICE,
   WIDGET_MODULE_DIRECTORY,
   WIDGET_MODULE_FILE,
 } from "./src/build-output.ts";
@@ -20,7 +19,6 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         minify: true,
-        banner: METEOCONS_NOTICE,
         comments: { legal: true, annotation: false, jsdoc: false },
       },
     },

@@ -9,16 +9,17 @@
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "write-icon-svgs": "node scripts/write-icon-svgs.ts"
   },
   "dependencies": {
-    "@meteocons/svg": "3.0.0-next.10",
-    "@meteocons/svg-static": "3.0.0-next.10",
     "@weather-widget/contract": "workspace:*",
     "lit": "3.3.3",
     "valibot": "1.5.0"
   },
   "devDependencies": {
+    "@meteocons/svg": "3.0.0-next.10",
+    "@meteocons/svg-static": "3.0.0-next.10",
     "@vitest/browser-playwright": "4.1.12",
     "vite": "8.3.5",
     "vitest": "4.1.12"
