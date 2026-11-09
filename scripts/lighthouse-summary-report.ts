@@ -45,6 +45,34 @@ export const FailedAssertionsSchema = v.array(
   }),
 );
 
+export const LighthouseConfigSchema = v.object({
+  ci: v.object({
+    collect: v.object({ url: v.array(v.string()) }),
+    assert: v.object({
+      assertMatrix: v.array(
+        v.object({
+          matchingUrlPattern: v.string(),
+          assertions: v.record(v.string(), v.unknown()),
+        }),
+      ),
+    }),
+  }),
+});
+
+export const budgetCountOf = ({
+  ci: { collect, assert },
+}: v.InferOutput<typeof LighthouseConfigSchema>) =>
+  collect.url
+    .flatMap((url) =>
+      assert.assertMatrix.filter(({ matchingUrlPattern }) =>
+        new RegExp(matchingUrlPattern).test(url),
+      ),
+    )
+    .reduce(
+      (count, { assertions }) => count + Object.keys(assertions).length,
+      0,
+    );
+
 export const ReportLinksSchema = v.record(v.string(), v.string());
 
 export interface LighthouseResults {

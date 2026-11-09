@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  budgetCountOf,
   isLighthouseRunFile,
   renderLighthouseSummary,
   type LighthouseRun,
@@ -238,5 +239,51 @@ describe("a Lighthouse run file in .lighthouseci/", () => {
     "links.json",
   ])("isn't confused with %s", (name) => {
     expect(isLighthouseRunFile(name)).toBe(false);
+  });
+});
+
+describe("the budget count of a Lighthouse config", () => {
+  it("counts each assertion once for every URL its pattern matches", () => {
+    const config = {
+      ci: {
+        collect: { url: [VANILLA, REACT] },
+        assert: {
+          assertMatrix: [
+            {
+              matchingUrlPattern: ".*",
+              assertions: { "categories:seo": "error", lcp: "error" },
+            },
+            {
+              matchingUrlPattern: "/vanilla/$",
+              assertions: { "resource-summary:script:size": "error" },
+            },
+            {
+              matchingUrlPattern: "/react/$",
+              assertions: { "resource-summary:script:size": "error" },
+            },
+          ],
+        },
+      },
+    };
+
+    expect(budgetCountOf(config)).toBe(6);
+  });
+
+  it("counts nothing for a URL no pattern matches", () => {
+    const config = {
+      ci: {
+        collect: { url: ["http://localhost:4173/angular/"] },
+        assert: {
+          assertMatrix: [
+            {
+              matchingUrlPattern: "/react/$",
+              assertions: { "categories:seo": "error" },
+            },
+          ],
+        },
+      },
+    };
+
+    expect(budgetCountOf(config)).toBe(0);
   });
 });
