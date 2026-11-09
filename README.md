@@ -10,7 +10,7 @@ The words used here (Widget, Host page, Location, Forecast part, Proxy and so on
 
 ```text
 Host page ──► <weather-widget>          ──┐
-          └─► <weather-location-picker> ──┤  same origin
+          └─► <weather-location-picker> ──┤  GET, any origin
                                           ▼
                                    Proxy (/api) ──► OpenWeather (Forecast, names for coordinates)
                                                 └─► Open-Meteo (Location search)
@@ -223,18 +223,20 @@ The Widget never calls OpenWeather itself, so a Host page needs a Proxy. To run 
 2. Deploy the Proxy. This repository deploys to Vercel as it is: import it as a project, add `OPENWEATHER_API_KEY` under Environment Variables and deploy. The Proxy then answers under `/api` on that project's domain. It is a Hono app (`createProxy` in `packages/proxy`), but Vercel is the only platform this repository builds it for.
 3. Point each Widget's and Location picker's `proxy-url` at the Proxy's `/api` URL.
 
-The Proxy doesn't send CORS headers yet, so a browser only lets a page call it from the same origin. Put the Proxy on the Host page's own domain: deploy the Host page in the same Vercel project, or have the Host page's server forward `/api/` to the Proxy with the `/api` prefix intact. The default `proxy-url` is `/api`, so on the same domain you don't have to set it:
+The Proxy answers GET requests from any origin, without credentials, so the Host page can live on another domain. Every origin shares the same cached Forecasts. Point `proxy-url` at the Proxy's `/api` URL:
 
 ```html
-<weather-widget latitude="52.03" longitude="5.08"></weather-widget>
+<weather-location-picker
+  proxy-url="https://weather.example.com/api"
+></weather-location-picker>
 <weather-widget
   latitude="52.03"
   longitude="5.08"
-  proxy-url="/api"
+  proxy-url="https://weather.example.com/api"
 ></weather-widget>
 ```
 
-Both Widgets above ask the same Proxy. Once the Proxy sends CORS headers, `proxy-url` can point at another domain, such as `https://weather.example.com/api`.
+On the Proxy's own domain you can leave `proxy-url` out, because it defaults to `/api`.
 
 OpenWeather's One Call API 4.0 is free for 1,000 calls a day, and calls above that are billed. A Forecast that isn't cached yet costs up to 4 calls: one per Forecast part, plus one for the Location's name.
 
