@@ -1,7 +1,7 @@
 import type { Condition, Daylight } from "@weather-widget/contract";
 import { html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { ICON_SVGS } from "./icon-svgs.ts";
+import { ICON_SVGS } from "../generated/icon-svgs.ts";
 import type { Motion } from "./motion-preference.ts";
 
 type IconMarkup = Readonly<Record<Motion, string>>;
