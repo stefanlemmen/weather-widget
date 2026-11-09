@@ -26,19 +26,6 @@
     />
     <style>
       :root {
-        color-scheme: light dark;
-        --page-max-size: 72rem;
-        --page-gap: 2rem;
-        --caption-gap: 0.75rem;
-        --settings-size: 22rem;
-        --preview-min-size: 15rem;
-        --ground: light-dark(#eef3f9, #16263b);
-        --ink: light-dark(#13243a, #f2f5f9);
-        --accent: light-dark(#17703f, #6fdc9b);
-        --ink-muted: color-mix(in oklab, var(--ink) 66%, var(--ground));
-        --band: color-mix(in oklab, var(--ink) 6%, var(--ground));
-        --panel-radius: 12px;
-        --panel-padding: 24px clamp(1rem, 4vw, 1.5rem);
         font-family: system-ui, sans-serif;
         line-height: 1.4;
       }
@@ -51,112 +38,14 @@
 
       main {
         box-sizing: border-box;
-        max-inline-size: var(--page-max-size);
+        max-inline-size: 45rem;
         margin-inline: auto;
         padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
         display: grid;
-        gap: var(--page-gap);
+        gap: 2rem;
       }
 
-      main > *,
-      .workbench > * {
-        min-inline-size: 0;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
-        font-weight: 800;
-        line-height: 1.15;
-        text-wrap: balance;
-      }
-
-      h2 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 800;
-      }
-
-      .workbench {
-        display: grid;
-        grid-template-columns: repeat(
-          auto-fit,
-          minmax(min(100%, var(--preview-min-size)), 1fr)
-        );
-        align-items: start;
-        gap: var(--page-gap);
-      }
-
-      @media (min-width: 48rem) {
-        .workbench {
-          grid-template-columns: var(--settings-size) 1fr;
-        }
-      }
-
-      .location-and-settings,
-      .preview,
-      form,
-      .preview figure {
-        display: grid;
-        align-content: start;
-        gap: var(--caption-gap);
-      }
-
-      .location-and-settings {
-        gap: 1rem;
-      }
-
-      form {
-        padding: var(--panel-padding);
-        border-radius: var(--panel-radius);
-        background-color: var(--ground);
-        color: var(--ink);
-        accent-color: var(--accent);
-        gap: 1rem;
-      }
-
-      fieldset {
-        margin: 0;
-        padding: 0;
-        border: 0;
-        display: flex;
-        flex-wrap: wrap;
-        column-gap: 1.5rem;
-      }
-
-      legend {
-        padding: 0;
-        color: var(--ink-muted);
-        font-size: 0.85rem;
-        font-weight: 600;
-      }
-
-      label {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        min-block-size: 44px;
-      }
-
-      input {
-        margin: 0;
-        inline-size: 1.125rem;
-        block-size: 1.125rem;
-      }
-
-      input:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 3px;
-      }
-
-      figure {
-        margin: 0;
-        display: grid;
-        align-content: start;
-        gap: var(--caption-gap);
-      }
-
-      figure > * {
+      main > * {
         min-inline-size: 0;
       }
 
@@ -164,32 +53,33 @@
           weather-widget:not(:defined),
           weather-location-picker:not(:defined)
         )
-        :is(.workbench, figure) {
+        > :not(h1) {
         visibility: hidden;
       }
 
-      figcaption {
-        color: color-mix(in oklab, CanvasText 72%, Canvas);
+      h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+        line-height: 1.15;
+        text-wrap: balance;
       }
 
-      .preview figcaption {
-        font-size: 0.85rem;
-        font-weight: 600;
+      form,
+      figure {
+        margin: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.25rem;
       }
 
       pre {
         margin: 0;
-        padding: 1rem clamp(1rem, 4vw, 1.5rem);
-        border-radius: var(--panel-radius);
-        background-color: var(--band);
-        color: var(--ink);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-      }
-
-      code {
-        font-family: ui-monospace, monospace;
-        font-size: 0.9em;
       }
     </style>
     <script type="module" src="/widget/weather-widget.js" vite-ignore></script>
@@ -198,54 +88,85 @@
       src="/location-picker/weather-location-picker.js"
       vite-ignore
     ></script>
-    <script type="module" src="./src/main.ts"></script>
+    <script type="module">
+      const MARKUP_ATTRIBUTES = [
+        "latitude",
+        "longitude",
+        "location-name",
+        "locale",
+        "units",
+      ];
+      const widget = document.querySelector("weather-widget");
+      const markup = document.querySelector("#widget-markup");
+
+      const setAttribute = (name, value) => {
+        if (value) widget.setAttribute(name, value);
+        else widget.removeAttribute(name);
+      };
+
+      const showMarkup = () => {
+        const attributes = MARKUP_ATTRIBUTES.filter((name) =>
+          widget.hasAttribute(name),
+        ).map(
+          (name) =>
+            `  ${name}="${widget.getAttribute(name).replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`,
+        );
+        markup.textContent = [
+          "<weather-widget",
+          ...attributes,
+          "></weather-widget>",
+        ].join("\n");
+      };
+
+      document
+        .querySelector("form")
+        .addEventListener("change", ({ target }) => {
+          setAttribute(target.name, target.value);
+          showMarkup();
+        });
+
+      document
+        .querySelector("weather-location-picker")
+        .addEventListener("location-select", ({ detail }) => {
+          setAttribute("latitude", String(detail.latitude));
+          setAttribute("longitude", String(detail.longitude));
+          setAttribute("location-name", detail.name);
+          showMarkup();
+        });
+
+      showMarkup();
+    </script>
   </head>
   <body>
     <main>
       <h1>Weather Widget in plain HTML</h1>
-      <div class="workbench">
-        <div class="location-and-settings">
-          <weather-location-picker></weather-location-picker>
-          <form id="widget-settings" aria-labelledby="widget-settings-title">
-            <h2 id="widget-settings-title">Widget settings</h2>
-            <fieldset>
-              <legend>Locale</legend>
-              <label
-                ><input type="radio" name="locale" value="en" checked />
-                English</label
-              >
-              <label
-                ><input type="radio" name="locale" value="nl" /> Dutch</label
-              >
-            </fieldset>
-            <fieldset>
-              <legend>Units</legend>
-              <label
-                ><input type="radio" name="units" value="metric" checked />
-                Metric</label
-              >
-              <label
-                ><input type="radio" name="units" value="imperial" />
-                Imperial</label
-              >
-            </fieldset>
-          </form>
-        </div>
-        <div class="preview">
-          <weather-widget
-            id="controlled-widget"
-            latitude="52.03"
-            longitude="5.08"
-          ></weather-widget>
-          <figure>
-            <figcaption>Markup for this Widget</figcaption>
-            <pre><code id="controlled-widget-markup">&lt;weather-widget
-  latitude="52.03"
-  longitude="5.08"
-&gt;&lt;/weather-widget&gt;</code></pre>
-          </figure>
-        </div>
-      </div>
+      <weather-location-picker></weather-location-picker>
+      <form aria-labelledby="widget-settings-title">
+        <h2 id="widget-settings-title">Widget settings</h2>
+        <fieldset>
+          <legend>Locale</legend>
+          <label
+            ><input type="radio" name="locale" value="" checked />
+            English</label
+          >
+          <label><input type="radio" name="locale" value="nl" /> Dutch</label>
+        </fieldset>
+        <fieldset>
+          <legend>Units</legend>
+          <label
+            ><input type="radio" name="units" value="" checked /> Metric</label
+          >
+          <label
+            ><input type="radio" name="units" value="imperial" />
+            Imperial</label
+          >
+        </fieldset>
+      </form>
+      <weather-widget latitude="52.03" longitude="5.08"></weather-widget>
+      <figure>
+        <figcaption>Markup for this Widget</figcaption>
+        <pre><code id="widget-markup"></code></pre>
+      </figure>
       <figure>
         <figcaption>
           A second Widget with its own settings: Nieuwegein in Dutch.

@@ -510,38 +510,30 @@ for (const host of SHOWCASE_HOSTS) {
 
 for (const host of WIDGET_SETTINGS_HOSTS) {
   test.describe(`the ${host.name} Example host's Widget settings`, () => {
-    test("come between the Location picker and the Widget, with its markup and the fixed Widget after it", async ({
+    test("come between the Location picker and the Widget, with its markup and the fixed Widget below", async ({
       page,
     }) => {
       await page.goto(host.path);
+      await expect(
+        controlledWidget(page).getByRole("heading", { level: 2 }),
+      ).toBeVisible();
 
-      const readingOrder = await page.evaluate(() =>
+      const tops = await Promise.all(
         [
-          ...document.querySelectorAll(
-            "weather-location-picker, form, weather-widget, figure",
-          ),
-        ].map((element) =>
-          element instanceof HTMLFormElement
-            ? "settings"
-            : element.matches("figure:has(weather-widget)")
-              ? "fixed Widget"
-              : element.matches("figure")
-                ? "markup"
-                : element.matches("weather-widget:not(figure *)")
-                  ? "controlled Widget"
-                  : element.matches("weather-location-picker")
-                    ? "picker"
-                    : "other",
-        ),
+          page.locator("weather-location-picker"),
+          widgetSettings(page),
+          controlledWidget(page),
+          markupSnippet(page),
+          page.getByRole("figure", { name: FIXED_WIDGET_CAPTION }),
+        ].map(async (part) => {
+          const box = await part.boundingBox();
+          if (!box) throw new Error("A part of the page isn't shown");
+          return box.y;
+        }),
       );
 
-      expect(readingOrder.filter((part) => part !== "other")).toEqual([
-        "picker",
-        "settings",
-        "controlled Widget",
-        "markup",
-        "fixed Widget",
-      ]);
+      expect(tops).toEqual([...tops].sort((one, other) => one - other));
+      expect(new Set(tops).size).toBe(tops.length);
     });
 
     test("start in sync with the Widget, whose markup then shows only its Location", async ({
@@ -642,7 +634,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
         name: "Metric",
       });
       await expect(metric).toBeFocused();
-      await expect(metric).toHaveCSS("outline-style", "solid");
+      await expect(metric).not.toHaveCSS("outline-style", "none");
     });
 
     test("show the Location chosen in the Location picker in the Widget and its markup", async ({
