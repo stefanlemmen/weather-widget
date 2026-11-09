@@ -48,7 +48,8 @@ const ANGULAR_HOST = {
 };
 const FRAMEWORK_HOSTS = [REACT_HOST, ANGULAR_HOST];
 const EXAMPLE_HOSTS = [VANILLA_HOST, ...FRAMEWORK_HOSTS];
-const SHOWCASE_HOSTS = EXAMPLE_HOSTS;
+const SHOWCASE_HOSTS = FRAMEWORK_HOSTS;
+const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST];
 
 const themeOf = (component: Locator) =>
   component.evaluate((host) => {
@@ -62,6 +63,23 @@ const themeOf = (component: Locator) =>
       radius: style.borderTopLeftRadius,
     };
   });
+
+const widgetSettings = (page: Page) =>
+  page.getByRole("form", { name: "Widget settings" });
+const controlledWidget = (page: Page) => page.locator("weather-widget").first();
+const markupSnippet = (page: Page) =>
+  page.getByRole("figure", { name: "Markup for this Widget" }).locator("code");
+const markupOf = (attributes: Record<string, string>) =>
+  [
+    "<weather-widget",
+    ...Object.entries(attributes).map(
+      ([name, value]) => `  ${name}="${value}"`,
+    ),
+    "></weather-widget>",
+  ].join("\n");
+const FIXED_WIDGET_CAPTION =
+  "A second Widget with its own settings: Nieuwegein in Dutch.";
+const NIEUWEGEIN_ATTRIBUTES = { latitude: "52.03", longitude: "5.08" };
 
 const showcaseWidget = (page: Page, caption: string) =>
   page.getByRole("figure", { name: caption }).locator("weather-widget");
@@ -271,8 +289,6 @@ for (const host of EXAMPLE_HOSTS) {
     }
 
     test.describe("its Location picker", () => {
-      const chosenLocation = (page: Page) =>
-        page.locator("weather-widget").first();
       const picker = (page: Page) => page.locator("weather-location-picker");
       const forecastRequestAt = (page: Page, latitude: string) =>
         page.waitForRequest((request) => {
@@ -289,7 +305,7 @@ for (const host of EXAMPLE_HOSTS) {
         await page.goto(host.path);
 
         await expect(
-          chosenLocation(page).getByRole("heading", {
+          controlledWidget(page).getByRole("heading", {
             level: 2,
             name: RECORDED_NIEUWEGEIN_NAME,
           }),
@@ -307,7 +323,7 @@ for (const host of EXAMPLE_HOSTS) {
         const url = new URL((await forecast).url());
         expect(url.searchParams.get("longitude")).toBe("-95.55551");
         await expect(
-          chosenLocation(page).getByRole("heading", {
+          controlledWidget(page).getByRole("heading", {
             level: 2,
             name: "Paris",
           }),
@@ -335,7 +351,7 @@ for (const host of EXAMPLE_HOSTS) {
         await context.setGeolocation({ latitude: 48.85341, longitude: 2.3488 });
         await page.goto(host.path);
         await expect(
-          chosenLocation(page).getByRole("heading", {
+          controlledWidget(page).getByRole("heading", {
             level: 2,
             name: RECORDED_NIEUWEGEIN_NAME,
           }),
@@ -366,7 +382,7 @@ for (const host of EXAMPLE_HOSTS) {
           .getByRole("button", { name: "Paris Texas, United States" })
           .click();
         await expect(
-          chosenLocation(page).getByRole("heading", {
+          controlledWidget(page).getByRole("heading", {
             level: 2,
             name: "Paris",
           }),
@@ -377,7 +393,7 @@ for (const host of EXAMPLE_HOSTS) {
           .click();
 
         await expect(
-          chosenLocation(page).getByRole("heading", {
+          controlledWidget(page).getByRole("heading", {
             level: 2,
             name: RECORDED_NIEUWEGEIN_NAME,
           }),
@@ -390,7 +406,7 @@ for (const host of EXAMPLE_HOSTS) {
         }) => {
           await page.emulateMedia({ colorScheme });
           await page.goto(host.path);
-          const widget = chosenLocation(page);
+          const widget = controlledWidget(page);
           await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
 
           const widgetTheme = await themeOf(widget);
@@ -488,6 +504,218 @@ for (const host of SHOWCASE_HOSTS) {
       ]) {
         await expect(showcaseWidget(page, caption)).toHaveCount(1);
       }
+    });
+  });
+}
+
+for (const host of WIDGET_SETTINGS_HOSTS) {
+  test.describe(`the ${host.name} Example host's Widget settings`, () => {
+    test("come between the Location picker and the Widget, with its markup and the fixed Widget after it", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+
+      const readingOrder = await page.evaluate(() =>
+        [
+          ...document.querySelectorAll(
+            "weather-location-picker, form, weather-widget, figure",
+          ),
+        ].map((element) =>
+          element instanceof HTMLFormElement
+            ? "settings"
+            : element.matches("figure:has(weather-widget)")
+              ? "fixed Widget"
+              : element.matches("figure")
+                ? "markup"
+                : element.matches("weather-widget:not(figure *)")
+                  ? "controlled Widget"
+                  : element.matches("weather-location-picker")
+                    ? "picker"
+                    : "other",
+        ),
+      );
+
+      expect(readingOrder.filter((part) => part !== "other")).toEqual([
+        "picker",
+        "settings",
+        "controlled Widget",
+        "markup",
+        "fixed Widget",
+      ]);
+    });
+
+    test("start in sync with the Widget, whose markup then shows only its Location", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const settings = widgetSettings(page);
+
+      await expect(
+        settings
+          .getByRole("group", { name: "Locale" })
+          .getByRole("radio", { name: "English" }),
+      ).toBeChecked();
+      await expect(
+        settings
+          .getByRole("group", { name: "Units" })
+          .getByRole("radio", { name: "Metric" }),
+      ).toBeChecked();
+      await expect(
+        controlledWidget(page).getByText("Feels like"),
+      ).toBeVisible();
+      await expect(markupSnippet(page)).toHaveText(
+        markupOf(NIEUWEGEIN_ATTRIBUTES),
+      );
+    });
+
+    test("switch the Widget to Dutch and show the locale in its markup", async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(RECORDED_AT);
+      await page.goto(host.path);
+      const dutch = widgetSettings(page)
+        .getByRole("group", { name: "Locale" })
+        .getByRole("radio", { name: "Dutch" });
+
+      await dutch.check();
+
+      const widget = controlledWidget(page);
+      await expect(widget.getByRole("status")).toContainText(
+        `Weersverwachting voor ${RECORDED_NIEUWEGEIN_NAME}`,
+      );
+      await expect(widget.getByText("Gevoelstemperatuur")).toBeVisible();
+      await expect(
+        widget
+          .getByRole("list", { name: "Komende 5 dagen" })
+          .getByRole("listitem")
+          .first(),
+      ).toContainText("zo");
+      await expect(markupSnippet(page)).toHaveText(
+        markupOf({ ...NIEUWEGEIN_ATTRIBUTES, locale: "nl" }),
+      );
+      await expect(dutch).toBeFocused();
+    });
+
+    test("switch the Widget to imperial units and show them in its markup", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+
+      await widgetSettings(page)
+        .getByRole("group", { name: "Units" })
+        .getByRole("radio", { name: "Imperial" })
+        .check();
+
+      await expect(
+        controlledWidget(page)
+          .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT, {
+            exact: true,
+          })
+          .first(),
+      ).toBeVisible();
+      await expect(markupSnippet(page)).toHaveText(
+        markupOf({ ...NIEUWEGEIN_ATTRIBUTES, units: "imperial" }),
+      );
+    });
+
+    test("can be reached and changed with the keyboard alone", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const english = widgetSettings(page).getByRole("radio", {
+        name: "English",
+      });
+      await english.focus();
+
+      await page.keyboard.press("ArrowDown");
+
+      const dutch = widgetSettings(page).getByRole("radio", { name: "Dutch" });
+      await expect(dutch).toBeChecked();
+      await expect(dutch).toBeFocused();
+      await expect(
+        controlledWidget(page).getByText("Gevoelstemperatuur"),
+      ).toBeVisible();
+
+      await page.keyboard.press("Tab");
+
+      const metric = widgetSettings(page).getByRole("radio", {
+        name: "Metric",
+      });
+      await expect(metric).toBeFocused();
+      await expect(metric).toHaveCSS("outline-style", "solid");
+    });
+
+    test("show the Location chosen in the Location picker in the Widget and its markup", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const picker = page.locator("weather-location-picker");
+      await widgetSettings(page).getByRole("radio", { name: "Dutch" }).check();
+
+      await picker.getByRole("searchbox", { name: "Location" }).fill("Paris");
+      await picker.getByRole("button", { name: "Search" }).click();
+      await picker
+        .getByRole("button", { name: "Paris Texas, United States" })
+        .click();
+
+      await expect(
+        controlledWidget(page).getByRole("heading", {
+          level: 2,
+          name: "Paris",
+        }),
+      ).toBeVisible();
+      await expect(markupSnippet(page)).toHaveText(
+        markupOf({
+          latitude: "33.66094",
+          longitude: "-95.55551",
+          "location-name": "Paris",
+          locale: "nl",
+        }),
+      );
+    });
+
+    test("leave the fixed Widget below alone", async ({ page }) => {
+      await page.goto(host.path);
+      const fixed = page
+        .getByRole("figure", { name: FIXED_WIDGET_CAPTION })
+        .locator("weather-widget");
+      await fixed.scrollIntoViewIfNeeded();
+      await expect(fixed.getByText("Gevoelstemperatuur")).toBeVisible();
+
+      await widgetSettings(page)
+        .getByRole("radio", { name: "Imperial" })
+        .check();
+
+      await expect(
+        fixed
+          .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE, { exact: true })
+          .first(),
+      ).toBeVisible();
+      await expect(fixed.getByText("Gevoelstemperatuur")).toBeVisible();
+    });
+
+    test("share one request to the Proxy between the two Widgets at Nieuwegein", async ({
+      page,
+    }) => {
+      const forecastUrls: string[] = [];
+      page.on("request", (request) => {
+        if (new URL(request.url()).pathname === "/api/forecast") {
+          forecastUrls.push(request.url());
+        }
+      });
+
+      await page.goto(host.path);
+      const widgets = page.locator("weather-widget");
+      await expect(widgets).toHaveCount(2);
+      for (const widget of await widgets.all()) {
+        await widget.scrollIntoViewIfNeeded();
+        await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+      }
+      await expect
+        .poll(() => forecastUrls.length, { timeout: 10_000 })
+        .toBeGreaterThanOrEqual(2);
+
+      expect(new Set(forecastUrls).size).toBe(1);
     });
   });
 }
