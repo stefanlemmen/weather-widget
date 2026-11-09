@@ -18,7 +18,7 @@ import {
   notAvailableIcon,
   windCompassIcon,
 } from "./condition-icon.ts";
-import type { Formatter, Spoken } from "./format.ts";
+import type { Formatter, Spoken } from "./formatter.ts";
 import type { Forecast } from "./forecast-client.ts";
 import type { ForecastState, ShownForecast } from "./forecast-loader.ts";
 import { upcomingDays, upcomingHours } from "./forecast-window.ts";

@@ -549,7 +549,7 @@ const forcedColors = css`
   }
 `;
 
-export const widgetStyles = [
+export const styles = [
   tokens,
   base,
   frame,
