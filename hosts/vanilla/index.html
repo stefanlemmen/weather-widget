@@ -80,6 +80,45 @@
         margin: 0;
         font-size: 1.25rem;
       }
+
+      label {
+        white-space: nowrap;
+      }
+
+      summary h2 {
+        display: inline;
+      }
+
+      details[open] > summary {
+        margin-block-end: 0.75rem;
+      }
+
+      @media (min-width: 64rem) {
+        :root {
+          --settings-inset: 1rem;
+          --settings-inline-size: 18rem;
+        }
+
+        body:has(details[open]) {
+          padding-inline-end: calc(
+            var(--settings-inline-size) + 2 * var(--settings-inset)
+          );
+        }
+
+        details {
+          box-sizing: border-box;
+          position: fixed;
+          inset-block-start: var(--settings-inset);
+          inset-inline-end: var(--settings-inset);
+          max-block-size: calc(100dvh - 2 * var(--settings-inset));
+          overflow-y: auto;
+          background-color: Canvas;
+        }
+
+        details[open] {
+          inline-size: var(--settings-inline-size);
+        }
+      }
     </style>
     <script type="module" src="/widget/weather-widget.js" vite-ignore></script>
     <script
@@ -158,83 +197,87 @@
   <body>
     <main>
       <h1>Weather Widget in plain HTML</h1>
-      <form aria-labelledby="widget-settings-title">
-        <h2 id="widget-settings-title">Widget settings</h2>
-        <fieldset>
-          <legend>Locale</legend>
-          <label
-            ><input type="radio" name="locale" value="" checked />
-            English</label
-          >
-          <label><input type="radio" name="locale" value="nl" /> Dutch</label>
-        </fieldset>
-        <fieldset>
-          <legend>Units</legend>
-          <label
-            ><input type="radio" name="units" value="" checked /> Metric</label
-          >
-          <label
-            ><input type="radio" name="units" value="imperial" />
-            Imperial</label
-          >
-        </fieldset>
-        <fieldset aria-describedby="forecast-parts-hint">
-          <legend>Forecast parts</legend>
-          <label
-            ><input type="checkbox" name="parts" value="current" checked />
-            Current conditions</label
-          >
-          <label
-            ><input type="checkbox" name="parts" value="hourly" checked />
-            Hourly forecast</label
-          >
-          <label
-            ><input type="checkbox" name="parts" value="daily" checked /> Daily
-            forecast</label
-          >
-          <p id="forecast-parts-hint" role="status"></p>
-        </fieldset>
-        <fieldset>
-          <legend>Theme</legend>
-          <label
-            ><input type="radio" name="theme" value="" checked /> None</label
-          >
-          <label
-            ><input type="radio" name="theme" value="preset" /> Georgia and
-            rust</label
-          >
-        </fieldset>
-        <fieldset>
-          <legend>Color scheme</legend>
-          <label
-            ><input type="radio" name="color-scheme" value="" checked />
-            System</label
-          >
-          <label
-            ><input type="radio" name="color-scheme" value="light" />
-            Light</label
-          >
-          <label
-            ><input type="radio" name="color-scheme" value="dark" /> Dark</label
-          >
-        </fieldset>
-        <fieldset>
-          <legend>Width</legend>
-          <label
-            ><input type="radio" name="width" value="240" /> 240 pixels</label
-          >
-          <label
-            ><input type="radio" name="width" value="390" checked /> 390
-            pixels</label
-          >
-          <label
-            ><input type="radio" name="width" value="640" /> 640 pixels</label
-          >
-          <label
-            ><input type="radio" name="width" value="760" /> 760 pixels</label
-          >
-        </fieldset>
-      </form>
+      <details open>
+        <summary><h2 id="widget-settings-title">Widget settings</h2></summary>
+        <form aria-labelledby="widget-settings-title">
+          <fieldset>
+            <legend>Locale</legend>
+            <label
+              ><input type="radio" name="locale" value="" checked />
+              English</label
+            >
+            <label><input type="radio" name="locale" value="nl" /> Dutch</label>
+          </fieldset>
+          <fieldset>
+            <legend>Units</legend>
+            <label
+              ><input type="radio" name="units" value="" checked />
+              Metric</label
+            >
+            <label
+              ><input type="radio" name="units" value="imperial" />
+              Imperial</label
+            >
+          </fieldset>
+          <fieldset aria-describedby="forecast-parts-hint">
+            <legend>Forecast parts</legend>
+            <label
+              ><input type="checkbox" name="parts" value="current" checked />
+              Current conditions</label
+            >
+            <label
+              ><input type="checkbox" name="parts" value="hourly" checked />
+              Hourly forecast</label
+            >
+            <label
+              ><input type="checkbox" name="parts" value="daily" checked />
+              Daily forecast</label
+            >
+            <p id="forecast-parts-hint" role="status"></p>
+          </fieldset>
+          <fieldset>
+            <legend>Theme</legend>
+            <label
+              ><input type="radio" name="theme" value="" checked /> None</label
+            >
+            <label
+              ><input type="radio" name="theme" value="preset" /> Georgia and
+              rust</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Color scheme</legend>
+            <label
+              ><input type="radio" name="color-scheme" value="" checked />
+              System</label
+            >
+            <label
+              ><input type="radio" name="color-scheme" value="light" />
+              Light</label
+            >
+            <label
+              ><input type="radio" name="color-scheme" value="dark" />
+              Dark</label
+            >
+          </fieldset>
+          <fieldset>
+            <legend>Width</legend>
+            <label
+              ><input type="radio" name="width" value="240" /> 240 pixels</label
+            >
+            <label
+              ><input type="radio" name="width" value="390" checked /> 390
+              pixels</label
+            >
+            <label
+              ><input type="radio" name="width" value="640" /> 640 pixels</label
+            >
+            <label
+              ><input type="radio" name="width" value="760" /> 760 pixels</label
+            >
+          </fieldset>
+        </form>
+      </details>
       <weather-location-picker></weather-location-picker>
       <weather-widget
         latitude="52.03"

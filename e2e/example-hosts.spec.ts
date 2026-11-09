@@ -50,6 +50,9 @@ const DEFAULT_BACKGROUNDS = {
 };
 const HOURS_IN_THE_HOURLY_FORECAST = 12;
 const DEFAULT_WIDTH = 390;
+const TOP_RIGHT_TOLERANCE = 32;
+const WIDEST_WIDTH = 760;
+const WIDE_SCREEN_WIDTHS = [1024, DESKTOP_WIDTH];
 const DEFAULT_WIDTH_STYLE = `inline-size: ${String(DEFAULT_WIDTH)}px`;
 const WIDGET_LAYOUTS = [
   { width: 240, hoursPerRow: 4, factsSideBySide: false },
@@ -101,6 +104,12 @@ const themeOf = (component: Locator) =>
 
 const widgetSettings = (page: Page) =>
   page.getByRole("form", { name: "Widget settings" });
+const settingsToggle = (page: Page) =>
+  page.locator("summary").filter({
+    has: page.getByRole("heading", { level: 2, name: "Widget settings" }),
+  });
+const settingsPanel = (page: Page) =>
+  page.locator("details").filter({ has: widgetSettings(page) });
 const controlledWidget = (page: Page) => page.locator("weather-widget").first();
 const forecastParts = (page: Page) =>
   widgetSettings(page).getByRole("group", { name: "Forecast parts" });
@@ -114,11 +123,21 @@ const themedPreset = (page: Page) =>
 const widthRadio = (page: Page, width: number) =>
   settingsRadio(page, "Width", `${String(width)} pixels`);
 
-const topOf = async (locator: Locator) => {
+const boxOf = async (locator: Locator) => {
   const box = await locator.boundingBox();
-  if (!box) throw new Error("A part of the Widget isn't shown");
-  return Math.round(box.y);
+  if (!box) throw new Error("A part of the page isn't shown");
+  return box;
 };
+
+type Box = Awaited<ReturnType<typeof boxOf>>;
+
+const overlap = (one: Box, other: Box) =>
+  one.x < other.x + other.width &&
+  other.x < one.x + one.width &&
+  one.y < other.y + other.height &&
+  other.y < one.y + one.height;
+
+const topOf = async (locator: Locator) => Math.round((await boxOf(locator)).y);
 
 const layoutOf = async (widget: Locator) => {
   const hours = widget
@@ -578,9 +597,82 @@ for (const host of SHOWCASE_HOSTS) {
 
 for (const host of WIDGET_SETTINGS_HOSTS) {
   test.describe(`the ${host.name} Example host's Widget settings`, () => {
-    test("come right below the title, before the Location picker and the Widget", async ({
+    for (const screenWidth of WIDE_SCREEN_WIDTHS) {
+      test(`sit at the top right of a ${String(screenWidth)} pixel screen, clear of the Location picker and the widest Widget`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({
+          width: screenWidth,
+          height: VIEWPORT_HEIGHT,
+        });
+        await page.goto(host.path);
+        await widthRadio(page, WIDEST_WIDTH).check();
+        await expect(
+          controlledWidget(page).getByRole("heading", { level: 2 }),
+        ).toBeVisible();
+
+        const [panel, picker, widget] = await Promise.all([
+          boxOf(settingsPanel(page)),
+          boxOf(page.locator("weather-location-picker")),
+          boxOf(controlledWidget(page)),
+        ]);
+
+        expect(panel.x + panel.width).toBeGreaterThanOrEqual(
+          screenWidth - TOP_RIGHT_TOLERANCE,
+        );
+        expect(panel.y).toBeLessThanOrEqual(TOP_RIGHT_TOLERANCE);
+        expect(overlap(panel, picker)).toBe(false);
+        expect(overlap(panel, widget)).toBe(false);
+      });
+    }
+
+    test("stay in view on a wide screen after scrolling to the end of the page", async ({
       page,
     }) => {
+      await page.setViewportSize({
+        width: DESKTOP_WIDTH,
+        height: VIEWPORT_HEIGHT,
+      });
+      await page.goto(host.path);
+      await expect(
+        controlledWidget(page).getByRole("heading", { level: 2 }),
+      ).toBeVisible();
+
+      await page.keyboard.press("End");
+
+      await expect
+        .poll(() => page.evaluate(() => window.scrollY))
+        .toBeGreaterThan(0);
+      await expect(settingsPanel(page)).toBeInViewport({ ratio: 1 });
+    });
+
+    test("start open and collapse and expand with the mouse and the keyboard", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const toggle = settingsToggle(page);
+      await expect(widgetSettings(page)).toBeVisible();
+
+      await page.keyboard.press("Tab");
+      await expect(toggle).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(widgetSettings(page)).toBeHidden();
+      await expect(toggle).toBeFocused();
+
+      await page.keyboard.press("Space");
+      await expect(widgetSettings(page)).toBeVisible();
+
+      await toggle.click();
+      await expect(widgetSettings(page)).toBeHidden();
+
+      await toggle.click();
+      await expect(widgetSettings(page)).toBeVisible();
+    });
+
+    test("come right below the title on a phone, before the Location picker and the Widget", async ({
+      page,
+    }) => {
+      await page.setViewportSize(MOBILE_VIEWPORT);
       await page.goto(host.path);
       await expect(
         controlledWidget(page).getByRole("heading", { level: 2 }),
@@ -588,18 +680,32 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
 
       const tops = await Promise.all(
         [
+          page.getByRole("heading", { level: 1 }),
           widgetSettings(page),
           page.locator("weather-location-picker"),
           controlledWidget(page),
-        ].map(async (part) => {
-          const box = await part.boundingBox();
-          if (!box) throw new Error("A part of the page isn't shown");
-          return box.y;
-        }),
+        ].map(async (part) => (await boxOf(part)).y),
       );
 
       expect(tops).toEqual([...tops].sort((one, other) => one - other));
       expect(new Set(tops).size).toBe(tops.length);
+    });
+
+    test("keep each radio button and checkbox on one line with its label", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      await expect(widgetSettings(page)).toBeVisible();
+
+      const brokenLabels = await widgetSettings(page)
+        .locator("label")
+        .evaluateAll((labels) =>
+          labels
+            .filter((label) => label.getClientRects().length > 1)
+            .map((label) => label.textContent.trim()),
+        );
+
+      expect(brokenLabels).toEqual([]);
     });
 
     test("start in sync with the Widget", async ({ page }) => {
