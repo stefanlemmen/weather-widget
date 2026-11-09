@@ -5,10 +5,14 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RECORDED_SEARCHES, urlOf } from "../fixtures/recorded-responses.ts";
+import {
+  RECORDED_SEARCHES,
+  recordedFetch,
+  urlOf,
+} from "../fixtures/recorded-responses.ts";
 import { createProxy } from "../src/index.ts";
 
-const liveEnvironment = { OPENWEATHER_API_KEY: "test-key" };
+const environmentWithKey = { OPENWEATHER_API_KEY: "test-key" };
 const SEARCH_PROVIDER_ORIGIN = "https://geocoding-api.open-meteo.com";
 const SEARCH_PATH = "/v1/search";
 
@@ -62,7 +66,7 @@ const proxyAnswering = (respond: Respond) => {
     requestedUrls.push(url);
     return respond(url);
   };
-  return { proxy: createProxy(liveEnvironment, { fetch }), requestedUrls };
+  return { proxy: createProxy(environmentWithKey, { fetch }), requestedUrls };
 };
 
 const answering = (recorded: unknown) =>
@@ -245,7 +249,7 @@ describe("the locations route", () => {
   );
 
   it("answers 503 Problem Details when the Search provider doesn't answer in time", async () => {
-    const proxy = createProxy(liveEnvironment, {
+    const proxy = createProxy(environmentWithKey, {
       fetch: timingOut,
       searchProviderTimeoutMs: 10,
     });
@@ -292,28 +296,20 @@ describe("the locations route", () => {
   });
 });
 
-describe("the locations route in fixture mode", () => {
-  const fixtureProxy = () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(() =>
-      Promise.reject(new Error("the network must not be used")),
-    );
-    return {
-      proxy: createProxy({ PROVIDER_MODE: "fixtures" }, { fetch }),
-      fetch,
-    };
-  };
+describe("the locations route with the recorded fetch", () => {
+  const recordedProxy = () =>
+    createProxy(environmentWithKey, { fetch: recordedFetch });
 
-  it("answers from recorded Search provider responses without a network call", async () => {
-    const { proxy, fetch } = fixtureProxy();
+  it("answers from the recorded Search provider responses", async () => {
+    const proxy = recordedProxy();
 
     const response = await proxy.request("/api/locations?name=Paris&locale=en");
 
     expect(await locationsIn(response)).toEqual(RECORDED_PARIS_LOCATIONS);
-    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("finds a recorded search whatever its case", async () => {
-    const { proxy } = fixtureProxy();
+    const proxy = recordedProxy();
 
     const response = await proxy.request(
       "/api/locations?name=parijs&locale=nl",
@@ -325,7 +321,7 @@ describe("the locations route in fixture mode", () => {
   });
 
   it("finds no Locations for a search that wasn't recorded", async () => {
-    const { proxy } = fixtureProxy();
+    const proxy = recordedProxy();
 
     const response = await proxy.request(
       "/api/locations?name=Atlantis&locale=en",

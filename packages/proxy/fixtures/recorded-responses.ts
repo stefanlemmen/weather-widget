@@ -5,6 +5,8 @@ import recordedReverseGeocoding from "./reverse-nieuwegein.json" with { type: "j
 import recordedParijsSearch from "./search-parijs.json" with { type: "json" };
 import recordedParisSearch from "./search-paris.json" with { type: "json" };
 import recordedSearchWithoutResults from "./search-parjs.json" with { type: "json" };
+import { SEARCH_CALL } from "../src/search-provider.ts";
+import { WEATHER_PROVIDER_CALLS } from "../src/weather-provider.ts";
 
 export const RECORDED_RESPONSES = {
   current: recordedCurrentConditions,
@@ -24,7 +26,7 @@ const NOT_RECORDED_STATUS = 404;
 export const urlOf = (input: Parameters<typeof globalThis.fetch>[0]): URL =>
   new URL(input instanceof Request ? input.url : input);
 
-export const recordedFetchFor = (
+const recordedFetchFor = (
   recordedByUrl: Iterable<readonly [url: string, recorded: unknown]>,
 ): typeof globalThis.fetch => {
   const recordedByPath = new Map(
@@ -49,7 +51,7 @@ const RECORDED_SEARCHES_BY_TERM = new Map<string, unknown>([
   ["parijs", RECORDED_SEARCHES.parijs],
 ]);
 
-export const recordedSearch: typeof globalThis.fetch = (input) => {
+const recordedSearch: typeof globalThis.fetch = (input) => {
   const url = urlOf(input);
   const term = url.searchParams.get("name")?.toLocaleLowerCase() ?? "";
   return Promise.resolve(
@@ -58,3 +60,20 @@ export const recordedSearch: typeof globalThis.fetch = (input) => {
     ),
   );
 };
+
+const recordedWeather = recordedFetchFor([
+  [WEATHER_PROVIDER_CALLS.current.url, RECORDED_RESPONSES.current],
+  [WEATHER_PROVIDER_CALLS.hourly.url, RECORDED_RESPONSES.hourly],
+  [WEATHER_PROVIDER_CALLS.daily.url, RECORDED_RESPONSES.daily],
+  [
+    WEATHER_PROVIDER_CALLS.reverseGeocoding.url,
+    RECORDED_RESPONSES.reverseGeocoding,
+  ],
+]);
+
+const SEARCH_PROVIDER_ORIGIN = new URL(SEARCH_CALL.url).origin;
+
+export const recordedFetch: typeof globalThis.fetch = (input, init) =>
+  urlOf(input).origin === SEARCH_PROVIDER_ORIGIN
+    ? recordedSearch(input, init)
+    : recordedWeather(input, init);

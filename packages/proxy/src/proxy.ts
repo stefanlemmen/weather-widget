@@ -103,7 +103,7 @@ export const createProxy = (
 ): Hono => {
   const environment = parseEnvironment(rawEnvironment);
   const fetchForecast = createWeatherProvider(environment, dependencies);
-  const findLocations = createSearchProvider(environment, dependencies);
+  const findLocations = createSearchProvider(dependencies);
 
   const proxy = new Hono().basePath(PROXY_BASE_PATH);
   proxy.notFound((context) => problem(context, NOT_FOUND));

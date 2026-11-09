@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { recordedFetch } from "../fixtures/recorded-responses.ts";
 import { createProxy } from "../src/index.ts";
 
-const FIXTURES_ENVIRONMENT = { PROVIDER_MODE: "fixtures" };
-const LIVE_ENVIRONMENT = { OPENWEATHER_API_KEY: "test-key" };
+const ENVIRONMENT_WITH_KEY = { OPENWEATHER_API_KEY: "test-key" };
 const HOST_PAGE_ORIGIN = "https://host-page.example";
 const OTHER_HOST_PAGE_ORIGIN = "https://other-host-page.example";
 const ANY_ORIGIN = "*";
@@ -22,9 +22,10 @@ const NEVER_CACHED = "no-store";
 const failingProviders: typeof globalThis.fetch = () =>
   Promise.resolve(new Response(null, { status: FAILING_STATUS }));
 
-const proxyWithRecordedProviders = () => createProxy(FIXTURES_ENVIRONMENT);
+const proxyWithRecordedProviders = () =>
+  createProxy(ENVIRONMENT_WITH_KEY, { fetch: recordedFetch });
 const proxyWithFailingProviders = () =>
-  createProxy(LIVE_ENVIRONMENT, { fetch: failingProviders });
+  createProxy(ENVIRONMENT_WITH_KEY, { fetch: failingProviders });
 
 const crossOriginGet = (
   path: string,
