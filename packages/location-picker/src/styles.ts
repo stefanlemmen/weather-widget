@@ -28,13 +28,17 @@ const picker = css`
   }
 
   .picker-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
+  .picker-row input {
+    flex: 1 1 0;
+    min-inline-size: 0;
+  }
+
   input {
-    inline-size: 100%;
     min-block-size: var(--_target);
     padding: 0.5rem 0.75rem;
     border: 1.5px solid var(--_field-border);
@@ -61,8 +65,9 @@ const picker = css`
   }
 
   .locate {
-    justify-self: start;
-    gap: 0.5rem;
+    flex: none;
+    inline-size: var(--_target);
+    padding: 0;
   }
 
   .locate svg {
@@ -140,8 +145,12 @@ const picker = css`
   }
 
   @container weather (inline-size < 20rem) {
-    .picker-row {
-      grid-template-columns: 1fr;
+    .picker-row input {
+      flex-basis: 100%;
+    }
+
+    .picker-row .button-primary {
+      flex-grow: 1;
     }
   }
 `;

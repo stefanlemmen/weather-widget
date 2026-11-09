@@ -467,13 +467,17 @@
 }
 
 .picker-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
+.picker-row input {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
 .picker input {
-  inline-size: 100%;
   min-block-size: var(--_target);
   padding: 0.5rem 0.75rem;
   border: 1.5px solid var(--_field-border);
@@ -490,7 +494,9 @@
 }
 
 .locate {
-  justify-self: start;
+  flex: none;
+  inline-size: var(--_target);
+  padding: 0;
 }
 
 .locate svg {
@@ -597,8 +603,12 @@
     display: none;
   }
 
-  .picker-row {
-    grid-template-columns: 1fr;
+  .picker-row input {
+    flex-basis: 100%;
+  }
+
+  .picker-row .button-primary {
+    flex-grow: 1;
   }
 }
 
