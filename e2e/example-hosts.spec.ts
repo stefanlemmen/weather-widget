@@ -23,10 +23,6 @@ const WIDGET_MODULE_PATH = "/widget/weather-widget.js";
 const PICKER_MODULE_PATH = "/location-picker/weather-location-picker.js";
 const STANDALONE_MODULE_PATHS = [WIDGET_MODULE_PATH, PICKER_MODULE_PATH];
 
-const CHOSEN_LOCATION_CAPTION = "Choose a Location to show it in this Widget.";
-const DUTCH_CAPTION = 'Dutch: locale="nl"';
-const IMPERIAL_CAPTION = 'Imperial units: units="imperial"';
-const THEMED_CAPTION = "Themed with five CSS custom properties";
 const HOURLY_FORECAST_LIST = "Next 12 hours";
 const DAILY_FORECAST_LIST = "Next 5 days";
 const FORECAST_PARTS_HINT =
@@ -88,8 +84,6 @@ const ANGULAR_HOST = {
 };
 const FRAMEWORK_HOSTS = [REACT_HOST, ANGULAR_HOST];
 const EXAMPLE_HOSTS = [VANILLA_HOST, ...FRAMEWORK_HOSTS];
-const SHOWCASE_HOSTS = [ANGULAR_HOST];
-const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST, REACT_HOST];
 
 const themeOf = (component: Locator) =>
   component.evaluate((host) => {
@@ -178,9 +172,6 @@ const partsOf = (widget: Locator) =>
 
 const expectParts = (widget: Locator, parts: string | null) =>
   expect.poll(() => partsOf(widget)).toBe(parts);
-
-const showcaseWidget = (page: Page, caption: string) =>
-  page.getByRole("figure", { name: caption }).locator("weather-widget");
 
 for (const host of EXAMPLE_HOSTS) {
   const showEveryWidget = async (page: Page) => {
@@ -517,96 +508,7 @@ for (const host of EXAMPLE_HOSTS) {
   });
 }
 
-for (const host of SHOWCASE_HOSTS) {
-  test.describe(`the ${host.name} Example host's fixed showcase`, () => {
-    test("shows a Dutch Widget", async ({ page }) => {
-      await page.clock.setFixedTime(RECORDED_AT);
-      await page.goto(host.path);
-      const widget = showcaseWidget(page, DUTCH_CAPTION);
-      await widget.scrollIntoViewIfNeeded();
-
-      await expect(widget.getByRole("status")).toContainText(
-        `Weersverwachting voor ${RECORDED_NIEUWEGEIN_NAME}`,
-      );
-      await expect(widget.getByText("Gevoelstemperatuur")).toBeVisible();
-      await expect(
-        widget
-          .getByRole("list", { name: "Komende 5 dagen" })
-          .getByRole("listitem")
-          .first(),
-      ).toContainText("zo");
-    });
-
-    test("shows an imperial Widget", async ({ page }) => {
-      await page.goto(host.path);
-      const widget = showcaseWidget(page, IMPERIAL_CAPTION);
-      await widget.scrollIntoViewIfNeeded();
-
-      await expect(
-        widget
-          .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT, {
-            exact: true,
-          })
-          .first(),
-      ).toBeVisible();
-    });
-
-    test("asks the Proxy one shared request for Widgets that differ only in locale and units", async ({
-      page,
-    }) => {
-      const forecastUrls: string[] = [];
-      page.on("request", (request) => {
-        if (new URL(request.url()).pathname === "/api/forecast") {
-          forecastUrls.push(request.url());
-        }
-      });
-
-      await page.goto(host.path);
-      const widgets = page.locator("weather-widget");
-      await expect(widgets).toHaveCount(4);
-      for (const widget of await widgets.all()) {
-        await widget.scrollIntoViewIfNeeded();
-      }
-      await expect
-        .poll(() => forecastUrls.length, { timeout: 10_000 })
-        .toBeGreaterThanOrEqual(3);
-
-      expect(new Set(forecastUrls).size).toBe(1);
-    });
-
-    test("shows one Widget themed through its style attribute", async ({
-      page,
-    }) => {
-      await page.goto(host.path);
-      const themed = page.locator("weather-widget[style]");
-      await themed.scrollIntoViewIfNeeded();
-
-      await expect(themed).toHaveCount(1);
-      await expect(themed.getByRole("heading", { level: 2 })).toBeVisible();
-      await expect(themed).toHaveCSS("background-color", "rgb(255, 250, 242)");
-      await expect(themed).toHaveCSS("color", "rgb(43, 29, 22)");
-      await expect(themed.getByRole("link", { name: "OpenWeather" })).toHaveCSS(
-        "color",
-        "rgb(156, 52, 18)",
-      );
-    });
-
-    test("names each example Widget in a caption", async ({ page }) => {
-      await page.goto(host.path);
-
-      for (const caption of [
-        CHOSEN_LOCATION_CAPTION,
-        DUTCH_CAPTION,
-        IMPERIAL_CAPTION,
-        THEMED_CAPTION,
-      ]) {
-        await expect(showcaseWidget(page, caption)).toHaveCount(1);
-      }
-    });
-  });
-}
-
-for (const host of WIDGET_SETTINGS_HOSTS) {
+for (const host of EXAMPLE_HOSTS) {
   test.describe(`the ${host.name} Example host's Widget settings`, () => {
     for (const screenWidth of WIDE_SCREEN_WIDTHS) {
       test(`sit at the top right of a ${String(screenWidth)} pixel screen, clear of the Location picker and the widest Widget`, async ({
