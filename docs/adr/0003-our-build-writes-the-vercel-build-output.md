@@ -9,6 +9,6 @@ One Vercel project serves every build and the Proxy from one domain. Our own bui
 
 ## Consequences
 
-- A new build joins by writing to its own path in `dist/`: the landing page to `dist/index.html`, the React and Angular Example hosts to `dist/react/` and `dist/angular/`, and the standalone Widget module to `dist/widget/weather-widget.js`, which becomes its stable URL. The React host sets Vite's `base` to its path. The Angular host sets `baseHref` and an `outputPath` whose `browser` folder lands in `dist/angular/`, because Angular builds to `dist/<project>/browser/` by default. The script copies `dist/` as a whole, so adding a build doesn't change it.
+- A new build joins by writing to its own path in `dist/`: the landing page to `dist/index.html`, the React and Angular Example hosts to `dist/react/` and `dist/angular/`, and the standalone Widget and Location picker modules to `dist/widget/weather-widget.js` and `dist/location-picker/weather-location-picker.js`, which become their stable URLs. The React host sets Vite's `base` to its path. The Angular host sets `baseHref` and an `outputPath` whose `browser` folder lands in `dist/angular/`, because Angular builds to `dist/<project>/browser/` by default. The script copies `dist/` as a whole, so adding a build doesn't change it.
 - The Proxy function has no `node_modules` at runtime. Everything it imports is in the bundle.
 - `vercel.json` sets `framework: null`, because the project still has the Astro preset from an earlier version of the app.
