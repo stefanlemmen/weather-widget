@@ -27,6 +27,10 @@ const CHOSEN_LOCATION_CAPTION = "Choose a Location to show it in this Widget.";
 const DUTCH_CAPTION = 'Dutch: locale="nl"';
 const IMPERIAL_CAPTION = 'Imperial units: units="imperial"';
 const THEMED_CAPTION = "Themed with five CSS custom properties";
+const HOURLY_FORECAST_LIST = "Next 12 hours";
+const DAILY_FORECAST_LIST = "Next 5 days";
+const FORECAST_PARTS_HINT =
+  "The Widget always shows at least one Forecast part.";
 
 const VANILLA_HOST = {
   name: "vanilla",
@@ -67,6 +71,8 @@ const themeOf = (component: Locator) =>
 const widgetSettings = (page: Page) =>
   page.getByRole("form", { name: "Widget settings" });
 const controlledWidget = (page: Page) => page.locator("weather-widget").first();
+const forecastParts = (page: Page) =>
+  widgetSettings(page).getByRole("group", { name: "Forecast parts" });
 
 const showcaseWidget = (page: Page, caption: string) =>
   page.getByRole("figure", { name: caption }).locator("weather-widget");
@@ -145,10 +151,10 @@ for (const host of EXAMPLE_HOSTS) {
 
       const widget = page.locator("weather-widget").first();
       const hours = widget
-        .getByRole("list", { name: "Next 12 hours" })
+        .getByRole("list", { name: HOURLY_FORECAST_LIST })
         .getByRole("listitem");
       const days = widget
-        .getByRole("list", { name: "Next 5 days" })
+        .getByRole("list", { name: DAILY_FORECAST_LIST })
         .getByRole("listitem");
       await expect(hours).toHaveCount(12);
       await expect(hours.first()).toContainText("10 AM");
@@ -535,6 +541,16 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           .getByRole("group", { name: "Units" })
           .getByRole("radio", { name: "Metric" }),
       ).toBeChecked();
+      for (const name of [
+        "Current conditions",
+        "Hourly forecast",
+        "Daily forecast",
+      ]) {
+        await expect(
+          forecastParts(page).getByRole("checkbox", { name }),
+        ).toBeChecked();
+      }
+      await expect(controlledWidget(page)).not.toHaveAttribute("parts");
       await expect(
         controlledWidget(page).getByText("Feels like"),
       ).toBeVisible();
@@ -605,6 +621,87 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       });
       await expect(metric).toBeFocused();
       await expect(metric).not.toHaveCSS("outline-style", "none");
+
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Space");
+
+      const current = forecastParts(page).getByRole("checkbox", {
+        name: "Current conditions",
+      });
+      await expect(current).not.toBeChecked();
+      await expect(current).toBeFocused();
+      await expect(current).not.toHaveCSS("outline-style", "none");
+      await expect(controlledWidget(page)).toHaveAttribute(
+        "parts",
+        "hourly daily",
+      );
+    });
+
+    test("hide a Forecast part once it is unticked", async ({ page }) => {
+      await page.goto(host.path);
+      const widget = controlledWidget(page);
+      await expect(
+        widget.getByRole("list", { name: HOURLY_FORECAST_LIST }),
+      ).toHaveCount(1);
+
+      await forecastParts(page)
+        .getByRole("checkbox", { name: "Hourly forecast" })
+        .uncheck();
+
+      await expect(widget).toHaveAttribute("parts", "current daily");
+      await expect(
+        widget.getByRole("list", { name: HOURLY_FORECAST_LIST }),
+      ).toHaveCount(0);
+      await expect(widget.getByText("Feels like")).toBeVisible();
+      await expect(
+        widget.getByRole("list", { name: DAILY_FORECAST_LIST }),
+      ).toHaveCount(1);
+    });
+
+    test("leave out the parts attribute while every Forecast part is ticked", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const widget = controlledWidget(page);
+      const daily = forecastParts(page).getByRole("checkbox", {
+        name: "Daily forecast",
+      });
+      await daily.uncheck();
+      await expect(widget).toHaveAttribute("parts", "current hourly");
+
+      await daily.check();
+
+      await expect(widget).not.toHaveAttribute("parts");
+      await expect(
+        widget.getByRole("list", { name: DAILY_FORECAST_LIST }),
+      ).toHaveCount(1);
+    });
+
+    test("keep the last Forecast part ticked and announce why", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const parts = forecastParts(page);
+      await parts
+        .getByRole("checkbox", { name: "Current conditions" })
+        .uncheck();
+      await parts.getByRole("checkbox", { name: "Hourly forecast" }).uncheck();
+      const daily = parts.getByRole("checkbox", { name: "Daily forecast" });
+      await daily.focus();
+
+      await page.keyboard.press("Space");
+
+      await expect(daily).toBeChecked();
+      await expect(daily).toBeFocused();
+      await expect(controlledWidget(page)).toHaveAttribute("parts", "daily");
+      await expect(widgetSettings(page).getByRole("status")).toHaveText(
+        FORECAST_PARTS_HINT,
+      );
+      await expect(parts).toHaveAccessibleDescription(FORECAST_PARTS_HINT);
+
+      await parts.getByRole("checkbox", { name: "Hourly forecast" }).check();
+
+      await expect(widgetSettings(page).getByRole("status")).toBeEmpty();
     });
 
     test("keep their locale when the Location picker chooses a new Location", async ({

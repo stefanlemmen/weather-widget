@@ -70,7 +70,8 @@
         gap: 0.75rem;
       }
 
-      h2 {
+      h2,
+      #forecast-parts-hint {
         margin: 0;
         font-size: 1.25rem;
       }
@@ -82,6 +83,8 @@
       vite-ignore
     ></script>
     <script type="module">
+      const FORECAST_PARTS_HINT =
+        "The Widget always shows at least one Forecast part.";
       const widget = document.querySelector("weather-widget");
 
       const setAttribute = (name, value) => {
@@ -89,11 +92,31 @@
         else widget.removeAttribute(name);
       };
 
-      document
-        .querySelector("form")
-        .addEventListener("change", ({ target }) => {
-          setAttribute(target.name, target.value);
-        });
+      const settings = document.querySelector("form");
+
+      const partsHint = document.querySelector("#forecast-parts-hint");
+
+      const setParts = (changedCheckbox) => {
+        const checkboxes = [...settings.elements.parts];
+        const ticked = checkboxes.filter((checkbox) => checkbox.checked);
+        if (ticked.length === 0) {
+          changedCheckbox.checked = true;
+          partsHint.textContent = FORECAST_PARTS_HINT;
+          return;
+        }
+        partsHint.textContent = "";
+        setAttribute(
+          "parts",
+          ticked.length < checkboxes.length
+            ? ticked.map((checkbox) => checkbox.value).join(" ")
+            : "",
+        );
+      };
+
+      settings.addEventListener("change", ({ target }) => {
+        if (target.name === "parts") setParts(target);
+        else setAttribute(target.name, target.value);
+      });
 
       document
         .querySelector("weather-location-picker")
@@ -126,6 +149,22 @@
             ><input type="radio" name="units" value="imperial" />
             Imperial</label
           >
+        </fieldset>
+        <fieldset aria-describedby="forecast-parts-hint">
+          <legend>Forecast parts</legend>
+          <label
+            ><input type="checkbox" name="parts" value="current" checked />
+            Current conditions</label
+          >
+          <label
+            ><input type="checkbox" name="parts" value="hourly" checked />
+            Hourly forecast</label
+          >
+          <label
+            ><input type="checkbox" name="parts" value="daily" checked /> Daily
+            forecast</label
+          >
+          <p id="forecast-parts-hint" role="status"></p>
         </fieldset>
       </form>
       <weather-location-picker></weather-location-picker>
