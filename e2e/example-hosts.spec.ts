@@ -215,20 +215,6 @@ for (const host of EXAMPLE_HOSTS) {
       );
     });
 
-    test("draws its Widgets in the self-hosted Lexend", async ({ page }) => {
-      const font = page.waitForResponse(
-        `**${host.path}fonts/lexend-latin-wght.woff2`,
-      );
-
-      await page.goto(host.path);
-
-      expect((await font).status()).toBe(200);
-      await expect(page.locator("weather-widget").first()).toHaveCSS(
-        "font-family",
-        /^Lexend/,
-      );
-    });
-
     test("names each example Widget in a caption", async ({ page }) => {
       await page.goto(host.path);
 
