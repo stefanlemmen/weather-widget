@@ -3,7 +3,11 @@
     "collect": {
       "startServerCommand": "PROVIDER_MODE=fixtures pnpm preview",
       "startServerReadyPattern": "Preview listening",
-      "url": ["http://localhost:4173/vanilla/", "http://localhost:4173/react/"],
+      "url": [
+        "http://localhost:4173/vanilla/",
+        "http://localhost:4173/react/",
+        "http://localhost:4173/angular/"
+      ],
       "numberOfRuns": 3
     },
     "assert": {
@@ -34,6 +38,15 @@
             "resource-summary:script:size": [
               "error",
               { "maxNumericValue": 102400 }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "/angular/$",
+          "assertions": {
+            "resource-summary:script:size": [
+              "error",
+              { "maxNumericValue": 76800 }
             ]
           }
         }

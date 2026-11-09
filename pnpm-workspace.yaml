@@ -5,3 +5,8 @@ packages:
 minimumReleaseAge: 4320
 strictDepBuilds: true
 saveExact: true
+allowBuilds:
+  "@parcel/watcher": false
+  esbuild: false
+  lmdb: false
+  msgpackr-extract: false
