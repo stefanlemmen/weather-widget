@@ -332,7 +332,7 @@ Accent, 600, underlined (1px, 2px on hover) with a 3px offset. Used for credits.
 44px minimum height, 6px radius (half the theme radius), 600 weight.
 
 - **Primary:** accent fill, ground text, hover mixes the fill 14% towards ink (darker in light mode, lighter in dark mode; ground on it stays above 5:1). Used for "Search".
-- **Secondary:** accent outline (1.5px) and text, no fill; hover fills with a 10% accent tint. Used for "Try again" and "Use my location".
+- **Secondary:** accent outline (1.5px) and text, no fill; hover fills with a 10% accent tint. Used for "Try again", and as an icon-only square for "Use my location".
 
 ### Focus
 
@@ -358,11 +358,10 @@ The skeleton is the real layout filled with placeholder text ("Nieuwegein", "12Â
 
 The picker is its own element and uses the same tokens, theming properties and radius. Top to bottom:
 
-1. A search form (`role="search"`): the visible label "Location" (600), a text field and a primary "Search" button on one row. Below 20rem the button drops under the field.
-2. A secondary "Use my location" button with the Lucide `navigation` arrow. It renders only when the Geolocation API exists. While locating it is `aria-disabled="true"`, its cursor is `progress`, and the arrow pulses to 35% opacity (1.2s, alternate) under `prefers-reduced-motion: no-preference`.
-3. A `role="status"` message in ink soft at label size, hidden while empty.
-4. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color. Choosing one cancels a running search, clears the list and moves focus back to the text field.
-5. The credit: "Search by Open-Meteo, place names from GeoNames (CC BY 4.0)", with links.
+1. A search form (`role="search"`): the visible label "Location" (600), then one row with a text field, a primary "Search" button and a secondary "Use my location" button. That last button is a 44px square showing only the Lucide `navigation` arrow. Its `aria-label` and `title` carry the name, so screen readers announce it and a mouse hover shows it. It renders only when the Geolocation API exists. While locating it is `aria-disabled="true"`, its cursor is `progress`, and the arrow pulses to 35% opacity (1.2s, alternate) under `prefers-reduced-motion: no-preference`. Below 20rem both buttons drop under the field, with Search filling the row next to the square.
+2. A `role="status"` message in ink soft at label size, hidden while empty.
+3. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color. Choosing one cancels a running search, clears the list and moves focus back to the text field.
+4. The credit: "Search by Open-Meteo, place names from GeoNames (CC BY 4.0)", with links.
 
 The text field is 44px high with a 1.5px field-border outline, the body font (17px, so iOS doesn't zoom) and an accent caret. On focus its border turns accent and the focus ring sits 2px outside it.
 

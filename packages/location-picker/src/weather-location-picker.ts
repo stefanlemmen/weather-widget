@@ -204,10 +204,12 @@ export class WeatherLocationPicker extends LitElement {
     return html`<button
       type="button"
       class="button locate"
+      aria-label=${this.#messages.useMyLocation}
+      title=${this.#messages.useMyLocation}
       aria-disabled=${this.#locating}
       @click=${this.#onLocate}
     >
-      ${NAVIGATION_ICON}${this.#messages.useMyLocation}
+      ${NAVIGATION_ICON}
     </button>`;
   }
 
@@ -259,9 +261,9 @@ export class WeatherLocationPicker extends LitElement {
           <button type="submit" class="button button-primary">
             ${messages.search}
           </button>
+          ${this.#locateButton()}
         </div>
       </form>
-      ${this.#locateButton()}
       <p
         class=${message === "" ? "picker-message is-empty" : "picker-message"}
         role="status"
