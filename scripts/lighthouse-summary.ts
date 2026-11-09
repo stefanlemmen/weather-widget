@@ -1,8 +1,10 @@
 import { appendFile, readdir, readFile } from "node:fs/promises";
 import * as v from "valibot";
 import {
+  budgetCountOf,
   isLighthouseRunFile,
   FailedAssertionsSchema,
+  LighthouseConfigSchema,
   LighthouseRunSchema,
   renderLighthouseSummary,
   ReportLinksSchema,
@@ -13,13 +15,6 @@ const LHCI_DIRECTORY = new URL("../.lighthouseci/", import.meta.url);
 const LIGHTHOUSE_CONFIG = new URL("../lighthouserc.json", import.meta.url);
 const ASSERTION_RESULTS_FILE = "assertion-results.json";
 const LINKS_FILE = "links.json";
-
-const ConfigSchema = v.object({
-  ci: v.object({
-    collect: v.object({ url: v.array(v.string()) }),
-    assert: v.object({ assertions: v.record(v.string(), v.unknown()) }),
-  }),
-});
 
 const isMissingFile = (error: unknown) =>
   error instanceof Error && "code" in error && error.code === "ENOENT";
@@ -49,7 +44,7 @@ if (runFiles.length === 0) {
   );
 }
 
-const config = await readJson(ConfigSchema, LIGHTHOUSE_CONFIG);
+const config = await readJson(LighthouseConfigSchema, LIGHTHOUSE_CONFIG);
 const summary = renderLighthouseSummary({
   runs: await Promise.all(
     runFiles.map((file) =>
@@ -65,9 +60,7 @@ const summary = renderLighthouseSummary({
       ReportLinksSchema,
       new URL(LINKS_FILE, LHCI_DIRECTORY),
     )) ?? {},
-  budgetCount:
-    Object.keys(config.ci.assert.assertions).length *
-    config.ci.collect.url.length,
+  budgetCount: budgetCountOf(config),
   sourceUrl: sourceUrlFrom(process.env),
 });
 

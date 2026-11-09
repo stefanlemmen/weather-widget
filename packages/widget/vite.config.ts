@@ -1,19 +1,12 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
+  METEOCONS_NOTICE,
   WIDGET_MODULE_DIRECTORY,
   WIDGET_MODULE_FILE,
 } from "./src/build-output.ts";
 import { emulateMedia } from "./test/emulate-media-command.ts";
-
-const METEOCONS_LICENSE = readFileSync(
-  fileURLToPath(import.meta.resolve("@meteocons/svg/LICENSE")),
-  "utf8",
-);
-const METEOCONS_NOTICE = `/*! Meteocons (https://github.com/basmilius/meteocons)\n\n${METEOCONS_LICENSE}*/`;
 
 export default defineConfig({
   build: {
