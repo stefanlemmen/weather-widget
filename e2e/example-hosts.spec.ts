@@ -88,8 +88,8 @@ const ANGULAR_HOST = {
 };
 const FRAMEWORK_HOSTS = [REACT_HOST, ANGULAR_HOST];
 const EXAMPLE_HOSTS = [VANILLA_HOST, ...FRAMEWORK_HOSTS];
-const SHOWCASE_HOSTS = FRAMEWORK_HOSTS;
-const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST];
+const SHOWCASE_HOSTS = [ANGULAR_HOST];
+const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST, REACT_HOST];
 
 const themeOf = (component: Locator) =>
   component.evaluate((host) => {

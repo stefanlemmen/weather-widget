@@ -7,7 +7,7 @@
     <title>Weather Widget in React</title>
     <meta
       name="description"
-      content="Weather Widgets in a React app that imports the Widget package and passes the chosen Location down as state."
+      content="Try the Weather Widget's settings in a React app that imports the Widget package and keeps the settings in state."
     />
     <link
       rel="canonical"
@@ -18,7 +18,7 @@
     <meta property="og:title" content="Weather Widget in React" />
     <meta
       property="og:description"
-      content="Weather Widgets in a React app that imports the Widget package and passes the chosen Location down as state."
+      content="Try the Weather Widget's settings in a React app that imports the Widget package and keeps the settings in state."
     />
     <meta
       property="og:url"
@@ -26,10 +26,6 @@
     />
     <style>
       :root {
-        --page-max-size: 72rem;
-        --page-gap: 2rem;
-        --caption-gap: 0.75rem;
-        --example-min-size: 18rem;
         font-family: system-ui, sans-serif;
         line-height: 1.4;
       }
@@ -42,48 +38,78 @@
 
       main {
         box-sizing: border-box;
-        max-inline-size: var(--page-max-size);
+        max-inline-size: 52rem;
         margin-inline: auto;
         padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
         display: grid;
-        gap: var(--page-gap);
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2rem;
+      }
+
+      main > * {
+        min-inline-size: 0;
+      }
+
+      weather-widget {
+        max-inline-size: 100%;
       }
 
       h1 {
         margin: 0;
         font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
-        font-weight: 800;
         line-height: 1.15;
         text-wrap: balance;
       }
 
-      figure {
+      form {
         margin: 0;
         display: grid;
-        align-content: start;
-        gap: var(--caption-gap);
+        gap: 0.75rem;
       }
 
-      figure > * {
-        min-inline-size: 0;
+      h2,
+      #forecast-parts-hint {
+        margin: 0;
+        font-size: 1.25rem;
       }
 
-      figcaption {
-        color: color-mix(in oklab, CanvasText 72%, Canvas);
+      label {
+        white-space: nowrap;
       }
 
-      code {
-        font-family: ui-monospace, monospace;
-        font-size: 0.9em;
+      summary h2 {
+        display: inline;
       }
 
-      .examples {
-        display: grid;
-        grid-template-columns: repeat(
-          auto-fit,
-          minmax(min(100%, var(--example-min-size)), 1fr)
-        );
-        gap: var(--page-gap);
+      details[open] > summary {
+        margin-block-end: 0.75rem;
+      }
+
+      @media (min-width: 64rem) {
+        :root {
+          --settings-inset: 1rem;
+          --settings-inline-size: 18rem;
+        }
+
+        body:has(details[open]) {
+          padding-inline-end: calc(
+            var(--settings-inline-size) + 2 * var(--settings-inset)
+          );
+        }
+
+        details {
+          box-sizing: border-box;
+          position: fixed;
+          inset-block-start: var(--settings-inset);
+          inset-inline-end: var(--settings-inset);
+          max-block-size: calc(100dvh - 2 * var(--settings-inset));
+          overflow-y: auto;
+          background-color: Canvas;
+        }
+
+        details[open] {
+          inline-size: var(--settings-inline-size);
+        }
       }
     </style>
   </head>
