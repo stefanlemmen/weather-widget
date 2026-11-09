@@ -141,6 +141,8 @@ importers:
         specifier: 1.5.0
         version: 1.5.0(typescript@6.0.3)
 
+  packages/landing-page: {}
+
   packages/location-picker:
     dependencies:
       '@weather-widget/contract':

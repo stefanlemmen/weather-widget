@@ -179,14 +179,19 @@ export const isLighthouseRunFile = (name: string) =>
 
 const pathOf = (url: string) => new URL(url).pathname;
 
+const LANDING_PAGE_PATH = "/";
+const LANDING_PAGE_SOURCE = "packages/landing-page/index.html";
 const EXAMPLE_HOSTS_DIRECTORY = "hosts";
 const EXAMPLE_HOST_PAGE = "index.html";
 
+const pageSourceOf = (path: string) =>
+  path === LANDING_PAGE_PATH
+    ? LANDING_PAGE_SOURCE
+    : `${EXAMPLE_HOSTS_DIRECTORY}${path}${EXAMPLE_HOST_PAGE}`;
+
 const urlCell = (url: string, sourceUrl: string | undefined) => {
   const path = pathOf(url);
-  return sourceUrl
-    ? `[${path}](${sourceUrl}/${EXAMPLE_HOSTS_DIRECTORY}${path}${EXAMPLE_HOST_PAGE})`
-    : path;
+  return sourceUrl ? `[${path}](${sourceUrl}/${pageSourceOf(path)})` : path;
 };
 
 const scoreCell = (runs: readonly LighthouseRun[], category: string) => {

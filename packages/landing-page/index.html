@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Weather Widget</title>
+    <meta
+      name="description"
+      content="A weather forecast web component that any page can embed. See it in plain HTML, React and Angular."
+    />
+    <link
+      rel="canonical"
+      href="https://weather-widget-ruby-delta.vercel.app/"
+    />
+    <link rel="icon" href="data:," />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Weather Widget" />
+    <meta
+      property="og:description"
+      content="A weather forecast web component that any page can embed. See it in plain HTML, React and Angular."
+    />
+    <meta
+      property="og:url"
+      content="https://weather-widget-ruby-delta.vercel.app/"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Weather Widget",
+        "url": "https://weather-widget-ruby-delta.vercel.app/",
+        "description": "A weather forecast web component that any page can embed. See it in plain HTML, React and Angular."
+      }
+    </script>
+    <style>
+      :root {
+        --page-max-size: 40rem;
+        --page-gap: 1.5rem;
+        --link-gap: 0.25rem;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+      }
+
+      body {
+        margin: 0;
+        background-color: Canvas;
+        color: CanvasText;
+      }
+
+      main {
+        box-sizing: border-box;
+        max-inline-size: var(--page-max-size);
+        margin-inline: auto;
+        padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
+        display: grid;
+        gap: var(--page-gap);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.15;
+        text-wrap: balance;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: var(--page-gap);
+      }
+
+      li {
+        display: grid;
+        gap: var(--link-gap);
+      }
+
+      a {
+        justify-self: start;
+        font-weight: 600;
+        font-size: 1.125rem;
+      }
+
+      li p {
+        color: color-mix(in oklab, CanvasText 72%, Canvas);
+      }
+
+      code {
+        font-family: ui-monospace, monospace;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Weather Widget</h1>
+      <p>
+        <code>&lt;weather-widget&gt;</code> is a web component that shows the
+        weather forecast for one place. Each page below embeds the same Widgets,
+        and a Location picker that changes the first one.
+      </p>
+      <ul>
+        <li>
+          <a href="/vanilla/">Weather Widget in plain HTML</a>
+          <p>No framework: loads the Widget as one standalone ES module.</p>
+        </li>
+        <li>
+          <a href="/react/">Weather Widget in React</a>
+          <p>Imports the package and sets the Widget's properties in JSX.</p>
+        </li>
+        <li>
+          <a href="/angular/">Weather Widget in Angular</a>
+          <p>
+            Imports the package and binds the Widget's properties in a template.
+          </p>
+        </li>
+      </ul>
+    </main>
+  </body>
+</html>

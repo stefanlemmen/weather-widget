@@ -8,6 +8,7 @@ import {
 
 const VANILLA = "http://localhost:4173/vanilla/";
 const REACT = "http://localhost:4173/react/";
+const LANDING_PAGE = "http://localhost:4173/";
 
 const run = (
   finalUrl: string,
@@ -73,6 +74,18 @@ describe("the Lighthouse job summary", () => {
       renderLighthouseSummary({ ...passingResults, sourceUrl: SOURCE_URL }),
     ).toContain(
       `| [/vanilla/](${SOURCE_URL}/hosts/vanilla/index.html) | 98 | 100 |`,
+    );
+  });
+
+  it("links the landing page to its own source", () => {
+    expect(
+      renderLighthouseSummary({
+        ...passingResults,
+        runs: [run(LANDING_PAGE, { performance: 1, seo: 1 })],
+        sourceUrl: SOURCE_URL,
+      }),
+    ).toContain(
+      `| [/](${SOURCE_URL}/packages/landing-page/index.html) | 100 | 100 |`,
     );
   });
 
