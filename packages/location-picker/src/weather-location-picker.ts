@@ -11,6 +11,7 @@ import {
 import { html, LitElement, nothing, type PropertyValues } from "lit";
 import { findLocations } from "./locations-client.ts";
 import { MESSAGES, type LocationError, type Messages } from "./messages.ts";
+import { NAVIGATION_ICON } from "./navigation-icon.ts";
 import { styles } from "./styles.ts";
 
 export const WEATHER_LOCATION_PICKER_TAG = "weather-location-picker";
@@ -87,20 +88,6 @@ const textOf = (messages: Messages, message: Message) => {
 
 const contextOf = ({ region, country }: FoundLocation) =>
   [region, country].filter((part) => part !== null).join(", ");
-
-const NAVIGATION_ICON = html`<svg
-  aria-hidden="true"
-  focusable="false"
-  xmlns="http://www.w3.org/2000/svg"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <polygon points="3 11 22 2 13 21 11 13 3 11" />
-</svg>`;
 
 export class WeatherLocationPicker extends LitElement {
   static override properties = {

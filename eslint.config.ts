@@ -4,7 +4,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  { ignores: ["**/dist", "**/.vercel", "**/.lighthouseci"] },
+  { ignores: ["**/dist", "**/.vercel", "**/.lighthouseci", "**/.angular"] },
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,

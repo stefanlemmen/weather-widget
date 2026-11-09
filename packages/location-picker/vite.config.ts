@@ -4,7 +4,6 @@ import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
   LOCATION_PICKER_MODULE_DIRECTORY,
   LOCATION_PICKER_MODULE_FILE,
-  LUCIDE_NOTICE,
 } from "./src/build-output.ts";
 
 export default defineConfig({
@@ -19,7 +18,6 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         minify: true,
-        banner: LUCIDE_NOTICE,
         comments: { legal: true, annotation: false, jsdoc: false },
       },
     },

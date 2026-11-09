@@ -40,7 +40,14 @@ const REACT_HOST = {
   title: "Weather Widget in React",
   modules: "**/react/assets/*.js",
 };
-const EXAMPLE_HOSTS = [VANILLA_HOST, REACT_HOST];
+const ANGULAR_HOST = {
+  name: "Angular",
+  path: "/angular/",
+  title: "Weather Widget in Angular",
+  modules: "**/angular/main-*.js",
+};
+const FRAMEWORK_HOSTS = [REACT_HOST, ANGULAR_HOST];
+const EXAMPLE_HOSTS = [VANILLA_HOST, ...FRAMEWORK_HOSTS];
 
 const themeOf = (component: Locator) =>
   component.evaluate((host) => {
@@ -532,41 +539,45 @@ test.describe("the vanilla Example host's standalone modules", () => {
   });
 });
 
-test.describe("the React Example host's imported packages", () => {
-  test("bundles the Widget and the Location picker instead of loading their standalone modules", async ({
-    page,
-    baseURL,
-  }) => {
-    const requestedPaths: string[] = [];
-    page.on("request", (request) => {
-      requestedPaths.push(new URL(request.url()).pathname);
+for (const host of FRAMEWORK_HOSTS) {
+  test.describe(`the ${host.name} Example host's imported packages`, () => {
+    test("bundles the Widget and the Location picker instead of loading their standalone modules", async ({
+      page,
+      baseURL,
+    }) => {
+      const requestedPaths: string[] = [];
+      page.on("request", (request) => {
+        requestedPaths.push(new URL(request.url()).pathname);
+      });
+      const forecast = page.waitForResponse("**/api/forecast?**");
+
+      await page.goto(host.path);
+
+      const forecastResponse = await forecast;
+      expect(forecastResponse.status()).toBe(200);
+      expect(new URL(forecastResponse.url()).origin).toBe(baseURL);
+      await expect(page.locator("weather-location-picker")).toHaveCount(1);
+      expect(
+        requestedPaths.filter((path) => STANDALONE_MODULE_PATHS.includes(path)),
+      ).toEqual([]);
     });
-    const forecast = page.waitForResponse("**/api/forecast?**");
 
-    await page.goto(REACT_HOST.path);
+    test("ships the Meteocons and Lucide licences inside its bundle", async ({
+      page,
+      request,
+    }) => {
+      await page.goto(host.path);
+      const bundleUrl = await page
+        .locator('script[type="module"]')
+        .evaluate((script) =>
+          script instanceof HTMLScriptElement ? script.src : null,
+        );
+      expect(bundleUrl).not.toBeNull();
 
-    const forecastResponse = await forecast;
-    expect(forecastResponse.status()).toBe(200);
-    expect(new URL(forecastResponse.url()).origin).toBe(baseURL);
-    await expect(page.locator("weather-location-picker")).toHaveCount(1);
-    expect(
-      requestedPaths.filter((path) => STANDALONE_MODULE_PATHS.includes(path)),
-    ).toEqual([]);
+      const bundle = await (await request.get(bundleUrl ?? "")).text();
+
+      expect(bundle).toContain("Copyright (c) 2020-present Bas Milius");
+      expect(bundle).toContain("Lucide Icons and Contributors");
+    });
   });
-
-  test("ships the Meteocons and Lucide licences inside its bundle", async ({
-    page,
-    request,
-  }) => {
-    await page.goto(REACT_HOST.path);
-    const bundlePath = await page
-      .locator('script[type="module"]')
-      .getAttribute("src");
-    expect(bundlePath).not.toBeNull();
-
-    const bundle = await (await request.get(bundlePath ?? "")).text();
-
-    expect(bundle).toContain("Copyright (c) 2020-present Bas Milius");
-    expect(bundle).toContain("Lucide Icons and Contributors");
-  });
-});
+}

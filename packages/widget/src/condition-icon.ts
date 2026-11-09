@@ -1,89 +1,12 @@
 import type { Condition, Daylight } from "@weather-widget/contract";
 import { html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import clearDayAnimated from "@meteocons/svg/monochrome/clear-day.svg?raw";
-import clearDayStill from "@meteocons/svg-static/monochrome/clear-day.svg?raw";
-import clearNightAnimated from "@meteocons/svg/monochrome/clear-night.svg?raw";
-import clearNightStill from "@meteocons/svg-static/monochrome/clear-night.svg?raw";
-import partlyCloudyDayAnimated from "@meteocons/svg/monochrome/partly-cloudy-day.svg?raw";
-import partlyCloudyDayStill from "@meteocons/svg-static/monochrome/partly-cloudy-day.svg?raw";
-import partlyCloudyNightAnimated from "@meteocons/svg/monochrome/partly-cloudy-night.svg?raw";
-import partlyCloudyNightStill from "@meteocons/svg-static/monochrome/partly-cloudy-night.svg?raw";
-import overcastDayAnimated from "@meteocons/svg/monochrome/overcast-day.svg?raw";
-import overcastDayStill from "@meteocons/svg-static/monochrome/overcast-day.svg?raw";
-import overcastNightAnimated from "@meteocons/svg/monochrome/overcast-night.svg?raw";
-import overcastNightStill from "@meteocons/svg-static/monochrome/overcast-night.svg?raw";
-import cloudyAnimated from "@meteocons/svg/monochrome/cloudy.svg?raw";
-import cloudyStill from "@meteocons/svg-static/monochrome/cloudy.svg?raw";
-import fogDayAnimated from "@meteocons/svg/monochrome/fog-day.svg?raw";
-import fogDayStill from "@meteocons/svg-static/monochrome/fog-day.svg?raw";
-import fogNightAnimated from "@meteocons/svg/monochrome/fog-night.svg?raw";
-import fogNightStill from "@meteocons/svg-static/monochrome/fog-night.svg?raw";
-import hazeDayAnimated from "@meteocons/svg/monochrome/haze-day.svg?raw";
-import hazeDayStill from "@meteocons/svg-static/monochrome/haze-day.svg?raw";
-import hazeNightAnimated from "@meteocons/svg/monochrome/haze-night.svg?raw";
-import hazeNightStill from "@meteocons/svg-static/monochrome/haze-night.svg?raw";
-import drizzleAnimated from "@meteocons/svg/monochrome/drizzle.svg?raw";
-import drizzleStill from "@meteocons/svg-static/monochrome/drizzle.svg?raw";
-import rainAnimated from "@meteocons/svg/monochrome/rain.svg?raw";
-import rainStill from "@meteocons/svg-static/monochrome/rain.svg?raw";
-import sleetAnimated from "@meteocons/svg/monochrome/sleet.svg?raw";
-import sleetStill from "@meteocons/svg-static/monochrome/sleet.svg?raw";
-import snowAnimated from "@meteocons/svg/monochrome/snow.svg?raw";
-import snowStill from "@meteocons/svg-static/monochrome/snow.svg?raw";
-import thunderstormsDayAnimated from "@meteocons/svg/monochrome/thunderstorms-day.svg?raw";
-import thunderstormsDayStill from "@meteocons/svg-static/monochrome/thunderstorms-day.svg?raw";
-import thunderstormsNightAnimated from "@meteocons/svg/monochrome/thunderstorms-night.svg?raw";
-import thunderstormsNightStill from "@meteocons/svg-static/monochrome/thunderstorms-night.svg?raw";
-import notAvailableAnimated from "@meteocons/svg/monochrome/not-available.svg?raw";
-import notAvailableStill from "@meteocons/svg-static/monochrome/not-available.svg?raw";
-import thermometerAnimated from "@meteocons/svg/monochrome/thermometer.svg?raw";
-import thermometerStill from "@meteocons/svg-static/monochrome/thermometer.svg?raw";
-import raindropAnimated from "@meteocons/svg/monochrome/raindrop.svg?raw";
-import raindropStill from "@meteocons/svg-static/monochrome/raindrop.svg?raw";
-import windCompass from "./icons/wind-compass.svg?raw";
-import notAvailableMark from "./icons/not-available.svg?raw";
+import { ICON_SVGS } from "../generated/icon-svgs.ts";
 import type { Motion } from "./motion-preference.ts";
 
 type IconMarkup = Readonly<Record<Motion, string>>;
 
-const METEOCONS = {
-  "clear-day": { animated: clearDayAnimated, still: clearDayStill },
-  "clear-night": { animated: clearNightAnimated, still: clearNightStill },
-  "partly-cloudy-day": {
-    animated: partlyCloudyDayAnimated,
-    still: partlyCloudyDayStill,
-  },
-  "partly-cloudy-night": {
-    animated: partlyCloudyNightAnimated,
-    still: partlyCloudyNightStill,
-  },
-  "overcast-day": { animated: overcastDayAnimated, still: overcastDayStill },
-  "overcast-night": {
-    animated: overcastNightAnimated,
-    still: overcastNightStill,
-  },
-  cloudy: { animated: cloudyAnimated, still: cloudyStill },
-  "fog-day": { animated: fogDayAnimated, still: fogDayStill },
-  "fog-night": { animated: fogNightAnimated, still: fogNightStill },
-  "haze-day": { animated: hazeDayAnimated, still: hazeDayStill },
-  "haze-night": { animated: hazeNightAnimated, still: hazeNightStill },
-  drizzle: { animated: drizzleAnimated, still: drizzleStill },
-  rain: { animated: rainAnimated, still: rainStill },
-  sleet: { animated: sleetAnimated, still: sleetStill },
-  snow: { animated: snowAnimated, still: snowStill },
-  "thunderstorms-day": {
-    animated: thunderstormsDayAnimated,
-    still: thunderstormsDayStill,
-  },
-  "thunderstorms-night": {
-    animated: thunderstormsNightAnimated,
-    still: thunderstormsNightStill,
-  },
-  "not-available": { animated: notAvailableAnimated, still: notAvailableStill },
-  thermometer: { animated: thermometerAnimated, still: thermometerStill },
-  raindrop: { animated: raindropAnimated, still: raindropStill },
-} satisfies Record<string, IconMarkup>;
+const METEOCONS = ICON_SVGS.meteocons satisfies Record<string, IconMarkup>;
 
 type Meteocon = keyof typeof METEOCONS;
 
@@ -153,7 +76,7 @@ const NEEDLE_SWAY = /<animateTransform[^>]*\/>/;
 
 export const windCompassIcon = (directionDegrees: number, motion: Motion) => {
   const rotation = directionDegrees + COMPASS_NEEDLE_OFFSET_DEGREES;
-  const pointed = windCompass
+  const pointed = ICON_SVGS.windCompass
     .replace(SVG_OPENING, HIDDEN_SVG_OPENING)
     .replace(
       `transform="${COMPASS_ROTATION}`,
@@ -166,5 +89,5 @@ export const windCompassIcon = (directionDegrees: number, motion: Motion) => {
 
 export const notAvailableIcon = () =>
   html`<span class="not-available" aria-hidden="true"
-    >${unsafeHTML(notAvailableMark.replace(SVG_OPENING, HIDDEN_SVG_OPENING))}</span
+    >${unsafeHTML(ICON_SVGS.notAvailableMark.replace(SVG_OPENING, HIDDEN_SVG_OPENING))}</span
   >`;
