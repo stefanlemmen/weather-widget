@@ -48,6 +48,16 @@ const DEFAULT_BACKGROUNDS = {
   light: "rgb(238, 243, 249)",
   dark: "rgb(22, 38, 59)",
 };
+const HOURS_IN_THE_HOURLY_FORECAST = 12;
+const DEFAULT_WIDTH = 390;
+const DEFAULT_WIDTH_STYLE = `inline-size: ${String(DEFAULT_WIDTH)}px`;
+const WIDGET_LAYOUTS = [
+  { width: 240, hoursPerRow: 4, factsSideBySide: false },
+  { width: 390, hoursPerRow: 6, factsSideBySide: true },
+  { width: 640, hoursPerRow: 6, factsSideBySide: false },
+  { width: 760, hoursPerRow: 12, factsSideBySide: false },
+];
+const WIDTHS_CAPPED_ON_A_PHONE = [390, 640, 760];
 const COLOR_SCHEMES = [
   { scheme: "light", name: "Light", other: "dark" },
   { scheme: "dark", name: "Dark", other: "light" },
@@ -100,6 +110,32 @@ const settingsRadio = (page: Page, group: string, name: string) =>
     .getByRole("radio", { name });
 const themedPreset = (page: Page) =>
   settingsRadio(page, "Theme", THEMED_PRESET_NAME);
+
+const widthRadio = (page: Page, width: number) =>
+  settingsRadio(page, "Width", `${String(width)} pixels`);
+
+const topOf = async (locator: Locator) => {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("A part of the Widget isn't shown");
+  return Math.round(box.y);
+};
+
+const layoutOf = async (widget: Locator) => {
+  const hours = widget
+    .getByRole("list", { name: HOURLY_FORECAST_LIST })
+    .getByRole("listitem");
+  await expect(hours).toHaveCount(HOURS_IN_THE_HOURLY_FORECAST);
+  const hourTops = await Promise.all((await hours.all()).map(topOf));
+  const [feelsLikeTop, windTop] = await Promise.all(
+    ["Feels like", "Wind"].map((label) =>
+      topOf(widget.getByText(label, { exact: true })),
+    ),
+  );
+  return {
+    hoursPerRow: hourTops.filter((top) => top === hourTops[0]).length,
+    factsSideBySide: feelsLikeTop === windTop,
+  };
+};
 
 const expectColors = async (
   widget: Locator,
@@ -592,7 +628,11 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       await expect(controlledWidget(page)).not.toHaveAttribute("parts");
       await expect(settingsRadio(page, "Theme", "None")).toBeChecked();
       await expect(settingsRadio(page, "Color scheme", "System")).toBeChecked();
-      await expect(controlledWidget(page)).not.toHaveAttribute("style");
+      await expect(widthRadio(page, DEFAULT_WIDTH)).toBeChecked();
+      await expect(controlledWidget(page)).toHaveAttribute(
+        "style",
+        DEFAULT_WIDTH_STYLE,
+      );
       await expect(
         controlledWidget(page).getByText("Feels like"),
       ).toBeVisible();
@@ -673,7 +713,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
 
       await settingsRadio(page, "Theme", "None").check();
 
-      await expect(widget).not.toHaveAttribute("style");
+      await expect(widget).toHaveAttribute("style", DEFAULT_WIDTH_STYLE);
     });
 
     test("switch the Widget to Dutch", async ({ page }) => {
@@ -780,6 +820,18 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
         "style",
         /color-scheme: light/,
       );
+
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("ArrowDown");
+
+      const wide = widthRadio(page, 640);
+      await expect(wide).toBeChecked();
+      await expect(wide).toBeFocused();
+      await expect(wide).not.toHaveCSS("outline-style", "none");
+      await expect(controlledWidget(page)).toHaveAttribute(
+        "style",
+        /inline-size: 640px/,
+      );
     });
 
     test("hide a Forecast part once it is unticked", async ({ page }) => {
@@ -848,6 +900,52 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
 
       await expect(widgetSettings(page).getByRole("status")).toBeEmpty();
     });
+
+    for (const { width, ...layout } of WIDGET_LAYOUTS) {
+      test(`render the Widget ${String(width)} pixels wide in the layout for that width`, async ({
+        page,
+      }) => {
+        await page.clock.setFixedTime(RECORDED_AT);
+        await page.goto(host.path);
+        const widget = controlledWidget(page);
+        await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+
+        await widthRadio(page, width).check();
+
+        await expect
+          .poll(async () => (await widget.boundingBox())?.width)
+          .toBe(width);
+        expect(await layoutOf(widget)).toEqual(layout);
+      });
+    }
+
+    for (const width of WIDTHS_CAPPED_ON_A_PHONE) {
+      test(`cap ${String(width)} pixels at the available width on a phone`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(MOBILE_VIEWPORT);
+        await page.goto(host.path);
+        const widget = controlledWidget(page);
+        await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+
+        await widthRadio(page, width).check();
+
+        await expect(widget).toHaveAttribute(
+          "style",
+          `inline-size: ${String(width)}px`,
+        );
+        const [widgetBox, pickerBox] = await Promise.all(
+          [widget, page.locator("weather-location-picker")].map((part) =>
+            part.boundingBox(),
+          ),
+        );
+        expect(widgetBox?.width).toBeLessThan(width);
+        expect(widgetBox?.width).toBe(pickerBox?.width);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(MOBILE_VIEWPORT.width);
+      });
+    }
 
     test("keep their locale when the Location picker chooses a new Location", async ({
       page,
