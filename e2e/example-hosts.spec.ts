@@ -497,7 +497,7 @@ for (const host of SHOWCASE_HOSTS) {
 
 for (const host of WIDGET_SETTINGS_HOSTS) {
   test.describe(`the ${host.name} Example host's Widget settings`, () => {
-    test("come between the Location picker and the Widget", async ({
+    test("come right below the title, before the Location picker and the Widget", async ({
       page,
     }) => {
       await page.goto(host.path);
@@ -507,8 +507,8 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
 
       const tops = await Promise.all(
         [
-          page.locator("weather-location-picker"),
           widgetSettings(page),
+          page.locator("weather-location-picker"),
           controlledWidget(page),
         ].map(async (part) => {
           const box = await part.boundingBox();
