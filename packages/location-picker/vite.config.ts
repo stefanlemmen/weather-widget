@@ -1,17 +1,11 @@
-import { readFileSync } from "node:fs";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
   LOCATION_PICKER_MODULE_DIRECTORY,
   LOCATION_PICKER_MODULE_FILE,
+  LUCIDE_NOTICE,
 } from "./src/build-output.ts";
-
-const LUCIDE_LICENSE = readFileSync(
-  new URL("lucide-LICENSE", import.meta.url),
-  "utf8",
-);
-const LUCIDE_NOTICE = `/*! Lucide (https://lucide.dev)\n\n${LUCIDE_LICENSE}*/`;
 
 export default defineConfig({
   build: {
