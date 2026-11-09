@@ -31,6 +31,27 @@ const HOURLY_FORECAST_LIST = "Next 12 hours";
 const DAILY_FORECAST_LIST = "Next 5 days";
 const FORECAST_PARTS_HINT =
   "The Widget always shows at least one Forecast part.";
+const THEMED_PRESET_NAME = "Georgia and rust";
+const THEMED_PRESET_COLORS = {
+  light: {
+    background: "rgb(255, 250, 242)",
+    ink: "rgb(43, 29, 22)",
+    accent: "rgb(156, 52, 18)",
+  },
+  dark: {
+    background: "rgb(33, 24, 20)",
+    ink: "rgb(246, 237, 226)",
+    accent: "rgb(240, 147, 106)",
+  },
+};
+const DEFAULT_BACKGROUNDS = {
+  light: "rgb(238, 243, 249)",
+  dark: "rgb(22, 38, 59)",
+};
+const COLOR_SCHEMES = [
+  { scheme: "light", name: "Light", other: "dark" },
+  { scheme: "dark", name: "Dark", other: "light" },
+] as const;
 
 const VANILLA_HOST = {
   name: "vanilla",
@@ -73,6 +94,24 @@ const widgetSettings = (page: Page) =>
 const controlledWidget = (page: Page) => page.locator("weather-widget").first();
 const forecastParts = (page: Page) =>
   widgetSettings(page).getByRole("group", { name: "Forecast parts" });
+const settingsRadio = (page: Page, group: string, name: string) =>
+  widgetSettings(page)
+    .getByRole("group", { name: group })
+    .getByRole("radio", { name });
+const themedPreset = (page: Page) =>
+  settingsRadio(page, "Theme", THEMED_PRESET_NAME);
+
+const expectColors = async (
+  widget: Locator,
+  { background, ink, accent }: Record<"background" | "ink" | "accent", string>,
+) => {
+  await expect(widget).toHaveCSS("background-color", background);
+  await expect(widget).toHaveCSS("color", ink);
+  await expect(widget.getByRole("link", { name: "OpenWeather" })).toHaveCSS(
+    "color",
+    accent,
+  );
+};
 
 const showcaseWidget = (page: Page, caption: string) =>
   page.getByRole("figure", { name: caption }).locator("weather-widget");
@@ -551,9 +590,90 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
         ).toBeChecked();
       }
       await expect(controlledWidget(page)).not.toHaveAttribute("parts");
+      await expect(settingsRadio(page, "Theme", "None")).toBeChecked();
+      await expect(settingsRadio(page, "Color scheme", "System")).toBeChecked();
+      await expect(controlledWidget(page)).not.toHaveAttribute("style");
       await expect(
         controlledWidget(page).getByText("Feels like"),
       ).toBeVisible();
+    });
+
+    for (const { scheme } of COLOR_SCHEMES) {
+      test(`theme the Widget with the preset's ${scheme} colors in the ${scheme} scheme`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.goto(host.path);
+        const widget = controlledWidget(page);
+        await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+
+        await themedPreset(page).check();
+
+        await expectColors(widget, THEMED_PRESET_COLORS[scheme]);
+        await expect(widget).toHaveCSS("font-family", "Georgia, serif");
+        await expect(widget).toHaveCSS("border-top-left-radius", "0px");
+        await expect(themedPreset(page)).toBeFocused();
+      });
+
+      test(`pass axe in the ${scheme} scheme with the themed preset on`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.goto(host.path);
+        await themedPreset(page).check();
+        await expect(
+          controlledWidget(page).getByRole("heading", { level: 2 }),
+        ).toBeVisible();
+
+        const results = await new AxeBuilder({ page })
+          .withTags(WCAG_AA_TAGS)
+          .analyze();
+
+        expect(results.violations).toEqual([]);
+      });
+    }
+
+    for (const { scheme, name, other } of COLOR_SCHEMES) {
+      test(`force the ${scheme} scheme on the Widget on a ${other} device`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme: other });
+        await page.goto(host.path);
+        const widget = controlledWidget(page);
+        await expect(widget).toHaveCSS(
+          "background-color",
+          DEFAULT_BACKGROUNDS[other],
+        );
+
+        await settingsRadio(page, "Color scheme", name).check();
+
+        await expect(widget).toHaveCSS(
+          "background-color",
+          DEFAULT_BACKGROUNDS[scheme],
+        );
+        await themedPreset(page).check();
+        await expectColors(widget, THEMED_PRESET_COLORS[scheme]);
+      });
+    }
+
+    test("leave color-scheme out of the Widget's style on System", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: "light" });
+      await page.goto(host.path);
+      const widget = controlledWidget(page);
+      await themedPreset(page).check();
+      await settingsRadio(page, "Color scheme", "Dark").check();
+      await expect(widget).toHaveAttribute("style", /color-scheme: dark/);
+
+      await settingsRadio(page, "Color scheme", "System").check();
+
+      await expect(widget).not.toHaveAttribute("style", /color-scheme/);
+      await expectColors(widget, THEMED_PRESET_COLORS.light);
+
+      await settingsRadio(page, "Theme", "None").check();
+
+      await expect(widget).not.toHaveAttribute("style");
     });
 
     test("switch the Widget to Dutch", async ({ page }) => {
@@ -634,6 +754,31 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       await expect(controlledWidget(page)).toHaveAttribute(
         "parts",
         "hourly daily",
+      );
+
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("ArrowDown");
+
+      await expect(themedPreset(page)).toBeChecked();
+      await expect(themedPreset(page)).toBeFocused();
+      await expect(themedPreset(page)).not.toHaveCSS("outline-style", "none");
+      await expect(controlledWidget(page)).toHaveCSS(
+        "font-family",
+        "Georgia, serif",
+      );
+
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("ArrowDown");
+
+      const light = settingsRadio(page, "Color scheme", "Light");
+      await expect(light).toBeChecked();
+      await expect(light).toBeFocused();
+      await expect(light).not.toHaveCSS("outline-style", "none");
+      await expect(controlledWidget(page)).toHaveAttribute(
+        "style",
+        /color-scheme: light/,
       );
     });
 
