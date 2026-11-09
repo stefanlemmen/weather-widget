@@ -14,6 +14,10 @@ The five default triage labels, each label string equal to its role. See `docs/a
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## Simplicity outside the Widget
+
+The Widget is the product. Keep everything outside it as simple as it can be, the Example hosts most of all: the controlled Widget's attributes are the page's only state, controls keep their native look, and the page CSS does layout only. Design work and the impeccable skill go to the Widget; an Example host uses the browser's defaults.
+
 ## File structure and naming
 
 Name each module in `src/` after its main export, in kebab-case, using `GLOSSARY.md` terms:
