@@ -77,8 +77,6 @@ const markupOf = (attributes: Record<string, string>) =>
     ),
     "></weather-widget>",
   ].join("\n");
-const FIXED_WIDGET_CAPTION =
-  "A second Widget with its own settings: Nieuwegein in Dutch.";
 const NIEUWEGEIN_ATTRIBUTES = { latitude: "52.03", longitude: "5.08" };
 
 const showcaseWidget = (page: Page, caption: string) =>
@@ -510,7 +508,7 @@ for (const host of SHOWCASE_HOSTS) {
 
 for (const host of WIDGET_SETTINGS_HOSTS) {
   test.describe(`the ${host.name} Example host's Widget settings`, () => {
-    test("come between the Location picker and the Widget, with its markup and the fixed Widget below", async ({
+    test("come between the Location picker and the Widget, with its markup below", async ({
       page,
     }) => {
       await page.goto(host.path);
@@ -524,7 +522,6 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           widgetSettings(page),
           controlledWidget(page),
           markupSnippet(page),
-          page.getByRole("figure", { name: FIXED_WIDGET_CAPTION }),
         ].map(async (part) => {
           const box = await part.boundingBox();
           if (!box) throw new Error("A part of the page isn't shown");
@@ -664,50 +661,6 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           locale: "nl",
         }),
       );
-    });
-
-    test("leave the fixed Widget below alone", async ({ page }) => {
-      await page.goto(host.path);
-      const fixed = page
-        .getByRole("figure", { name: FIXED_WIDGET_CAPTION })
-        .locator("weather-widget");
-      await fixed.scrollIntoViewIfNeeded();
-      await expect(fixed.getByText("Gevoelstemperatuur")).toBeVisible();
-
-      await widgetSettings(page)
-        .getByRole("radio", { name: "Imperial" })
-        .check();
-
-      await expect(
-        fixed
-          .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE, { exact: true })
-          .first(),
-      ).toBeVisible();
-      await expect(fixed.getByText("Gevoelstemperatuur")).toBeVisible();
-    });
-
-    test("share one request to the Proxy between the two Widgets at Nieuwegein", async ({
-      page,
-    }) => {
-      const forecastUrls: string[] = [];
-      page.on("request", (request) => {
-        if (new URL(request.url()).pathname === "/api/forecast") {
-          forecastUrls.push(request.url());
-        }
-      });
-
-      await page.goto(host.path);
-      const widgets = page.locator("weather-widget");
-      await expect(widgets).toHaveCount(2);
-      for (const widget of await widgets.all()) {
-        await widget.scrollIntoViewIfNeeded();
-        await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
-      }
-      await expect
-        .poll(() => forecastUrls.length, { timeout: 10_000 })
-        .toBeGreaterThanOrEqual(2);
-
-      expect(new Set(forecastUrls).size).toBe(1);
     });
   });
 }
