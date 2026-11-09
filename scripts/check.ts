@@ -9,6 +9,7 @@ const CHECKS = [
   { name: "Type check", script: "typecheck" },
   { name: "Lint", script: "lint" },
   { name: "Formatting", script: "format:check" },
+  { name: "Icon SVGs", script: "icon-svgs:check" },
 ] as const;
 
 const IN_GITHUB_ACTIONS = process.env.GITHUB_ACTIONS === "true";

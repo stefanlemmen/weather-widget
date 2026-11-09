@@ -13,6 +13,7 @@
     "lint": "eslint --flag unstable_native_nodejs_ts_config .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "icon-svgs:check": "pnpm --filter @weather-widget/widget write-icon-svgs && git diff --exit-code -- packages/widget/generated/icon-svgs.ts",
     "test": "vitest run && pnpm --recursive --if-present test",
     "lighthouse": "lhci autorun",
     "preview": "node scripts/preview.ts",
