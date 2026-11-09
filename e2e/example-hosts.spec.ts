@@ -567,4 +567,20 @@ test.describe("the React Example host's imported packages", () => {
       requestedPaths.filter((path) => STANDALONE_MODULE_PATHS.includes(path)),
     ).toEqual([]);
   });
+
+  test("ships the Meteocons and Lucide licences inside its bundle", async ({
+    page,
+    request,
+  }) => {
+    await page.goto(REACT_HOST.path);
+    const bundlePath = await page
+      .locator('script[type="module"]')
+      .getAttribute("src");
+    expect(bundlePath).not.toBeNull();
+
+    const bundle = await (await request.get(bundlePath ?? "")).text();
+
+    expect(bundle).toContain("Copyright (c) 2020-present Bas Milius");
+    expect(bundle).toContain("Lucide Icons and Contributors");
+  });
 });
