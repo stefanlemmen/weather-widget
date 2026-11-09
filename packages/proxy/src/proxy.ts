@@ -19,6 +19,7 @@ import {
   type ProblemDetails,
 } from "@weather-widget/contract";
 import { Hono, type Context } from "hono";
+import { cors } from "hono/cors";
 import * as v from "valibot";
 import { parseEnvironment, type RawEnvironment } from "./environment.ts";
 import {
@@ -36,6 +37,8 @@ const LOCATIONS_CACHE_CONTROL = FORECAST_CACHE_CONTROL;
 const PARTIAL_FORECAST_CACHE_CONTROL =
   "public, max-age=0, s-maxage=60, stale-if-error=3600";
 const NO_STORE = "no-store";
+const ANY_ORIGIN = "*";
+const CROSS_ORIGIN_METHODS = ["GET"];
 
 type ProblemResponse = ProblemDetails & { readonly status: 400 | 404 | 503 };
 
@@ -106,6 +109,7 @@ export const createProxy = (
   proxy.notFound((context) => problem(context, NOT_FOUND));
 
   return proxy
+    .use(cors({ origin: ANY_ORIGIN, allowMethods: CROSS_ORIGIN_METHODS }))
     .get("/health", (context) =>
       context.json({ status: "ok" } satisfies HealthResponse),
     )
