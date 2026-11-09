@@ -48,6 +48,8 @@ const ANGULAR_HOST = {
 };
 const FRAMEWORK_HOSTS = [REACT_HOST, ANGULAR_HOST];
 const EXAMPLE_HOSTS = [VANILLA_HOST, ...FRAMEWORK_HOSTS];
+const SHOWCASE_HOSTS = FRAMEWORK_HOSTS;
+const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST];
 
 const themeOf = (component: Locator) =>
   component.evaluate((host) => {
@@ -61,6 +63,10 @@ const themeOf = (component: Locator) =>
       radius: style.borderTopLeftRadius,
     };
   });
+
+const widgetSettings = (page: Page) =>
+  page.getByRole("form", { name: "Widget settings" });
+const controlledWidget = (page: Page) => page.locator("weather-widget").first();
 
 const showcaseWidget = (page: Page, caption: string) =>
   page.getByRole("figure", { name: caption }).locator("weather-widget");
@@ -131,6 +137,277 @@ for (const host of EXAMPLE_HOSTS) {
       ).toBeVisible();
     });
 
+    test("shows the Hourly and Daily forecast in the Location's local time", async ({
+      page,
+    }) => {
+      await page.clock.setFixedTime(RECORDED_AT);
+      await page.goto(host.path);
+
+      const widget = page.locator("weather-widget").first();
+      const hours = widget
+        .getByRole("list", { name: "Next 12 hours" })
+        .getByRole("listitem");
+      const days = widget
+        .getByRole("list", { name: "Next 5 days" })
+        .getByRole("listitem");
+      await expect(hours).toHaveCount(12);
+      await expect(hours.first()).toContainText("10 AM");
+      await expect(days).toHaveCount(5);
+      await expect(days.first()).toContainText("Sun");
+    });
+
+    test("keeps the page still while its modules load slowly", async ({
+      page,
+    }) => {
+      await page.setViewportSize(MOBILE_VIEWPORT);
+      await page.route(host.modules, async (route) => {
+        await new Promise((resolve) =>
+          setTimeout(resolve, SLOW_MODULE_DELAY_MS),
+        );
+        await route.continue();
+      });
+      await page.addInitScript((key) => {
+        let layoutShift = 0;
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if ("value" in entry && typeof entry.value === "number") {
+              layoutShift += entry.value;
+            }
+          }
+          Reflect.set(window, key, layoutShift);
+        }).observe({ type: "layout-shift", buffered: true });
+      }, LAYOUT_SHIFT_KEY);
+
+      await page.goto(host.path);
+      await expect(
+        page
+          .locator("weather-widget")
+          .first()
+          .getByRole("heading", { level: 2 }),
+      ).toBeVisible();
+
+      const layoutShift = await page.evaluate((key) => {
+        const measured: unknown = Reflect.get(window, key);
+        return typeof measured === "number" ? measured : 0;
+      }, LAYOUT_SHIFT_KEY);
+      expect(layoutShift).toBeLessThanOrEqual(GOOD_LAYOUT_SHIFT);
+    });
+
+    test("keeps the Location picker and the Widgets apart", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      await expect(
+        page
+          .locator("weather-widget")
+          .first()
+          .getByRole("heading", { level: 2 }),
+      ).toBeVisible();
+
+      const components = page.locator(
+        "weather-location-picker, weather-widget",
+      );
+      const bounds = await Promise.all(
+        (await components.all()).map(async (component) => {
+          const box = await component.boundingBox();
+          if (!box) throw new Error("A component isn't shown");
+          return box;
+        }),
+      );
+      const touching = bounds.flatMap((one, index) =>
+        bounds
+          .slice(index + 1)
+          .filter(
+            (other) =>
+              one.x <= other.x + other.width &&
+              other.x <= one.x + one.width &&
+              one.y <= other.y + other.height &&
+              other.y <= one.y + one.height,
+          ),
+      );
+      expect(touching).toEqual([]);
+    });
+
+    for (const colorScheme of ["light", "dark"] as const) {
+      test(`passes axe in the ${colorScheme} scheme with every Widget shown`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme });
+        await showEveryWidget(page);
+
+        const results = await new AxeBuilder({ page })
+          .withTags(WCAG_AA_TAGS)
+          .analyze();
+
+        expect(results.violations).toEqual([]);
+      });
+    }
+
+    for (const { zoom, width } of ZOOM_LEVELS) {
+      test(`keeps everything inside each Widget and the Location picker at ${zoom} zoom`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
+        await showEveryWidget(page);
+
+        const cutOff: string[] = [];
+        for (const widget of await page
+          .locator("weather-widget, weather-location-picker")
+          .all()) {
+          const bounds = await widget.boundingBox();
+          expect(bounds).not.toBeNull();
+          if (!bounds) continue;
+          expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+          for (const part of await widget.locator(SHOWN_PARTS).all()) {
+            const box = await part.boundingBox();
+            if (
+              box &&
+              box.width > 1 &&
+              (box.x < Math.floor(bounds.x) ||
+                box.x + box.width > Math.ceil(bounds.x + bounds.width))
+            ) {
+              cutOff.push(await part.innerText());
+            }
+          }
+        }
+
+        expect(cutOff).toEqual([]);
+      });
+    }
+
+    test.describe("its Location picker", () => {
+      const picker = (page: Page) => page.locator("weather-location-picker");
+      const forecastRequestAt = (page: Page, latitude: string) =>
+        page.waitForRequest((request) => {
+          const url = new URL(request.url());
+          return (
+            url.pathname === "/api/forecast" &&
+            url.searchParams.get("latitude") === latitude
+          );
+        });
+
+      test("drives the top Widget, which starts on Nieuwegein", async ({
+        page,
+      }) => {
+        await page.goto(host.path);
+
+        await expect(
+          controlledWidget(page).getByRole("heading", {
+            level: 2,
+            name: RECORDED_NIEUWEGEIN_NAME,
+          }),
+        ).toBeVisible();
+
+        await picker(page)
+          .getByRole("searchbox", { name: "Location" })
+          .fill("Paris");
+        await picker(page).getByRole("button", { name: "Search" }).click();
+        const forecast = forecastRequestAt(page, "33.66094");
+        await picker(page)
+          .getByRole("button", { name: "Paris Texas, United States" })
+          .click();
+
+        const url = new URL((await forecast).url());
+        expect(url.searchParams.get("longitude")).toBe("-95.55551");
+        await expect(
+          controlledWidget(page).getByRole("heading", {
+            level: 2,
+            name: "Paris",
+          }),
+        ).toBeVisible();
+      });
+
+      test("announces a search that finds nothing", async ({ page }) => {
+        await page.goto(host.path);
+
+        await picker(page)
+          .getByRole("searchbox", { name: "Location" })
+          .fill("Atlantis");
+        await picker(page).getByRole("button", { name: "Search" }).click();
+
+        await expect(picker(page).getByRole("status")).toHaveText(
+          "No locations found for “Atlantis”. Check the spelling or try a nearby town.",
+        );
+      });
+
+      test("sends the top Widget the device's Location rounded to 2 decimals", async ({
+        page,
+        context,
+      }) => {
+        await context.grantPermissions(["geolocation"]);
+        await context.setGeolocation({ latitude: 48.85341, longitude: 2.3488 });
+        await page.goto(host.path);
+        await expect(
+          controlledWidget(page).getByRole("heading", {
+            level: 2,
+            name: RECORDED_NIEUWEGEIN_NAME,
+          }),
+        ).toBeVisible();
+
+        const forecast = forecastRequestAt(page, "48.85");
+        await picker(page)
+          .getByRole("button", { name: "Use my location" })
+          .click();
+
+        expect(
+          new URL((await forecast).url()).searchParams.get("longitude"),
+        ).toBe("2.35");
+      });
+
+      test("drops a searched name once the top Widget gets the device's Location", async ({
+        page,
+        context,
+      }) => {
+        await context.grantPermissions(["geolocation"]);
+        await context.setGeolocation({ latitude: 48.85341, longitude: 2.3488 });
+        await page.goto(host.path);
+        await picker(page)
+          .getByRole("searchbox", { name: "Location" })
+          .fill("Paris");
+        await picker(page).getByRole("button", { name: "Search" }).click();
+        await picker(page)
+          .getByRole("button", { name: "Paris Texas, United States" })
+          .click();
+        await expect(
+          controlledWidget(page).getByRole("heading", {
+            level: 2,
+            name: "Paris",
+          }),
+        ).toBeVisible();
+
+        await picker(page)
+          .getByRole("button", { name: "Use my location" })
+          .click();
+
+        await expect(
+          controlledWidget(page).getByRole("heading", {
+            level: 2,
+            name: RECORDED_NIEUWEGEIN_NAME,
+          }),
+        ).toBeVisible();
+      });
+
+      for (const colorScheme of ["light", "dark"] as const) {
+        test(`falls back to the same theme as the Widget in the ${colorScheme} scheme`, async ({
+          page,
+        }) => {
+          await page.emulateMedia({ colorScheme });
+          await page.goto(host.path);
+          const widget = controlledWidget(page);
+          await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
+
+          const widgetTheme = await themeOf(widget);
+
+          expect(widgetTheme.accent).not.toBeNull();
+          expect(await themeOf(picker(page))).toEqual(widgetTheme);
+        });
+      }
+    });
+  });
+}
+
+for (const host of SHOWCASE_HOSTS) {
+  test.describe(`the ${host.name} Example host's fixed showcase`, () => {
     test("shows a Dutch Widget", async ({ page }) => {
       await page.clock.setFixedTime(RECORDED_AT);
       await page.goto(host.path);
@@ -186,25 +463,6 @@ for (const host of EXAMPLE_HOSTS) {
       expect(new Set(forecastUrls).size).toBe(1);
     });
 
-    test("shows the Hourly and Daily forecast in the Location's local time", async ({
-      page,
-    }) => {
-      await page.clock.setFixedTime(RECORDED_AT);
-      await page.goto(host.path);
-
-      const widget = page.locator("weather-widget").first();
-      const hours = widget
-        .getByRole("list", { name: "Next 12 hours" })
-        .getByRole("listitem");
-      const days = widget
-        .getByRole("list", { name: "Next 5 days" })
-        .getByRole("listitem");
-      await expect(hours).toHaveCount(12);
-      await expect(hours.first()).toContainText("10 AM");
-      await expect(days).toHaveCount(5);
-      await expect(days.first()).toContainText("Sun");
-    });
-
     test("shows one Widget themed through its style attribute", async ({
       page,
     }) => {
@@ -234,250 +492,143 @@ for (const host of EXAMPLE_HOSTS) {
         await expect(showcaseWidget(page, caption)).toHaveCount(1);
       }
     });
+  });
+}
 
-    test("keeps the page still while its modules load slowly", async ({
+for (const host of WIDGET_SETTINGS_HOSTS) {
+  test.describe(`the ${host.name} Example host's Widget settings`, () => {
+    test("come right below the title, before the Location picker and the Widget", async ({
       page,
     }) => {
-      await page.setViewportSize(MOBILE_VIEWPORT);
-      await page.route(host.modules, async (route) => {
-        await new Promise((resolve) =>
-          setTimeout(resolve, SLOW_MODULE_DELAY_MS),
-        );
-        await route.continue();
-      });
-      await page.addInitScript((key) => {
-        let layoutShift = 0;
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if ("value" in entry && typeof entry.value === "number") {
-              layoutShift += entry.value;
-            }
-          }
-          Reflect.set(window, key, layoutShift);
-        }).observe({ type: "layout-shift", buffered: true });
-      }, LAYOUT_SHIFT_KEY);
-
       await page.goto(host.path);
       await expect(
-        page
-          .locator("weather-widget")
-          .first()
-          .getByRole("heading", { level: 2 }),
+        controlledWidget(page).getByRole("heading", { level: 2 }),
       ).toBeVisible();
 
-      const layoutShift = await page.evaluate((key) => {
-        const measured: unknown = Reflect.get(window, key);
-        return typeof measured === "number" ? measured : 0;
-      }, LAYOUT_SHIFT_KEY);
-      expect(layoutShift).toBeLessThanOrEqual(GOOD_LAYOUT_SHIFT);
+      const tops = await Promise.all(
+        [
+          widgetSettings(page),
+          page.locator("weather-location-picker"),
+          controlledWidget(page),
+        ].map(async (part) => {
+          const box = await part.boundingBox();
+          if (!box) throw new Error("A part of the page isn't shown");
+          return box.y;
+        }),
+      );
+
+      expect(tops).toEqual([...tops].sort((one, other) => one - other));
+      expect(new Set(tops).size).toBe(tops.length);
     });
 
-    test("keeps the Location picker and the Widgets apart", async ({
+    test("start in sync with the Widget", async ({ page }) => {
+      await page.goto(host.path);
+      const settings = widgetSettings(page);
+
+      await expect(
+        settings
+          .getByRole("group", { name: "Locale" })
+          .getByRole("radio", { name: "English" }),
+      ).toBeChecked();
+      await expect(
+        settings
+          .getByRole("group", { name: "Units" })
+          .getByRole("radio", { name: "Metric" }),
+      ).toBeChecked();
+      await expect(
+        controlledWidget(page).getByText("Feels like"),
+      ).toBeVisible();
+    });
+
+    test("switch the Widget to Dutch", async ({ page }) => {
+      await page.clock.setFixedTime(RECORDED_AT);
+      await page.goto(host.path);
+      const dutch = widgetSettings(page)
+        .getByRole("group", { name: "Locale" })
+        .getByRole("radio", { name: "Dutch" });
+
+      await dutch.check();
+
+      const widget = controlledWidget(page);
+      await expect(widget.getByRole("status")).toContainText(
+        `Weersverwachting voor ${RECORDED_NIEUWEGEIN_NAME}`,
+      );
+      await expect(widget.getByText("Gevoelstemperatuur")).toBeVisible();
+      await expect(
+        widget
+          .getByRole("list", { name: "Komende 5 dagen" })
+          .getByRole("listitem")
+          .first(),
+      ).toContainText("zo");
+      await expect(dutch).toBeFocused();
+    });
+
+    test("switch the Widget to imperial units", async ({ page }) => {
+      await page.goto(host.path);
+
+      await widgetSettings(page)
+        .getByRole("group", { name: "Units" })
+        .getByRole("radio", { name: "Imperial" })
+        .check();
+
+      await expect(
+        controlledWidget(page)
+          .getByText(RECORDED_NIEUWEGEIN_TEMPERATURE_FAHRENHEIT, {
+            exact: true,
+          })
+          .first(),
+      ).toBeVisible();
+    });
+
+    test("can be reached and changed with the keyboard alone", async ({
       page,
     }) => {
       await page.goto(host.path);
+      const english = widgetSettings(page).getByRole("radio", {
+        name: "English",
+      });
+      await english.focus();
 
-      const components = page.locator(
-        "weather-location-picker, weather-widget",
-      );
-      await expect(components).toHaveCount(5);
-      const bounds = await Promise.all(
-        (await components.all()).map(async (component) => {
-          const box = await component.boundingBox();
-          if (!box) throw new Error("A component isn't shown");
-          return box;
-        }),
-      );
-      const touching = bounds.flatMap((one, index) =>
-        bounds
-          .slice(index + 1)
-          .filter(
-            (other) =>
-              one.x <= other.x + other.width &&
-              other.x <= one.x + one.width &&
-              one.y <= other.y + other.height &&
-              other.y <= one.y + one.height,
-          ),
-      );
-      expect(touching).toEqual([]);
+      await page.keyboard.press("ArrowDown");
+
+      const dutch = widgetSettings(page).getByRole("radio", { name: "Dutch" });
+      await expect(dutch).toBeChecked();
+      await expect(dutch).toBeFocused();
+      await expect(
+        controlledWidget(page).getByText("Gevoelstemperatuur"),
+      ).toBeVisible();
+
+      await page.keyboard.press("Tab");
+
+      const metric = widgetSettings(page).getByRole("radio", {
+        name: "Metric",
+      });
+      await expect(metric).toBeFocused();
+      await expect(metric).not.toHaveCSS("outline-style", "none");
     });
 
-    for (const colorScheme of ["light", "dark"] as const) {
-      test(`passes axe in the ${colorScheme} scheme, the themed Widget included`, async ({
-        page,
-      }) => {
-        await page.emulateMedia({ colorScheme });
-        await showEveryWidget(page);
+    test("keep their locale when the Location picker chooses a new Location", async ({
+      page,
+    }) => {
+      await page.goto(host.path);
+      const picker = page.locator("weather-location-picker");
+      await widgetSettings(page).getByRole("radio", { name: "Dutch" }).check();
 
-        const results = await new AxeBuilder({ page })
-          .withTags(WCAG_AA_TAGS)
-          .analyze();
+      await picker.getByRole("searchbox", { name: "Location" }).fill("Paris");
+      await picker.getByRole("button", { name: "Search" }).click();
+      await picker
+        .getByRole("button", { name: "Paris Texas, United States" })
+        .click();
 
-        expect(results.violations).toEqual([]);
-      });
-    }
-
-    for (const { zoom, width } of ZOOM_LEVELS) {
-      test(`keeps everything inside each Widget and the Location picker at ${zoom} zoom`, async ({
-        page,
-      }) => {
-        await page.setViewportSize({ width, height: VIEWPORT_HEIGHT });
-        await showEveryWidget(page);
-
-        const cutOff: string[] = [];
-        for (const widget of await page
-          .locator("weather-widget, weather-location-picker")
-          .all()) {
-          const bounds = await widget.boundingBox();
-          expect(bounds).not.toBeNull();
-          if (!bounds) continue;
-          expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
-          for (const part of await widget.locator(SHOWN_PARTS).all()) {
-            const box = await part.boundingBox();
-            if (
-              box &&
-              box.width > 1 &&
-              (box.x < Math.floor(bounds.x) ||
-                box.x + box.width > Math.ceil(bounds.x + bounds.width))
-            ) {
-              cutOff.push(await part.innerText());
-            }
-          }
-        }
-
-        expect(cutOff).toEqual([]);
-      });
-    }
-
-    test.describe("its Location picker", () => {
-      const chosenLocation = (page: Page) =>
-        showcaseWidget(page, CHOSEN_LOCATION_CAPTION);
-      const picker = (page: Page) => page.locator("weather-location-picker");
-      const forecastRequestAt = (page: Page, latitude: string) =>
-        page.waitForRequest((request) => {
-          const url = new URL(request.url());
-          return (
-            url.pathname === "/api/forecast" &&
-            url.searchParams.get("latitude") === latitude
-          );
-        });
-
-      test("drives the top Widget, which starts on Nieuwegein", async ({
-        page,
-      }) => {
-        await page.goto(host.path);
-
-        await expect(
-          chosenLocation(page).getByRole("heading", {
-            level: 2,
-            name: RECORDED_NIEUWEGEIN_NAME,
-          }),
-        ).toBeVisible();
-
-        await picker(page)
-          .getByRole("searchbox", { name: "Location" })
-          .fill("Paris");
-        await picker(page).getByRole("button", { name: "Search" }).click();
-        const forecast = forecastRequestAt(page, "33.66094");
-        await picker(page)
-          .getByRole("button", { name: "Paris Texas, United States" })
-          .click();
-
-        const url = new URL((await forecast).url());
-        expect(url.searchParams.get("longitude")).toBe("-95.55551");
-        await expect(
-          chosenLocation(page).getByRole("heading", {
-            level: 2,
-            name: "Paris",
-          }),
-        ).toBeVisible();
-      });
-
-      test("announces a search that finds nothing", async ({ page }) => {
-        await page.goto(host.path);
-
-        await picker(page)
-          .getByRole("searchbox", { name: "Location" })
-          .fill("Atlantis");
-        await picker(page).getByRole("button", { name: "Search" }).click();
-
-        await expect(picker(page).getByRole("status")).toHaveText(
-          "No locations found for “Atlantis”. Check the spelling or try a nearby town.",
-        );
-      });
-
-      test("sends the top Widget the device's Location rounded to 2 decimals", async ({
-        page,
-        context,
-      }) => {
-        await context.grantPermissions(["geolocation"]);
-        await context.setGeolocation({ latitude: 48.85341, longitude: 2.3488 });
-        await page.goto(host.path);
-        await expect(
-          chosenLocation(page).getByRole("heading", {
-            level: 2,
-            name: RECORDED_NIEUWEGEIN_NAME,
-          }),
-        ).toBeVisible();
-
-        const forecast = forecastRequestAt(page, "48.85");
-        await picker(page)
-          .getByRole("button", { name: "Use my location" })
-          .click();
-
-        expect(
-          new URL((await forecast).url()).searchParams.get("longitude"),
-        ).toBe("2.35");
-      });
-
-      test("drops a searched name once the top Widget gets the device's Location", async ({
-        page,
-        context,
-      }) => {
-        await context.grantPermissions(["geolocation"]);
-        await context.setGeolocation({ latitude: 48.85341, longitude: 2.3488 });
-        await page.goto(host.path);
-        await picker(page)
-          .getByRole("searchbox", { name: "Location" })
-          .fill("Paris");
-        await picker(page).getByRole("button", { name: "Search" }).click();
-        await picker(page)
-          .getByRole("button", { name: "Paris Texas, United States" })
-          .click();
-        await expect(
-          chosenLocation(page).getByRole("heading", {
-            level: 2,
-            name: "Paris",
-          }),
-        ).toBeVisible();
-
-        await picker(page)
-          .getByRole("button", { name: "Use my location" })
-          .click();
-
-        await expect(
-          chosenLocation(page).getByRole("heading", {
-            level: 2,
-            name: RECORDED_NIEUWEGEIN_NAME,
-          }),
-        ).toBeVisible();
-      });
-
-      for (const colorScheme of ["light", "dark"] as const) {
-        test(`falls back to the same theme as the Widget in the ${colorScheme} scheme`, async ({
-          page,
-        }) => {
-          await page.emulateMedia({ colorScheme });
-          await page.goto(host.path);
-          const widget = chosenLocation(page);
-          await expect(widget.getByRole("heading", { level: 2 })).toBeVisible();
-
-          const widgetTheme = await themeOf(widget);
-
-          expect(widgetTheme.accent).not.toBeNull();
-          expect(await themeOf(picker(page))).toEqual(widgetTheme);
-        });
-      }
+      await expect(
+        controlledWidget(page).getByRole("heading", {
+          level: 2,
+          name: "Paris",
+        }),
+      ).toBeVisible();
+      await expect(
+        controlledWidget(page).getByText("Gevoelstemperatuur"),
+      ).toBeVisible();
     });
   });
 }

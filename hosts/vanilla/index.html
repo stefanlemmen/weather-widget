@@ -7,7 +7,7 @@
     <title>Weather Widget in plain HTML</title>
     <meta
       name="description"
-      content="Weather Widgets on a plain HTML page with no framework, loaded from one standalone ES module."
+      content="Try the Weather Widget's settings on a plain HTML page with no framework, loaded from one standalone ES module."
     />
     <link
       rel="canonical"
@@ -18,7 +18,7 @@
     <meta property="og:title" content="Weather Widget in plain HTML" />
     <meta
       property="og:description"
-      content="Weather Widgets on a plain HTML page with no framework, loaded from one standalone ES module."
+      content="Try the Weather Widget's settings on a plain HTML page with no framework, loaded from one standalone ES module."
     />
     <meta
       property="og:url"
@@ -26,10 +26,6 @@
     />
     <style>
       :root {
-        --page-max-size: 72rem;
-        --page-gap: 2rem;
-        --caption-gap: 0.75rem;
-        --example-min-size: 18rem;
         font-family: system-ui, sans-serif;
         line-height: 1.4;
       }
@@ -42,29 +38,14 @@
 
       main {
         box-sizing: border-box;
-        max-inline-size: var(--page-max-size);
+        max-inline-size: 45rem;
         margin-inline: auto;
         padding: clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
         display: grid;
-        gap: var(--page-gap);
+        gap: 2rem;
       }
 
-      h1 {
-        margin: 0;
-        font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
-        font-weight: 800;
-        line-height: 1.15;
-        text-wrap: balance;
-      }
-
-      figure {
-        margin: 0;
-        display: grid;
-        align-content: start;
-        gap: var(--caption-gap);
-      }
-
-      figure > * {
+      main > * {
         min-inline-size: 0;
       }
 
@@ -72,26 +53,26 @@
           weather-widget:not(:defined),
           weather-location-picker:not(:defined)
         )
-        figure {
-        display: none;
+        > :not(h1) {
+        visibility: hidden;
       }
 
-      figcaption {
-        color: color-mix(in oklab, CanvasText 72%, Canvas);
+      h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+        line-height: 1.15;
+        text-wrap: balance;
       }
 
-      code {
-        font-family: ui-monospace, monospace;
-        font-size: 0.9em;
-      }
-
-      .examples {
+      form {
+        margin: 0;
         display: grid;
-        grid-template-columns: repeat(
-          auto-fit,
-          minmax(min(100%, var(--example-min-size)), 1fr)
-        );
-        gap: var(--page-gap);
+        gap: 0.75rem;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.25rem;
       }
     </style>
     <script type="module" src="/widget/weather-widget.js" vite-ignore></script>
@@ -101,60 +82,54 @@
       vite-ignore
     ></script>
     <script type="module">
-      const chosen = document.querySelector("#chosen-location");
+      const widget = document.querySelector("weather-widget");
+
+      const setAttribute = (name, value) => {
+        if (value) widget.setAttribute(name, value);
+        else widget.removeAttribute(name);
+      };
+
+      document
+        .querySelector("form")
+        .addEventListener("change", ({ target }) => {
+          setAttribute(target.name, target.value);
+        });
+
       document
         .querySelector("weather-location-picker")
         .addEventListener("location-select", ({ detail }) => {
-          chosen.latitude = detail.latitude;
-          chosen.longitude = detail.longitude;
-          chosen.locationName = detail.name ?? undefined;
+          setAttribute("latitude", String(detail.latitude));
+          setAttribute("longitude", String(detail.longitude));
+          setAttribute("location-name", detail.name);
         });
     </script>
   </head>
   <body>
     <main>
       <h1>Weather Widget in plain HTML</h1>
-      <figure>
-        <figcaption>Choose a Location to show it in this Widget.</figcaption>
-        <weather-location-picker></weather-location-picker>
-        <weather-widget
-          id="chosen-location"
-          latitude="52.03"
-          longitude="5.08"
-        ></weather-widget>
-      </figure>
-      <div class="examples">
-        <figure>
-          <figcaption>Dutch: <code>locale="nl"</code></figcaption>
-          <weather-widget
-            latitude="52.03"
-            longitude="5.08"
-            locale="nl"
-          ></weather-widget>
-        </figure>
-        <figure>
-          <figcaption>Imperial units: <code>units="imperial"</code></figcaption>
-          <weather-widget
-            latitude="52.03"
-            longitude="5.08"
-            units="imperial"
-          ></weather-widget>
-        </figure>
-        <figure>
-          <figcaption>Themed with five CSS custom properties</figcaption>
-          <weather-widget
-            latitude="52.03"
-            longitude="5.08"
-            style="
-              --weather-font: Georgia, serif;
-              --weather-background: #fffaf2;
-              --weather-ink: #2b1d16;
-              --weather-accent: #9c3412;
-              --weather-radius: 0;
-            "
-          ></weather-widget>
-        </figure>
-      </div>
+      <form aria-labelledby="widget-settings-title">
+        <h2 id="widget-settings-title">Widget settings</h2>
+        <fieldset>
+          <legend>Locale</legend>
+          <label
+            ><input type="radio" name="locale" value="" checked />
+            English</label
+          >
+          <label><input type="radio" name="locale" value="nl" /> Dutch</label>
+        </fieldset>
+        <fieldset>
+          <legend>Units</legend>
+          <label
+            ><input type="radio" name="units" value="" checked /> Metric</label
+          >
+          <label
+            ><input type="radio" name="units" value="imperial" />
+            Imperial</label
+          >
+        </fieldset>
+      </form>
+      <weather-location-picker></weather-location-picker>
+      <weather-widget latitude="52.03" longitude="5.08"></weather-widget>
     </main>
   </body>
 </html>
