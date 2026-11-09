@@ -64,8 +64,7 @@
         text-wrap: balance;
       }
 
-      form,
-      figure {
+      form {
         margin: 0;
         display: grid;
         gap: 0.75rem;
@@ -75,12 +74,6 @@
         margin: 0;
         font-size: 1.25rem;
       }
-
-      pre {
-        margin: 0;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-      }
     </style>
     <script type="module" src="/widget/weather-widget.js" vite-ignore></script>
     <script
@@ -89,40 +82,17 @@
       vite-ignore
     ></script>
     <script type="module">
-      const MARKUP_ATTRIBUTES = [
-        "latitude",
-        "longitude",
-        "location-name",
-        "locale",
-        "units",
-      ];
       const widget = document.querySelector("weather-widget");
-      const markup = document.querySelector("#widget-markup");
 
       const setAttribute = (name, value) => {
         if (value) widget.setAttribute(name, value);
         else widget.removeAttribute(name);
       };
 
-      const showMarkup = () => {
-        const attributes = MARKUP_ATTRIBUTES.filter((name) =>
-          widget.hasAttribute(name),
-        ).map(
-          (name) =>
-            `  ${name}="${widget.getAttribute(name).replaceAll("&", "&amp;").replaceAll('"', "&quot;")}"`,
-        );
-        markup.textContent = [
-          "<weather-widget",
-          ...attributes,
-          "></weather-widget>",
-        ].join("\n");
-      };
-
       document
         .querySelector("form")
         .addEventListener("change", ({ target }) => {
           setAttribute(target.name, target.value);
-          showMarkup();
         });
 
       document
@@ -131,10 +101,7 @@
           setAttribute("latitude", String(detail.latitude));
           setAttribute("longitude", String(detail.longitude));
           setAttribute("location-name", detail.name);
-          showMarkup();
         });
-
-      showMarkup();
     </script>
   </head>
   <body>
@@ -163,10 +130,6 @@
         </fieldset>
       </form>
       <weather-widget latitude="52.03" longitude="5.08"></weather-widget>
-      <figure>
-        <figcaption>Markup for this Widget</figcaption>
-        <pre><code id="widget-markup"></code></pre>
-      </figure>
     </main>
   </body>
 </html>

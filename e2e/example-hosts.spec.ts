@@ -67,17 +67,6 @@ const themeOf = (component: Locator) =>
 const widgetSettings = (page: Page) =>
   page.getByRole("form", { name: "Widget settings" });
 const controlledWidget = (page: Page) => page.locator("weather-widget").first();
-const markupSnippet = (page: Page) =>
-  page.getByRole("figure", { name: "Markup for this Widget" }).locator("code");
-const markupOf = (attributes: Record<string, string>) =>
-  [
-    "<weather-widget",
-    ...Object.entries(attributes).map(
-      ([name, value]) => `  ${name}="${value}"`,
-    ),
-    "></weather-widget>",
-  ].join("\n");
-const NIEUWEGEIN_ATTRIBUTES = { latitude: "52.03", longitude: "5.08" };
 
 const showcaseWidget = (page: Page, caption: string) =>
   page.getByRole("figure", { name: caption }).locator("weather-widget");
@@ -508,7 +497,7 @@ for (const host of SHOWCASE_HOSTS) {
 
 for (const host of WIDGET_SETTINGS_HOSTS) {
   test.describe(`the ${host.name} Example host's Widget settings`, () => {
-    test("come between the Location picker and the Widget, with its markup below", async ({
+    test("come between the Location picker and the Widget", async ({
       page,
     }) => {
       await page.goto(host.path);
@@ -521,7 +510,6 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           page.locator("weather-location-picker"),
           widgetSettings(page),
           controlledWidget(page),
-          markupSnippet(page),
         ].map(async (part) => {
           const box = await part.boundingBox();
           if (!box) throw new Error("A part of the page isn't shown");
@@ -533,9 +521,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       expect(new Set(tops).size).toBe(tops.length);
     });
 
-    test("start in sync with the Widget, whose markup then shows only its Location", async ({
-      page,
-    }) => {
+    test("start in sync with the Widget", async ({ page }) => {
       await page.goto(host.path);
       const settings = widgetSettings(page);
 
@@ -552,14 +538,9 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       await expect(
         controlledWidget(page).getByText("Feels like"),
       ).toBeVisible();
-      await expect(markupSnippet(page)).toHaveText(
-        markupOf(NIEUWEGEIN_ATTRIBUTES),
-      );
     });
 
-    test("switch the Widget to Dutch and show the locale in its markup", async ({
-      page,
-    }) => {
+    test("switch the Widget to Dutch", async ({ page }) => {
       await page.clock.setFixedTime(RECORDED_AT);
       await page.goto(host.path);
       const dutch = widgetSettings(page)
@@ -579,15 +560,10 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           .getByRole("listitem")
           .first(),
       ).toContainText("zo");
-      await expect(markupSnippet(page)).toHaveText(
-        markupOf({ ...NIEUWEGEIN_ATTRIBUTES, locale: "nl" }),
-      );
       await expect(dutch).toBeFocused();
     });
 
-    test("switch the Widget to imperial units and show them in its markup", async ({
-      page,
-    }) => {
+    test("switch the Widget to imperial units", async ({ page }) => {
       await page.goto(host.path);
 
       await widgetSettings(page)
@@ -602,9 +578,6 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           })
           .first(),
       ).toBeVisible();
-      await expect(markupSnippet(page)).toHaveText(
-        markupOf({ ...NIEUWEGEIN_ATTRIBUTES, units: "imperial" }),
-      );
     });
 
     test("can be reached and changed with the keyboard alone", async ({
@@ -634,7 +607,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       await expect(metric).not.toHaveCSS("outline-style", "none");
     });
 
-    test("show the Location chosen in the Location picker in the Widget and its markup", async ({
+    test("keep their locale when the Location picker chooses a new Location", async ({
       page,
     }) => {
       await page.goto(host.path);
@@ -653,14 +626,9 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           name: "Paris",
         }),
       ).toBeVisible();
-      await expect(markupSnippet(page)).toHaveText(
-        markupOf({
-          latitude: "33.66094",
-          longitude: "-95.55551",
-          "location-name": "Paris",
-          locale: "nl",
-        }),
-      );
+      await expect(
+        controlledWidget(page).getByText("Gevoelstemperatuur"),
+      ).toBeVisible();
     });
   });
 }
