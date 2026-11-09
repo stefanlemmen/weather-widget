@@ -1,3 +1,5 @@
+/*! Lucide (https://lucide.dev)
+
 ISC License
 
 Copyright (c) 2026 Lucide Icons and Contributors
@@ -41,3 +43,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+*/
+import { html } from "lit";
+
+export const NAVIGATION_ICON = html`<svg
+  aria-hidden="true"
+  focusable="false"
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+</svg>`;

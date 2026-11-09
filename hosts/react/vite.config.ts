@@ -1,4 +1,3 @@
-import { LUCIDE_NOTICE } from "@weather-widget/location-picker/build-output";
 import { PROXY_BASE_PATH } from "@weather-widget/proxy";
 import { PROXY_DEV_ORIGIN } from "@weather-widget/proxy/dev-server";
 import { defineConfig } from "vite";
@@ -14,7 +13,6 @@ export default defineConfig({
       output: {
         minify: true,
         comments: { legal: true, annotation: false, jsdoc: false },
-        banner: LUCIDE_NOTICE,
       },
     },
   },
