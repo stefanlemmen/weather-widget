@@ -1,0 +1,8 @@
+{
+  "name": "@weather-widget/landing-page",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "mkdir -p ../../dist && cp index.html ../../dist/index.html"
+  }
+}

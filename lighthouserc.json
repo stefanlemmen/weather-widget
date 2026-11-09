@@ -4,6 +4,7 @@
       "startServerCommand": "PROVIDER_MODE=fixtures pnpm preview",
       "startServerReadyPattern": "Preview listening",
       "url": [
+        "http://localhost:4173/",
         "http://localhost:4173/vanilla/",
         "http://localhost:4173/react/",
         "http://localhost:4173/angular/"
@@ -21,6 +22,12 @@
             "categories:seo": ["error", { "minScore": 1 }],
             "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
             "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
+          }
+        },
+        {
+          "matchingUrlPattern": "localhost:4173/$",
+          "assertions": {
+            "resource-summary:script:size": ["error", { "maxNumericValue": 0 }]
           }
         },
         {
