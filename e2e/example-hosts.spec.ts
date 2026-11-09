@@ -53,7 +53,9 @@ const DEFAULT_WIDTH = 390;
 const TOP_RIGHT_TOLERANCE = 32;
 const WIDEST_WIDTH = 760;
 const WIDE_SCREEN_WIDTHS = [1024, DESKTOP_WIDTH];
-const DEFAULT_WIDTH_STYLE = `inline-size: ${String(DEFAULT_WIDTH)}px`;
+const onlyWidthStyle = (width: number) =>
+  new RegExp(`^inline-size: ${String(width)}px;?$`);
+const DEFAULT_WIDTH_STYLE = onlyWidthStyle(DEFAULT_WIDTH);
 const WIDGET_LAYOUTS = [
   { width: 240, hoursPerRow: 4, factsSideBySide: false },
   { width: 390, hoursPerRow: 6, factsSideBySide: true },
@@ -86,8 +88,8 @@ const ANGULAR_HOST = {
 };
 const FRAMEWORK_HOSTS = [REACT_HOST, ANGULAR_HOST];
 const EXAMPLE_HOSTS = [VANILLA_HOST, ...FRAMEWORK_HOSTS];
-const SHOWCASE_HOSTS = FRAMEWORK_HOSTS;
-const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST];
+const SHOWCASE_HOSTS = [ANGULAR_HOST];
+const WIDGET_SETTINGS_HOSTS = [VANILLA_HOST, REACT_HOST];
 
 const themeOf = (component: Locator) =>
   component.evaluate((host) => {
@@ -167,6 +169,15 @@ const expectColors = async (
     accent,
   );
 };
+
+const partsOf = (widget: Locator) =>
+  widget.evaluate(async (element) => {
+    await customElements.whenDefined(element.localName);
+    return "parts" in element ? (element.parts ?? null) : undefined;
+  });
+
+const expectParts = (widget: Locator, parts: string | null) =>
+  expect.poll(() => partsOf(widget)).toBe(parts);
 
 const showcaseWidget = (page: Page, caption: string) =>
   page.getByRole("figure", { name: caption }).locator("weather-widget");
@@ -731,7 +742,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
           forecastParts(page).getByRole("checkbox", { name }),
         ).toBeChecked();
       }
-      await expect(controlledWidget(page)).not.toHaveAttribute("parts");
+      await expectParts(controlledWidget(page), null);
       await expect(settingsRadio(page, "Theme", "None")).toBeChecked();
       await expect(settingsRadio(page, "Color scheme", "System")).toBeChecked();
       await expect(widthRadio(page, DEFAULT_WIDTH)).toBeChecked();
@@ -897,10 +908,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
       await expect(current).not.toBeChecked();
       await expect(current).toBeFocused();
       await expect(current).not.toHaveCSS("outline-style", "none");
-      await expect(controlledWidget(page)).toHaveAttribute(
-        "parts",
-        "hourly daily",
-      );
+      await expectParts(controlledWidget(page), "hourly daily");
 
       await page.keyboard.press("Tab");
       await page.keyboard.press("Tab");
@@ -951,7 +959,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
         .getByRole("checkbox", { name: "Hourly forecast" })
         .uncheck();
 
-      await expect(widget).toHaveAttribute("parts", "current daily");
+      await expectParts(widget, "current daily");
       await expect(
         widget.getByRole("list", { name: HOURLY_FORECAST_LIST }),
       ).toHaveCount(0);
@@ -970,11 +978,11 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
         name: "Daily forecast",
       });
       await daily.uncheck();
-      await expect(widget).toHaveAttribute("parts", "current hourly");
+      await expectParts(widget, "current hourly");
 
       await daily.check();
 
-      await expect(widget).not.toHaveAttribute("parts");
+      await expectParts(widget, null);
       await expect(
         widget.getByRole("list", { name: DAILY_FORECAST_LIST }),
       ).toHaveCount(1);
@@ -996,7 +1004,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
 
       await expect(daily).toBeChecked();
       await expect(daily).toBeFocused();
-      await expect(controlledWidget(page)).toHaveAttribute("parts", "daily");
+      await expectParts(controlledWidget(page), "daily");
       await expect(widgetSettings(page).getByRole("status")).toHaveText(
         FORECAST_PARTS_HINT,
       );
@@ -1036,10 +1044,7 @@ for (const host of WIDGET_SETTINGS_HOSTS) {
 
         await widthRadio(page, width).check();
 
-        await expect(widget).toHaveAttribute(
-          "style",
-          `inline-size: ${String(width)}px`,
-        );
+        await expect(widget).toHaveAttribute("style", onlyWidthStyle(width));
         const [widgetBox, pickerBox] = await Promise.all(
           [widget, page.locator("weather-location-picker")].map((part) =>
             part.boundingBox(),
