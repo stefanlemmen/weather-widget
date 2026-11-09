@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sourceUrlFrom } from "./source-link.ts";
+import { sourceUrlFrom } from "../source-link.ts";
 
 const SHA = "4106403736223f0c551d8502265696f6d6a31321";
 const SOURCE_URL = `https://github.com/owner/repo/blob/${SHA}`;

@@ -3,7 +3,7 @@ import {
   firstLineOf,
   renderTestSummary,
   type TestRow,
-} from "./test-summary.ts";
+} from "../test-summary.ts";
 
 const HEADING = "## Proxy tests (Vitest)";
 const FILE = "packages/proxy/test/forecast.test.ts";
