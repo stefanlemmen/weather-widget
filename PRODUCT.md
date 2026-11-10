@@ -27,7 +27,7 @@ The Widget is a framework-agnostic web component, so the same element works in p
 - The Host page owns the Location (ADR 0002). The Widget has no Location UI. The Location picker is a package of its own: it emits the chosen Location, and the Host page decides which Widget receives it.
 - Each Widget lives in its own Shadow DOM, inside a Host page whose fonts, colors and width we don't control. Its layout follows its own width, from a narrow sidebar to a wide column.
 - Locales are English (`en`, default) and Dutch (`nl`); units are metric (default) or imperial. Hours and days follow Location time.
-- Forecasts are cached for 10 minutes, and for up to an hour when the Weather provider fails, so the Update time can be that old.
+- Forecasts are cached for 10 minutes, or 1 minute when one Forecast part failed. When the Weather provider delivers no Forecast part at all, a cached Forecast can be served for up to an hour longer, so the Update time can be more than an hour old.
 
 ## Capabilities and Constraints
 
