@@ -24,6 +24,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: node scripts/check.ts
 
   test:

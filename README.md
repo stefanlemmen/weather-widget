@@ -61,7 +61,7 @@ The repository is one pnpm workspace:
 - Names for coordinates come from OpenWeather ([ADR 0004](docs/adr/0004-names-for-coordinates-come-from-the-weather-provider.md)), so the Widget names its Location even when it only gets coordinates. When that lookup fails, it shows the coordinates.
 - Each Forecast part loads or fails on its own. If the Hourly forecast fails, the Widget still shows the Current weather and the Daily forecast, with an Unavailable message where the Hourly forecast would be. Only when nothing loads does it show the Error state, with a "Try again" button.
 
-The visual design and the theming rules are in [DESIGN.md](DESIGN.md), the audience and product principles in [PRODUCT.md](PRODUCT.md).
+The visual design and the theming rules are in [DESIGN.md](DESIGN.md), the audience and product principles in [PRODUCT.md](PRODUCT.md). [docs/scenarios.md](docs/scenarios.md) draws what the Widget, the Proxy and the Location picker do in each case.
 
 ## Embedding the Widget
 
@@ -264,13 +264,14 @@ OpenWeather's One Call API 4.0 is free for 1,000 calls a day. A new subscription
 
 Set up the workspace as in the [Quick start](#quick-start).
 
-| Command                                            | What it checks                                                                                 |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm typecheck`, `pnpm lint`, `pnpm format:check` | Types, lint rules and formatting                                                               |
-| `pnpm test`                                        | Unit tests, the Proxy over HTTP, and the components in a real browser with Vitest browser mode |
-| `pnpm build && pnpm test:e2e`                      | All three Example hosts end to end with Playwright and axe, against the Proxy in fixture mode  |
-| `pnpm build && pnpm lighthouse`                    | Performance, accessibility, best practices and SEO, and the script size budget per page        |
-| `pnpm build && pnpm preview`                       | Serves the production build and the Proxy on <http://localhost:4173>                           |
+| Command                                            | What it checks                                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`, `pnpm lint`, `pnpm format:check` | Types, lint rules and formatting                                                                        |
+| `pnpm diagrams:check`                              | That every Mermaid diagram in the Markdown files renders, and writes each one as an SVG to `.diagrams/` |
+| `pnpm test`                                        | Unit tests, the Proxy over HTTP, and the components in a real browser with Vitest browser mode          |
+| `pnpm build && pnpm test:e2e`                      | All three Example hosts end to end with Playwright and axe, against the Proxy in fixture mode           |
+| `pnpm build && pnpm lighthouse`                    | Performance, accessibility, best practices and SEO, and the script size budget per page                 |
+| `pnpm build && pnpm preview`                       | Serves the production build and the Proxy on <http://localhost:4173>                                    |
 
 Browser tests need Chromium: `pnpm exec playwright install chromium`. [TESTING.md](TESTING.md) says which kind of test owns which behaviour.
 
