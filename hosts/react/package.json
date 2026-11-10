@@ -10,8 +10,8 @@
   "devDependencies": {
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
+    "@weather-widget/contract": "workspace:*",
     "@weather-widget/location-picker": "workspace:*",
-    "@weather-widget/proxy": "workspace:*",
     "@weather-widget/widget": "workspace:*",
     "react": "19.2.9",
     "react-dom": "19.2.9",

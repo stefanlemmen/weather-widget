@@ -1,5 +1,6 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { MINIFIED_BUILD_OUTPUT } from "../../scripts/minified-build-output.ts";
 import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
   WIDGET_MODULE_DIRECTORY,
@@ -16,12 +17,7 @@ export default defineConfig({
     },
     outDir: `../../dist/${WIDGET_MODULE_DIRECTORY}`,
     emptyOutDir: true,
-    rolldownOptions: {
-      output: {
-        minify: true,
-        comments: { legal: true, annotation: false, jsdoc: false },
-      },
-    },
+    rolldownOptions: { output: MINIFIED_BUILD_OUTPUT },
   },
   optimizeDeps: {
     include: ["lit", "valibot"],

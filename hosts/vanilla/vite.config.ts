@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { PROXY_BASE_PATH } from "@weather-widget/proxy";
-import { PROXY_DEV_ORIGIN } from "@weather-widget/proxy/dev-server";
+import { PROXY_BASE_PATH } from "@weather-widget/contract";
+import { PROXY_DEV_ORIGIN } from "@weather-widget/contract/dev-server";
 import { LOCATION_PICKER_MODULE_PATH } from "@weather-widget/location-picker/build-output";
 import { WIDGET_MODULE_PATH } from "@weather-widget/widget/build-output";
 import { defineConfig, type Plugin } from "vite";

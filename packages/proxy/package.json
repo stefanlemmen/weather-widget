@@ -4,7 +4,6 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./dev-server": "./src/dev-server.ts",
     "./build-output": "./src/build-output.ts",
     "./local-proxy": "./src/local-proxy.ts"
   },

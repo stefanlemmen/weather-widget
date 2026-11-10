@@ -1,6 +1,6 @@
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { VERCEL_FUNCTION_BUNDLE } from "@weather-widget/proxy/build-output";
-import { PROXY_BASE_PATH } from "@weather-widget/proxy";
+import { PROXY_BASE_PATH } from "@weather-widget/contract";
 
 const workspaceRoot = new URL("../", import.meta.url);
 const outputDirectory = new URL(".vercel/output/", workspaceRoot);
