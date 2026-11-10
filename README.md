@@ -272,7 +272,7 @@ Set up the workspace as in the [Quick start](#quick-start).
 | `pnpm build && pnpm lighthouse`                    | Performance, accessibility, best practices and SEO, and the script size budget per page        |
 | `pnpm build && pnpm preview`                       | Serves the production build and the Proxy on <http://localhost:4173>                           |
 
-Browser tests need Chromium: `pnpm exec playwright install chromium`.
+Browser tests need Chromium: `pnpm exec playwright install chromium`. [TESTING.md](TESTING.md) says which kind of test owns which behaviour.
 
 CI runs all of these on every pull request. To deploy, connect the repository to a Vercel project and set `OPENWEATHER_API_KEY` in its environment variables. Vercel runs `pnpm build`, which writes the whole site and the Proxy function to `.vercel/output` ([ADR 0003](docs/adr/0003-our-build-writes-the-vercel-build-output.md)).
 
