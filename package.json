@@ -16,7 +16,7 @@
     "icon-svgs:check": "pnpm --filter @weather-widget/widget write-icon-svgs && git diff --exit-code -- packages/widget/generated/icon-svgs.ts",
     "test": "vitest run && pnpm --recursive --if-present test",
     "lighthouse": "lhci autorun",
-    "preview": "node scripts/preview.ts",
+    "preview": "node --env-file-if-exists=.env scripts/preview.ts",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

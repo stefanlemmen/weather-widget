@@ -6,6 +6,26 @@ See it running at <https://weather-widget-ruby-delta.vercel.app/>, which links t
 
 The words used here (Widget, Host page, Location, Forecast part, Proxy and so on) are defined in [GLOSSARY.md](GLOSSARY.md).
 
+## Quick start
+
+You need Node 26 and pnpm 11. You don't need an OpenWeather key: `.env.example` puts the Proxy in fixture mode, so it answers from recorded responses.
+
+```sh
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+`pnpm dev` starts the Proxy on port 8787 and the three Example hosts, each showing a Forecast for Nieuwegein:
+
+- Plain HTML: <http://localhost:5173/vanilla/>
+- React: <http://localhost:5174/react/>
+- Angular: <http://localhost:5175/angular/>
+
+The recordings cover a Forecast for Nieuwegein and searches for "Paris", "Parijs" and "Parjs". In fixture mode every Location gets Nieuwegein's Forecast, and any other search finds nothing.
+
+For live data, set `PROVIDER_MODE=live` and `OPENWEATHER_API_KEY` in `.env` ([Running your own Proxy](#running-your-own-proxy) says which key). `pnpm dev` and `pnpm preview` both read `.env`.
+
 ## Architecture
 
 ```text
@@ -219,7 +239,7 @@ The Widget and the Location picker need `light-dark()` in CSS, which sets the ol
 
 The Widget never calls OpenWeather itself, so a Host page needs a Proxy. To run your own:
 
-1. Get an OpenWeather API key with access to One Call API 4.0 and set it as `OPENWEATHER_API_KEY` in the Proxy's environment. Without it, the Proxy stops at startup with an error that names the variable.
+1. Subscribe to [One Call API 4.0](https://openweathermap.org/api/one-call-4) on OpenWeather to get an API key with access to it, and set the key as `OPENWEATHER_API_KEY` in the Proxy's environment. Without it, the Proxy stops at startup with an error that names the variable.
 2. Deploy the Proxy. This repository deploys to Vercel as it is: import it as a project, add `OPENWEATHER_API_KEY` under Environment Variables and deploy. The Proxy then answers under `/api` on that project's domain. It is a Hono app (`createProxy` in `packages/proxy`), but Vercel is the only platform this repository builds it for.
 3. Point each Widget's and Location picker's `proxy-url` at the Proxy's `/api` URL.
 
@@ -238,19 +258,11 @@ The Proxy answers GET requests from any origin, without credentials, so the Host
 
 On the Proxy's own domain you can leave `proxy-url` out, because it defaults to `/api`.
 
-OpenWeather's One Call API 4.0 is free for 1,000 calls a day, and calls above that are billed unless the account caps them. A Forecast that isn't cached yet costs up to 4 calls: one each for the Current weather, the Hourly forecast and the Daily forecast, and one for the Location's name. The Current weather on its own also costs the call for the Hourly forecast, because its chance of precipitation comes from the Hourly forecast's first hour.
+OpenWeather's One Call API 4.0 is free for 1,000 calls a day. A new subscription is capped at 2,000 calls a day, so up to 1,000 calls a day can be billed. To keep it free, lower the cap to 1,000 under [Billing plans](https://home.openweathermap.org/subscriptions) in your OpenWeather account. A Forecast that isn't cached yet costs up to 4 calls: one each for the Current weather, the Hourly forecast and the Daily forecast, and one for the Location's name. The Current weather on its own also costs the call for the Hourly forecast, because its chance of precipitation comes from the Hourly forecast's first hour.
 
 ## Running, testing and deploying
 
-You need Node 26 and pnpm 11.
-
-```sh
-pnpm install
-cp .env.example .env   # then set OPENWEATHER_API_KEY, or PROVIDER_MODE=fixtures
-pnpm dev               # the Proxy on :8787 and every Example host, each with its own URL
-```
-
-With `PROVIDER_MODE=fixtures` the Proxy answers from recorded responses instead of calling OpenWeather and Open-Meteo, so you don't need a key. The recordings cover a Forecast for Nieuwegein and searches for "Paris", "Parijs" and "Parjs".
+Set up the workspace as in the [Quick start](#quick-start).
 
 | Command                                            | What it checks                                                                                 |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
