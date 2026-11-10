@@ -57,15 +57,15 @@ flowchart TD
 
 A Forecast with every part stays recent for 10 minutes. For 10 minutes after that, the network still hands it out while it fetches a fresh one in the background. A Forecast with missing parts stays recent for 1 minute only, so a short problem at the Weather provider clears up quickly. When the Weather provider sends nothing at all, the network falls back on a stored copy that ran out less than an hour ago, even one with missing parts.
 
-Widgets that use the same Proxy and ask for the same coordinates and Forecast parts share one stored copy. Their language and units don't matter, because the Widget translates and converts the weather itself.
+Widgets that use the same Proxy and ask for the same coordinates and Forecast parts share one stored copy. The Widget first rounds the coordinates to about 1 km, so Widgets close together usually count as the same place. Their language and units don't matter, because the Widget translates and converts the weather itself.
 
 For developers:
 
-- The Proxy rounds coordinates to two decimals before it asks the Weather provider. The Widget sends them unrounded, so 52.0907 and 52.09 are two different stored copies.
+- The Widget rounds coordinates to two decimals before it asks the Proxy, so 52.0907 and 52.09 share one stored copy. The Proxy rounds them as well.
 - The Proxy answers 400 to invalid coordinates or Forecast parts, which a Widget never sends, and 503 when the Weather provider sends nothing. Neither answer is stored.
 - The Widget shows the error message for any answer that lacks a requested part or has none that arrived.
 - Code: `packages/proxy/src/proxy.ts`, `packages/proxy/src/weather-provider.ts`, `packages/proxy/src/provider-call.ts`, `packages/widget/src/forecast-client.ts`
-- Tests: `packages/proxy/test/forecast.test.ts`, `packages/widget/test/forecast-parts.test.ts`
+- Tests: `packages/proxy/test/forecast.test.ts`, `packages/widget/test/forecast-parts.test.ts`, `packages/widget/test/weather-widget.test.ts`
 
 ## 3. The Visitor comes back to the page
 
@@ -144,6 +144,7 @@ The Location picker and the Widget don't know about each other. The Host page de
 
 For developers:
 
+- The search field takes at most 100 characters (`SEARCH_TERM_MAX_LENGTH`), the longest term the Proxy accepts.
 - The picker tells the Host page through a `location-select` event. Its `name` is `null` for the device's own location.
 - The device may answer with a location it found in the last 5 minutes. The picker rounds it to two decimals.
 - Code: `packages/location-picker/src/weather-location-picker.ts`, `packages/location-picker/src/locations-client.ts`, `packages/proxy/src/search-provider.ts`
