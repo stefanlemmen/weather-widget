@@ -26,6 +26,9 @@ importers:
       '@types/node':
         specifier: 26.6.6
         version: 26.6.6
+      '@weather-widget/contract':
+        specifier: workspace:*
+        version: link:packages/contract
       '@weather-widget/proxy':
         specifier: workspace:*
         version: link:packages/proxy
@@ -77,12 +80,12 @@ importers:
       '@angular/platform-browser':
         specifier: 22.2.4
         version: 22.2.4(@angular/common@22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))
+      '@weather-widget/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
       '@weather-widget/location-picker':
         specifier: workspace:*
         version: link:../../packages/location-picker
-      '@weather-widget/proxy':
-        specifier: workspace:*
-        version: link:../../packages/proxy
       '@weather-widget/widget':
         specifier: workspace:*
         version: link:../../packages/widget
@@ -101,12 +104,12 @@ importers:
       '@types/react-dom':
         specifier: 19.2.7
         version: 19.2.7(@types/react@19.2.18)
+      '@weather-widget/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
       '@weather-widget/location-picker':
         specifier: workspace:*
         version: link:../../packages/location-picker
-      '@weather-widget/proxy':
-        specifier: workspace:*
-        version: link:../../packages/proxy
       '@weather-widget/widget':
         specifier: workspace:*
         version: link:../../packages/widget
@@ -122,12 +125,12 @@ importers:
 
   hosts/vanilla:
     devDependencies:
+      '@weather-widget/contract':
+        specifier: workspace:*
+        version: link:../../packages/contract
       '@weather-widget/location-picker':
         specifier: workspace:*
         version: link:../../packages/location-picker
-      '@weather-widget/proxy':
-        specifier: workspace:*
-        version: link:../../packages/proxy
       '@weather-widget/widget':
         specifier: workspace:*
         version: link:../../packages/widget

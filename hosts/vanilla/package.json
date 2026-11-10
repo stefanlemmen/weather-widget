@@ -8,8 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@weather-widget/contract": "workspace:*",
     "@weather-widget/location-picker": "workspace:*",
-    "@weather-widget/proxy": "workspace:*",
     "@weather-widget/widget": "workspace:*",
     "vite": "8.3.5"
   }
