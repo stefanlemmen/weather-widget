@@ -9,7 +9,7 @@ The self-contained component that shows the Forecast for one Location, configure
 _Avoid_: App, page, dashboard, card
 
 **Host page**:
-A page that embeds one or more Widgets and gives each one its configuration (Location, locale, units, Forecast parts).
+A page that embeds one or more Widgets and gives each one its configuration (coordinates, locale, units, Forecast parts, Theme).
 _Avoid_: Parent, container, demo app
 
 **Visitor**:
@@ -17,7 +17,7 @@ The person who reads a Widget or uses a Location picker on a Host page.
 _Avoid_: User, customer
 
 **Example host**:
-A Host page we build ourselves in one framework to show how Widgets are embedded there.
+A Host page we build ourselves in one framework, or none, to show how Widgets are embedded there.
 _Avoid_: Demo app, showcase, playground
 
 **Widget settings**:
