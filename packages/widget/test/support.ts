@@ -1,6 +1,6 @@
 import type {
   Condition,
-  CurrentConditions,
+  CurrentWeather,
   Day,
   ForecastPart,
   ForecastResponse,
@@ -14,7 +14,7 @@ import { WeatherWidget } from "../src/index.ts";
 
 export const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
 
-export const RECORDED_CONDITIONS: CurrentConditions = {
+export const RECORDED_CURRENT_WEATHER: CurrentWeather = {
   condition: "overcast",
   daylight: "day",
   temperatureCelsius: 8.85,
@@ -66,7 +66,7 @@ const RECORDED_HOURS = hoursFrom("2026-11-08T09:00:00.000Z");
 const RECORDED_DAYS = daysFrom("2026-11-08");
 
 export const forecastWith = (
-  conditions: Partial<CurrentConditions> = {},
+  currentWeather: Partial<CurrentWeather> = {},
   location: Partial<Location> = {},
   { hours = [], days = [] }: { hours?: Hour[]; days?: Day[] } = {},
 ): ForecastResponse => ({
@@ -74,7 +74,7 @@ export const forecastWith = (
   parts: {
     current: {
       status: "ok",
-      data: { ...RECORDED_CONDITIONS, ...conditions },
+      data: { ...RECORDED_CURRENT_WEATHER, ...currentWeather },
     },
     hourly: { status: "ok", data: hours },
     daily: { status: "ok", data: days },

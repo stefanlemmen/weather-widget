@@ -20,7 +20,7 @@ import {
 describe("locale", () => {
   const DUTCH = { ...NIEUWEGEIN, locale: "nl" };
 
-  it("shows Current conditions in Dutch, with Dutch numbers and Location time", async () => {
+  it("shows Current weather in Dutch, with Dutch numbers and Location time", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastWith()));
 
     renderWidget(DUTCH);

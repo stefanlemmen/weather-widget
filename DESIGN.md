@@ -221,7 +221,7 @@ Every number that lines up with others uses tabular figures (set on the Widget).
 
 - **Display** (800, `clamp(3.5rem, 26.5cqi, 6.5rem)`, line height 1, -0.04em): the current temperature only. It is 6.5rem from about 390px wide and scales down in a sidebar.
 - **Headline** (800, 1.75rem, 1.15, -0.01em): the Location's name. Long names wrap and balance, and never overflow.
-- **Condition** (500, 1.2rem): the Condition label in Current conditions; also the error state's heading (at 800).
+- **Condition** (500, 1.2rem): the Condition label in Current weather; also the error state's heading (at 800).
 - **Title** (800, 1rem): "Next 12 hours" and "Next 5 days", 12px above their list.
 - **Value** (600, 1.05rem): fact values, hourly temperatures and daily highs. Daily lows use the same size at 400 in ink muted.
 - **Body** (400, 1.0625rem, line height 1.4): the base, day names (at 600) and the picker's text field.
@@ -239,19 +239,19 @@ Every number that lines up with others uses tabular figures (set on the Widget).
 
 The Widget fills the width its Host page gives it. It is a size container (`container: weather / inline-size`), and three layouts follow from its own width. The smallest width it is designed for is 240px.
 
-| Width          | Name           | Current conditions                                                     | Hourly forecast          | Daily forecast                                   |
+| Width          | Name           | Current weather                                                        | Hourly forecast          | Daily forecast                                   |
 | -------------- | -------------- | ---------------------------------------------------------------------- | ------------------------ | ------------------------------------------------ |
 | under 20rem    | narrow sidebar | Temperature and icon side by side; facts as a list, one row per fact   | 4 per row, 3 rows        | No range bar (below 24rem); two-letter day names |
 | 20rem to 35rem | column         | Temperature left, icon and Condition right; facts in 3 centred columns | 6 per row, 2 rows        | Range bar from 24rem                             |
 | 35rem and up   | wide column    | Temperature, icon and Condition, then the facts as a list on the right | 6 per row; 12 from 45rem | Range bar capped at 14rem; full day names        |
 
-**Order, top to bottom.** The Location's name, Current conditions, Hourly forecast, Daily forecast, footer. The order never changes.
+**Order, top to bottom.** The Location's name, Current weather, Hourly forecast, Daily forecast, footer. The order never changes.
 
 **Composition.** The Host page chooses the Forecast parts. A part that is off is left out of the markup, and the next one moves up with the usual gap between Forecast parts. The name and the footer always show.
 
-**Spacing rhythm.** Forecast parts are `clamp(2rem, 12cqi, 3rem)` apart (`--_space-part`); the name and Current conditions sit closer, at 24px. The Widget has 24px block padding and `clamp(1rem, 5cqi, 1.75rem)` inline padding. Both lists indent 12px from their heading from 20rem up.
+**Spacing rhythm.** Forecast parts are `clamp(2rem, 12cqi, 3rem)` apart (`--_space-part`); the name and Current weather sit closer, at 24px. The Widget has 24px block padding and `clamp(1rem, 5cqi, 1.75rem)` inline padding. Both lists indent 12px from their heading from 20rem up.
 
-### Current conditions
+### Current weather
 
 The temperature fills the left column. The Condition icon sits to its right, up to 160px and bleeding slightly above and below its row, with the Condition label under it. The facts (Feels like, Wind, Chance of precipitation) follow:
 
@@ -285,7 +285,7 @@ The system is flat. There are no shadows. The Widget's edge comes from its groun
 
 ### Named rules
 
-**The One Box Rule.** Inside the Widget only the Daily forecast gets a filled background. Current conditions, hours, messages and the error state sit directly on the ground.
+**The One Box Rule.** Inside the Widget only the Daily forecast gets a filled background. Current weather, hours, messages and the error state sit directly on the ground.
 
 ## Shapes
 
@@ -299,7 +299,7 @@ The system is flat. There are no shadows. The Widget's edge comes from its groun
 
 ### Location's name
 
-An `h2` (headline). The Host page owns the `h1`, so the Widget's headings start at `h2`, and the Forecast parts use `h3`. Current conditions has a visually hidden `h3`.
+An `h2` (headline). The Host page owns the `h1`, so the Widget's headings start at `h2`, and the Forecast parts use `h3`. Current weather has a visually hidden `h3`.
 
 The name is the `location-name` attribute when set, otherwise the Proxy's name, otherwise the coordinates formatted in the locale, such as "52.03° N, 5.08° E". The coordinates use the same headline style and wrap like any long name.
 
@@ -344,7 +344,7 @@ Icons, the N/A mark and the range fill are painted with a mask over `background`
 
 ### Unavailable message
 
-When one Forecast part fails, its content is replaced by one line in ink soft: the N/A icon (18px high) and "Current conditions unavailable", "Hourly forecast unavailable" or "Daily forecast unavailable". The heading stays; the Daily forecast keeps its band.
+When one Forecast part fails, its content is replaced by one line in ink soft: the N/A icon (18px high) and "Current weather unavailable", "Hourly forecast unavailable" or "Daily forecast unavailable". The heading stays; the Daily forecast keeps its band.
 
 ### Error state
 
@@ -385,7 +385,7 @@ Dutch versions live in the message dictionary (#9).
 
 Meteocons 3 monochrome (MIT), drawn in `currentColor`. Each icon has an animated SVG (SMIL) and a static one; the static one shows under `prefers-reduced-motion: reduce`.
 
-Sizes follow their context: up to 160px in Current conditions, 60px for facts in the column layout (44px wide, 36px narrow), 40px for hours, 36px for days (32px narrow), and text height for N/A.
+Sizes follow their context: up to 160px in Current weather, 60px for facts in the column layout (44px wide, 36px narrow), 40px for hours, 36px for days (32px narrow), and text height for N/A.
 
 - **Wind:** the archived project's modified Meteocons compass: needle scaled 1.35 times, tail at 35% opacity. The needle points where the wind blows to, so a south-west wind points north-east. The text value ("24 km/h SW") carries the same information for screen readers.
 - **N/A:** the Meteocons not-available icon with its viewBox cropped to the lettering (`32 52 65 24`).
@@ -416,7 +416,7 @@ Unknown uses the full-size Meteocons `not-available` icon, so it sits in an hour
 
 ### Do
 
-- Do keep the current temperature the largest element and the first thing in Current conditions.
+- Do keep the current temperature the largest element and the first thing in Current weather.
 - Do switch layouts on the Widget's own width with container queries.
 - Do show exactly twelve hours, all visible, in rows of 4, 6 or 12.
 - Do use rain blue only for a chance of precipitation above 0%, and the accent only for links, buttons, focus and selection.
@@ -443,7 +443,7 @@ Build requirements the reference sheet can't show, for #6 to #12.
 - **Icons:** `@meteocons/svg` (animated) and `@meteocons/svg-static` (static), both `3.0.0-next.10`, MIT, no install scripts. That is a pre-release, published 2026-04-12; the only stable release (`0.1.0`) predates the monochrome set. The owner approved both at this pre-release as dependencies for #10; add them with `--save-exact`. Inline the SVG markup so `currentColor` applies, and pick the static or animated variant from `matchMedia("(prefers-reduced-motion: reduce)")`, listening for changes. The reference sheet uses CSS masks instead, which only works over HTTP.
 - **Wind direction:** the compass needle sits in a `rotate(0 64 64)` group, pointing north-east at 0 degrees. Rotate it by the wind direction plus 135 degrees, so a south-west wind (225) points north-east and every needle points where the wind blows to. Drop the needle's sway animation under reduced motion.
 - **Minus sign:** `Intl.NumberFormat` outputs a hyphen-minus, so replace it with U+2212 when formatting (#9).
-- **Accessible names:** hour and day icons carry the Condition as their accessible name. Icons next to a visible label (Current conditions, facts, N/A) are hidden. "chance of precipitation", "low" and "high" are visually hidden prefixes, and temperatures and wind are announced in full ("12 degrees Celsius", "24 kilometres per hour from the south-west").
+- **Accessible names:** hour and day icons carry the Condition as their accessible name. Icons next to a visible label (Current weather, facts, N/A) are hidden. "chance of precipitation", "low" and "high" are visually hidden prefixes, and temperatures and wind are announced in full ("12 degrees Celsius", "24 kilometres per hour from the south-west").
 - **Day names:** render the three lengths from `Intl.DateTimeFormat` (the first two letters of `weekday: "short"`, `"short"` and `"long"`) and show one per width with container queries. Screen readers get the full name as visually hidden text, because an `abbr` title isn't read out reliably. The reference sheet hides letters of one word instead, which only works because every English short name is the start of the full one.
 - **Hour row lines:** select the rows after the first with `:nth-child` per column count (`n + 5` for 4 columns, `n + 7` for 6), because a selector can't read the column count. At 12 columns there is one row and no line.
 - **Skeleton:** render the loading state from the same template as the Forecast, with placeholder values wrapped in bones, so the two can't drift apart in size.

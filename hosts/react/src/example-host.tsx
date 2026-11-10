@@ -29,7 +29,7 @@ const UNITS = [
   { value: "imperial", label: "Imperial" },
 ];
 const FORECAST_PARTS = [
-  { value: "current", label: "Current conditions" },
+  { value: "current", label: "Current weather" },
   { value: "hourly", label: "Hourly forecast" },
   { value: "daily", label: "Daily forecast" },
 ];

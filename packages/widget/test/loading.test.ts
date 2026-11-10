@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import {
   NIEUWEGEIN,
-  RECORDED_CONDITIONS,
+  RECORDED_CURRENT_WEATHER,
   RECORDED_AT,
   fullForecast,
   forecastWithTemperature,
@@ -203,7 +203,7 @@ describe("loading", () => {
           ...failing.parts,
           current: {
             status: "ok",
-            data: { ...RECORDED_CONDITIONS, temperatureCelsius: 15 },
+            data: { ...RECORDED_CURRENT_WEATHER, temperatureCelsius: 15 },
           },
         },
       };

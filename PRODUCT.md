@@ -16,7 +16,7 @@ A reviewer reads the repository and the Example hosts. The project is an assessm
 
 ## Product Purpose
 
-A Widget that shows the Forecast for one Location: Current conditions first, then the Hourly forecast, then the Daily forecast. Success means a visitor reads the current temperature at a glance, spots when the weather turns and compares the coming days, on any device and with any assistive technology. For the Host page developer, success means dropping the Widget into any page without building a weather integration.
+A Widget that shows the Forecast for one Location: Current weather first, then the Hourly forecast, then the Daily forecast. Success means a visitor reads the current temperature at a glance, spots when the weather turns and compares the coming days, on any device and with any assistive technology. For the Host page developer, success means dropping the Widget into any page without building a weather integration.
 
 ## Positioning
 
@@ -31,7 +31,7 @@ The Widget is a framework-agnostic web component, so the same element works in p
 
 ## Capabilities and Constraints
 
-- Current conditions: Condition, temperature (the most prominent number), feels-like temperature, wind speed and direction, chance of precipitation for the coming hour.
+- Current weather: Condition, temperature (the most prominent number), feels-like temperature, wind speed and direction, chance of precipitation for the coming hour.
 - Hourly forecast: time, Condition, temperature and chance of precipitation per hour.
 - Daily forecast: 5 days with day name, Condition, high, low and chance of precipitation.
 - The Widget names its Location and shows when the Forecast was last updated, with the OpenWeather credit as a visible link.
@@ -53,7 +53,7 @@ The Widget is a framework-agnostic web component, so the same element works in p
 
 ## Product Principles
 
-1. Current conditions come first, and the current temperature is the first thing a visitor reads.
+1. Current weather comes first, and the current temperature is the first thing a visitor reads.
 2. A failure removes only the part that failed; the rest of the Forecast stays on screen.
 3. Text carries the meaning: a visible label, or alt text where an hour or day shows only an icon. Values are announced in full.
 4. Every Widget is independent: its own Location, configuration, state and layout.

@@ -12,7 +12,7 @@ import {
 } from "./support.ts";
 
 describe("<weather-widget>", () => {
-  describe("Current conditions", () => {
+  describe("Current weather", () => {
     beforeEach(() => {
       fakeProxy.mockImplementation(() => respondWith(forecastWith()));
     });
@@ -46,7 +46,7 @@ describe("<weather-widget>", () => {
       ).toHaveTextContent("85%");
     });
 
-    it("shows when the Weather provider observed them, in Location time", async () => {
+    it("shows when the Weather provider observed it, in Location time", async () => {
       renderWidget(NIEUWEGEIN);
 
       const updated = shownMessage("Updated at");

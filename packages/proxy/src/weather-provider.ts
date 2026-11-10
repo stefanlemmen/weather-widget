@@ -1,5 +1,5 @@
 import {
-  CurrentConditionsSchema,
+  CurrentWeatherSchema,
   DAY,
   NIGHT,
   DailyForecastSchema,
@@ -72,7 +72,7 @@ const CurrentResponseSchema = v.pipe(
   }),
   v.transform(({ timezone, data: [now] }) => ({
     timeZone: timezone,
-    conditions: {
+    currentWeather: {
       ...now.weather,
       temperatureCelsius: now.temp,
       feelsLikeCelsius: now.feels_like,
@@ -83,7 +83,7 @@ const CurrentResponseSchema = v.pipe(
   })),
   v.object({
     timeZone: v.string(),
-    conditions: v.omit(CurrentConditionsSchema, ["precipitationChance"]),
+    currentWeather: v.omit(CurrentWeatherSchema, ["precipitationChance"]),
   }),
 );
 
@@ -244,8 +244,8 @@ const forecastFrom = (
       },
       parts: {
         ...(current && {
-          current: partFrom(current, ({ conditions }) => ({
-            ...conditions,
+          current: partFrom(current, ({ currentWeather }) => ({
+            ...currentWeather,
             precipitationChance: comingHourPrecipitationChance,
           })),
         }),

@@ -295,7 +295,7 @@ describe("layout by the Widget's own width", () => {
     },
   );
 
-  describe("Current conditions", () => {
+  describe("Current weather", () => {
     it("puts the facts in three columns under the temperature in a column", async () => {
       const widget = await renderAt(COLUMN);
 

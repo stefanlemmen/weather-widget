@@ -1,6 +1,6 @@
 # Weather Widget
 
-`<weather-widget>` is a web component that shows the weather forecast for one Location: Current conditions first, then the Hourly forecast, then the Daily forecast for the next 5 days. Any Host page can embed it, in any framework, as often as it likes. An optional `<weather-location-picker>` lets the visitor choose a Location by name or from their device.
+`<weather-widget>` is a web component that shows the weather forecast for one Location: Current weather first, then the Hourly forecast, then the Daily forecast for the next 5 days. Any Host page can embed it, in any framework, as often as it likes. An optional `<weather-location-picker>` lets the visitor choose a Location by name or from their device.
 
 See it running at <https://weather-widget-ruby-delta.vercel.app/>, which links to the three Example hosts: plain HTML, React and Angular.
 
@@ -39,7 +39,7 @@ The repository is one pnpm workspace:
 - The Host page owns the Location ([ADR 0002](docs/adr/0002-the-host-page-owns-the-location.md)). The Widget has no search box, because on a page with several Widgets a search box in each would repeat the same control. The Location picker is its own package: it emits a `location-select` event and the Host page decides which Widget gets the Location. A page without a picker never loads its code.
 - Our build writes Vercel's Build Output ([ADR 0003](docs/adr/0003-our-build-writes-the-vercel-build-output.md)). One Vercel project serves the landing page, the Example hosts, the standalone modules and the Proxy from one domain, so every Example host is same-origin with the Proxy.
 - Names for coordinates come from OpenWeather ([ADR 0004](docs/adr/0004-names-for-coordinates-come-from-the-weather-provider.md)), so the Widget names its Location even when it only gets coordinates. When that lookup fails, it shows the coordinates.
-- Each Forecast part loads or fails on its own. If the Hourly forecast fails, the Widget still shows the Current conditions and the Daily forecast, with a short message where the Hourly forecast would be. Only when nothing loads does it show an error with a "Try again" button.
+- Each Forecast part loads or fails on its own. If the Hourly forecast fails, the Widget still shows the Current weather and the Daily forecast, with a short message where the Hourly forecast would be. Only when nothing loads does it show an error with a "Try again" button.
 
 The visual design and the theming rules are in [DESIGN.md](DESIGN.md), the audience and product principles in [PRODUCT.md](PRODUCT.md).
 

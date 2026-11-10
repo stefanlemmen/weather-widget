@@ -1,7 +1,7 @@
 import {
   DAY,
   FORECAST_PARTS,
-  type CurrentConditions,
+  type CurrentWeather,
   type DailyForecast,
   type ForecastPart,
   type HourlyForecast,
@@ -72,10 +72,10 @@ const shownOrUnavailable = <TData>(
         ${notAvailableIcon()}${format.messages.partUnavailable[part]}
       </p>`;
 
-const currentConditionsDetails = (
+const currentWeatherDetails = (
   format: Formatter,
   motion: Motion,
-  current: CurrentConditions,
+  current: CurrentWeather,
 ) =>
   html`<dl class="facts">
     <div class="fact">
@@ -121,31 +121,31 @@ const currentConditionsDetails = (
     }
   </dl>`;
 
-const currentConditions = (
+const currentWeather = (
   { format, motion }: ViewContext,
-  current: Result<CurrentConditions>,
+  current: Result<CurrentWeather>,
 ) =>
   html`<section class="current" aria-labelledby=${CURRENT_HEADING_ID}>
     <h3 class="visually-hidden" id=${CURRENT_HEADING_ID}>
-      ${format.messages.currentConditions}
+      ${format.messages.currentWeather}
     </h3>
     ${shownOrUnavailable(
       format,
       "current",
       current,
-      (conditions) =>
+      (weather) =>
         html`<p class="temperature">
-            ${spoken(format.temperature(conditions.temperatureCelsius))}
+            ${spoken(format.temperature(weather.temperatureCelsius))}
           </p>
           <p class="condition">
             ${decorativeConditionIcon({
-              ...conditions,
+              ...weather,
               motion,
               placement: "current",
             })}
-            <span>${format.messages.conditions[conditions.condition]}</span>
+            <span>${format.messages.conditions[weather.condition]}</span>
           </p>
-          ${currentConditionsDetails(format, motion, conditions)}`,
+          ${currentWeatherDetails(format, motion, weather)}`,
     )}
   </section>`;
 
@@ -303,7 +303,7 @@ export const forecastView = (
   const { current, hourly, daily, location } = forecast;
   const now = new Date();
   return html`${locationNameHeading(name)}
-  ${current ? currentConditions(context, current) : nothing}
+  ${current ? currentWeather(context, current) : nothing}
   ${hourly ? hourlyForecast(context, hourly, location, now) : nothing}
   ${daily ? dailyForecast(context, daily, location, now) : nothing}
   ${footer(context.format, observedIn(forecast))}`;

@@ -808,7 +808,7 @@ describe("day or night", () => {
   );
 
   it.each(AROUND_SUNRISE_AND_SUNSET)(
-    "takes Current conditions observed %s as %s from the Weather provider's icon",
+    "takes Current weather observed %s as %s from the Weather provider's icon",
     async (_, dt, icon, daylight) => {
       const [now] = RECORDED_RESPONSES.current.data;
       const { current } = await forecastAnswering(CURRENT_PATH, {

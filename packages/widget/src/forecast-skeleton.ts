@@ -1,6 +1,6 @@
 import {
   DAY,
-  type CurrentConditions,
+  type CurrentWeather,
   type Day,
   type ForecastPart,
   type Hour,
@@ -18,7 +18,7 @@ const PLACEHOLDER_LOCATION: Location = {
   timeZone: "UTC",
 };
 
-const placeholderConditions = (now: Date): CurrentConditions => ({
+const placeholderCurrentWeather = (now: Date): CurrentWeather => ({
   condition: "partly-cloudy",
   daylight: DAY,
   temperatureCelsius: 12,
@@ -61,7 +61,7 @@ export const placeholderForecast = (
   coordinates: { latitude: 0, longitude: 0 },
   location: PLACEHOLDER_LOCATION,
   ...(parts.includes("current") && {
-    current: { status: "ok", data: placeholderConditions(now) },
+    current: { status: "ok", data: placeholderCurrentWeather(now) },
   }),
   ...(parts.includes("hourly") && {
     hourly: { status: "ok", data: placeholderHours(now) },

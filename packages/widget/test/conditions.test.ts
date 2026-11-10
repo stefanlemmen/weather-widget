@@ -145,7 +145,7 @@ describe("Conditions", () => {
     expect(iconsIn(dailyForecast())[0]?.name).toBe("partly-cloudy-day");
   });
 
-  it("labels the Condition of Current conditions in text, beside an icon screen readers skip", async () => {
+  it("labels the Condition of Current weather in text, beside an icon screen readers skip", async () => {
     fakeProxy.mockImplementation(() =>
       respondWith(
         forecastWith({ condition: "partly-cloudy", daylight: "night" }),

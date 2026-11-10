@@ -113,7 +113,7 @@ describe("Forecast parts", () => {
   });
 
   it.each([
-    ["current", "Current conditions unavailable", "hourly,daily"],
+    ["current", "Current weather unavailable", "hourly,daily"],
     ["hourly", "Hourly forecast unavailable", "current,daily"],
     ["daily", "Daily forecast unavailable", "current,hourly"],
   ] as const)(
@@ -161,7 +161,7 @@ describe("Forecast parts", () => {
       );
   });
 
-  it("announces the Forecast without an update time when Current conditions failed", async () => {
+  it("announces the Forecast without an update time when Current weather failed", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastFailing("current")));
 
     renderWidget(NIEUWEGEIN);
@@ -169,7 +169,7 @@ describe("Forecast parts", () => {
     await expect
       .element(announcement())
       .toHaveTextContent(
-        /^Forecast for Nieuwegein\. Current conditions unavailable$/,
+        /^Forecast for Nieuwegein\. Current weather unavailable$/,
       );
   });
 
@@ -188,7 +188,7 @@ describe("Forecast parts", () => {
       .toHaveTextContent("Forecast unavailable");
   });
 
-  it("credits OpenWeather without Current conditions, with no update time", async () => {
+  it("credits OpenWeather without Current weather, with no update time", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
     renderWidget({ ...NIEUWEGEIN, parts: "daily" });

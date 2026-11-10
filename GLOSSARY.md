@@ -43,16 +43,16 @@ _Avoid_: Local time, Location's local time, visitor time
 ## Forecast
 
 **Forecast**:
-The weather outlook for one Location: its Current conditions, Hourly forecast and Daily forecast together.
+The weather outlook for one Location: its Current weather, Hourly forecast and Daily forecast together.
 _Avoid_: Weather data, report
 
 **Forecast part**:
-One of the three parts of a Forecast: Current conditions, Hourly forecast or Daily forecast. The Host page chooses which ones the Widget shows, and each one loads or fails on its own.
+One of the three parts of a Forecast: Current weather, Hourly forecast or Daily forecast. The Host page chooses which ones the Widget shows, and each one loads or fails on its own.
 _Avoid_: Section, block, module
 
-**Current conditions**:
+**Current weather**:
 The weather at the Location right now.
-_Avoid_: Now, realtime, current weather
+_Avoid_: Now, realtime, current conditions
 
 **Hourly forecast**:
 The expected weather per hour for the next 12 hours.
@@ -63,7 +63,7 @@ The expected weather per day for the next 5 days: Condition, high, low and chanc
 _Avoid_: Week forecast, daily data
 
 **Condition**:
-The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon. Current conditions also show its name; elsewhere only screen readers read it.
+The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon. Current weather shows its name; elsewhere only screen readers read it.
 _Avoid_: Weather type, weather code, status
 
 **Daylight**:

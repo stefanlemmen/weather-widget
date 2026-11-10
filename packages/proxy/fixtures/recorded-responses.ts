@@ -1,4 +1,4 @@
-import recordedCurrentConditions from "./current-nieuwegein.json" with { type: "json" };
+import recordedCurrentWeather from "./current-nieuwegein.json" with { type: "json" };
 import recordedDailyForecast from "./daily-nieuwegein.json" with { type: "json" };
 import recordedHourlyForecast from "./hourly-nieuwegein.json" with { type: "json" };
 import recordedReverseGeocoding from "./reverse-nieuwegein.json" with { type: "json" };
@@ -9,7 +9,7 @@ import { SEARCH_CALL } from "../src/search-provider.ts";
 import { WEATHER_PROVIDER_CALLS } from "../src/weather-provider.ts";
 
 export const RECORDED_RESPONSES = {
-  current: recordedCurrentConditions,
+  current: recordedCurrentWeather,
   hourly: recordedHourlyForecast,
   daily: recordedDailyForecast,
   reverseGeocoding: recordedReverseGeocoding,

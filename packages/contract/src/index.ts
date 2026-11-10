@@ -94,7 +94,7 @@ const DaylightSchema = v.picklist(DAYLIGHTS);
 
 const ChanceSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
-export const CurrentConditionsSchema = v.object({
+export const CurrentWeatherSchema = v.object({
   condition: ConditionSchema,
   daylight: DaylightSchema,
   temperatureCelsius: v.number(),
@@ -105,7 +105,7 @@ export const CurrentConditionsSchema = v.object({
   observedAt: v.pipe(v.string(), v.isoTimestamp()),
 });
 
-export type CurrentConditions = v.InferOutput<typeof CurrentConditionsSchema>;
+export type CurrentWeather = v.InferOutput<typeof CurrentWeatherSchema>;
 
 export const HourSchema = v.object({
   startsAt: v.pipe(v.string(), v.isoTimestamp()),
@@ -160,7 +160,7 @@ export const FAILED = { status: "error" } as const;
 export const ForecastResponseSchema = v.object({
   location: LocationSchema,
   parts: v.object({
-    current: v.optional(resultSchema(CurrentConditionsSchema)),
+    current: v.optional(resultSchema(CurrentWeatherSchema)),
     hourly: v.optional(resultSchema(HourlyForecastSchema)),
     daily: v.optional(resultSchema(DailyForecastSchema)),
   }),
