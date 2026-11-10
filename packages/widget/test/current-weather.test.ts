@@ -56,7 +56,7 @@ describe("<weather-widget>", () => {
       );
     });
 
-    it("credits OpenWeather with the whole credit as a visible link", async () => {
+    it("credits OpenWeather with the whole Credit as a visible link", async () => {
       renderWidget(NIEUWEGEIN);
 
       await expect

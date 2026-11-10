@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { page } from "vitest/browser";
 import { renderPicker } from "./support.ts";
 
-describe("the Location picker's credit", () => {
+describe("the Location picker's Credit", () => {
   it.each([
     ["Open-Meteo", "https://open-meteo.com/"],
     ["GeoNames", "https://www.geonames.org/"],

@@ -117,7 +117,7 @@ describe("Forecast parts", () => {
     ["hourly", "Hourly forecast unavailable", "current,daily"],
     ["daily", "Daily forecast unavailable", "current,hourly"],
   ] as const)(
-    "replaces only a failed %s part with a short message",
+    "replaces only a failed %s part with an Unavailable message",
     async (failed, message, stillShown) => {
       fakeProxy.mockImplementation(() => respondWith(forecastFailing(failed)));
 
@@ -161,7 +161,7 @@ describe("Forecast parts", () => {
       );
   });
 
-  it("announces the Forecast without an update time when Current weather failed", async () => {
+  it("announces the Forecast without an Update time when Current weather failed", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastFailing("current")));
 
     renderWidget(NIEUWEGEIN);
@@ -188,7 +188,7 @@ describe("Forecast parts", () => {
       .toHaveTextContent("Forecast unavailable");
   });
 
-  it("credits OpenWeather without Current weather, with no update time", async () => {
+  it("credits OpenWeather without Current weather, with no Update time", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
     renderWidget({ ...NIEUWEGEIN, parts: "daily" });

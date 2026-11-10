@@ -309,7 +309,7 @@ export const forecastView = (
   ${footer(context.format, observedIn(forecast))}`;
 };
 
-export const errorView = (
+export const errorStateView = (
   format: Formatter,
   name: Spoken | string | undefined,
   tryAgain?: TemplateResult,

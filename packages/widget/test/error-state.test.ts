@@ -25,7 +25,7 @@ const failing = () => {
 
 const tryAgain = () => page.getByRole("button", { name: "Try again" });
 
-describe("the error state", () => {
+describe("the Error state", () => {
   it("keeps the name the Host page set in location-name", async () => {
     failing();
 
@@ -108,7 +108,7 @@ describe("the error state", () => {
   });
 });
 
-describe("the unavailable line", () => {
+describe("the Unavailable message", () => {
   it("draws the N/A mark before the message, hidden from screen readers", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastFailing("hourly")));
 

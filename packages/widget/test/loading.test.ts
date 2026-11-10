@@ -230,7 +230,7 @@ describe("loading", () => {
       expect(fakeProxy).toHaveBeenCalledTimes(2);
     });
 
-    it("keeps the Forecast and its update time when the refresh fails, and tries again next time", async () => {
+    it("keeps the Forecast and its Update time when the refresh fails, and tries again next time", async () => {
       await showingFiveDegrees();
       fakeProxy.mockImplementationOnce(() => respondWith(unavailable, 503));
 
