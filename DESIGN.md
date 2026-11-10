@@ -133,7 +133,7 @@ The reference sheet `docs/design/index.html` draws every state below with `docs/
 
 **Creative North Star: "The Window Glance"**
 
-People read the Widget the way they glance out of a window: how warm it is, whether it rains, when it turns. The current temperature is the largest thing in it, and everything else sits under it in reading order. There are no tiles, cards or gauges inside the Widget. The ground is a cool blue-grey and the text a dark ink (pale ink in dark mode). Only two hues carry meaning: blue for chance of rain, green for anything you can press.
+People read the Widget the way they glance out of a window: how warm it is, whether it rains, when it turns. The current temperature is the largest thing in it, and everything else sits under it in reading order. There are no tiles, cards or gauges inside the Widget. The ground is a cool blue-grey and the text a dark ink (pale ink in dark mode). Only two hues carry meaning: blue for chance of precipitation, green for anything you can press.
 
 The design comes from the archived Astro project, where the Widget was a whole page. Here it is an element on someone else's page, which changes four things:
 
@@ -146,7 +146,7 @@ The design comes from the archived Astro project, where the Widget was a whole p
 
 - A 6.5rem extra-bold temperature as the first thing read, scaled down with the Widget's width.
 - Lexend throughout, with tabular figures for every number in a column.
-- Blue only for chance of rain, green only for interaction.
+- Blue only for chance of precipitation, green only for interaction.
 - One tinted band (the Daily forecast); nothing else inside the Widget gets a box or a shadow.
 - Monochrome Meteocons drawn in the text color, sized to the text they sit beside.
 - Twelve hours, all visible, never scrolled.
@@ -205,7 +205,7 @@ Other pairings:
 
 ### Named rules
 
-**The Two Hues Rule.** Blue means chance of rain, green means you can press it. Neither appears anywhere else, and no third accent is added. A chance of 0% is drawn in ink muted at 400, so blue only appears where rain is possible.
+**The Two Hues Rule.** Blue means chance of precipitation, green means you can press it. Neither appears anywhere else, and no third accent is added. A chance of 0% is drawn in ink muted at 400, so blue only appears where precipitation is possible.
 
 **The Ink Icon Rule.** Icons are drawn in the text color of the place they sit (`currentColor`), so a theme or scheme change carries through without a second icon set.
 
@@ -226,7 +226,7 @@ Every number that lines up with others uses tabular figures (set on the Widget).
 - **Value** (600, 1.05rem): fact values, hourly temperatures and daily highs. Daily lows use the same size at 400 in ink muted.
 - **Body** (400, 1.0625rem, line height 1.4): the base, day names (at 600) and the picker's text field.
 - **Button** (600, 1rem, line height 1.2): buttons in the Widget and the picker.
-- **Label** (400, 0.85rem): fact labels, hour times, chance of rain (600, rain blue), picker messages and result context.
+- **Label** (400, 0.85rem): fact labels, hour times, chance of precipitation (600, rain blue), picker messages and result context.
 - **Footer** (400, 0.8rem, line height 1.6): the update time and the credits.
 
 ### Named rules
@@ -261,13 +261,13 @@ The temperature fills the left column. The Condition icon sits to its right, up 
 
 ### Hourly forecast
 
-Twelve hours, all visible, in a grid of equal columns: 4, 6 or 12 per row, always a divisor of 12, so no row is ragged. Each hour is a stack of time, 40px icon, temperature and chance of rain with 6px gaps. When the hours take more than one row, a 1px track line separates the rows, with 12px above and below it, the same as the gap under the title. There is no horizontal scrolling and no hidden overflow. The Weather provider's remaining hours are not shown.
+Twelve hours, all visible, in a grid of equal columns: 4, 6 or 12 per row, always a divisor of 12, so no row is ragged. Each hour is a stack of time, 40px icon, temperature and chance of precipitation with 6px gaps. When the hours take more than one row, a 1px track line separates the rows, with 12px above and below it, the same as the gap under the title. There is no horizontal scrolling and no hidden overflow. The Weather provider's remaining hours are not shown.
 
 ### Daily forecast
 
 Five rows inside the tinted band, which runs to the Widget's edges (it cancels the inline padding and puts it back as its own padding). The list sets the columns and each row uses them as a subgrid, so the columns line up across the five days and the name and temperature columns are as wide as their widest value:
 
-- **Column:** day, icon (36px), low (right-aligned), range bar (flexible), high (right-aligned), chance of rain (right-aligned), with 10px gaps and 8px vertical padding. The range bar takes the spare width.
+- **Column:** day, icon (36px), low (right-aligned), range bar (flexible), high (right-aligned), chance of precipitation (right-aligned), with 10px gaps and 8px vertical padding. The range bar takes the spare width.
 - **Wide column:** day (at least 3.5rem, takes the spare width), icon (36px), low (2.5rem), range bar (4rem to 14rem), high (2.5rem), chance (2.75rem), so lows and highs don't drift apart. The list is at most 40rem wide, so in a very wide Widget a day's values stay near its name; the band still runs to the edges.
 - **Below 24rem:** day, icon (32px), low, high and chance, with the spare width spread evenly over the gaps (at least 6px). The range bar is dropped, and lows and highs drop to 1rem, so "−12°" and "104°" still fit at 240px. The Daily forecast has its own breakpoint because at 20rem the range bar would be only a few pixels wide.
 
@@ -313,11 +313,11 @@ Feels like (thermometer), Wind (compass) and Chance of precipitation (raindrop):
 
 ### Hour
 
-Time (ink muted, label size, proportional figures, in the Location's local time), a 40px Condition icon, temperature (value), chance of rain.
+Time (ink muted, label size, proportional figures, in the Location's local time), a 40px Condition icon, temperature (value), chance of precipitation.
 
 ### Day
 
-Day name (600, without the dotted underline) in three lengths that follow the Widget's width: two letters below 20rem ("Mo"), the short name up to 35rem ("Mon"), and the full name from 35rem ("Monday"). The two shorter forms sit in an `abbr` with the full name. Then a 36px Condition icon, low (ink muted), range bar, high (value), chance of rain.
+Day name (600, without the dotted underline) in three lengths that follow the Widget's width: two letters below 20rem ("Mo"), the short name up to 35rem ("Mon"), and the full name from 35rem ("Monday"). The two shorter forms sit in an `abbr` with the full name. Then a 36px Condition icon, low (ink muted), range bar, high (value), chance of precipitation.
 
 ### Footer
 

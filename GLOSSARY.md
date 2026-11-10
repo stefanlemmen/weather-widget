@@ -12,6 +12,10 @@ _Avoid_: App, page, dashboard, card
 A page that embeds one or more Widgets and gives each one its configuration (Location, locale, units, Forecast parts).
 _Avoid_: Parent, container, demo app
 
+**Visitor**:
+The person who reads a Widget or uses a Location picker on a Host page.
+_Avoid_: User, customer
+
 **Example host**:
 A Host page we build ourselves in one framework to show how Widgets are embedded there.
 _Avoid_: Demo app, showcase, playground
@@ -20,8 +24,12 @@ _Avoid_: Demo app, showcase, playground
 A form on an Example host that changes one Widget: its locale, units and Forecast parts, its theme and color scheme, and the width it gets.
 _Avoid_: Playground, config panel, controls
 
+**Theme**:
+The Host page's own font, colors and corner radius for a Widget and its Location picker.
+_Avoid_: Skin, branding, style
+
 **Location**:
-The place a Forecast is for. It has coordinates, a name and a time zone, and its Host page always hands it to the Widget.
+The place a Forecast is for, with coordinates, a name and a time zone. The Host page gives the coordinates and may give the name; the Weather provider supplies the rest.
 _Avoid_: City, place, position
 
 **Location picker**:
@@ -39,7 +47,7 @@ The weather outlook for one Location: its Current conditions, Hourly forecast an
 _Avoid_: Weather data, report
 
 **Forecast part**:
-One of the three parts of a Forecast: Current conditions, Hourly forecast or Daily forecast. Each one loads or fails on its own, and the Host page chooses which ones the Widget shows.
+One of the three parts of a Forecast: Current conditions, Hourly forecast or Daily forecast. The Host page chooses which ones the Widget shows, and each one loads or fails on its own.
 _Avoid_: Section, block, module
 
 **Current conditions**:
@@ -47,15 +55,15 @@ The weather at the Location right now.
 _Avoid_: Now, realtime, current weather
 
 **Hourly forecast**:
-The expected weather per hour for roughly the next 12 to 24 hours.
+The expected weather per hour for the next 12 hours.
 _Avoid_: Timeline, hourly data
 
 **Daily forecast**:
-The expected weather per day for the next 5 days, summarised as high, low, condition and precipitation chance.
+The expected weather per day for the next 5 days: Condition, high, low and chance of precipitation.
 _Avoid_: Week forecast, daily data
 
 **Condition**:
-The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon. Current conditions also show its name. In the Hourly and Daily forecast the icon stands alone and screen readers read its name.
+The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon. Current conditions also show its name; elsewhere only screen readers read it.
 _Avoid_: Weather type, weather code, status
 
 **Daylight**:
@@ -65,7 +73,7 @@ _Avoid_: Time of day, day/night flag, is day
 ## Services
 
 **Weather provider**:
-The external weather service the Forecast comes from.
+The external weather service the Forecast comes from, which also names a Location from its coordinates.
 _Avoid_: Provider, API, source, backend
 
 **Search provider**:
@@ -73,5 +81,5 @@ The external service that finds a Location by the name a visitor types.
 _Avoid_: Geocoder, places API
 
 **Proxy**:
-Our own server that Widgets ask for Forecasts, and the only party that talks to the Weather provider and the Search provider.
+Our own server that Widgets and the Location picker call, and the only party that talks to the Weather provider and the Search provider.
 _Avoid_: API, backend, BFF
