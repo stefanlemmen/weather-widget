@@ -27,15 +27,15 @@ The Widget is a framework-agnostic web component, so the same element works in p
 - The Host page owns the Location (ADR 0002). The Widget has no Location UI. The Location picker is a package of its own: it emits the chosen Location, and the Host page decides which Widget receives it.
 - Each Widget lives in its own Shadow DOM, inside a Host page whose fonts, colors and width we don't control. Its layout follows its own width, from a narrow sidebar to a wide column.
 - Locales are English (`en`, default) and Dutch (`nl`); units are metric (default) or imperial. Hours and days follow Location time.
-- Forecasts are cached for 10 minutes, and for up to an hour when the Weather provider fails, so the "Updated at" time can be that old.
+- Forecasts are cached for 10 minutes, and for up to an hour when the Weather provider fails, so the Update time can be that old.
 
 ## Capabilities and Constraints
 
 - Current weather: Condition, temperature (the most prominent number), feels-like temperature, wind speed and direction, chance of precipitation for the coming hour.
 - Hourly forecast: time, Condition, temperature and chance of precipitation per hour.
 - Daily forecast: 5 days with day name, Condition, high, low and chance of precipitation.
-- The Widget names its Location and shows when the Forecast was last updated, with the OpenWeather credit as a visible link.
-- A skeleton of the final size shows while loading. A failed Forecast part is replaced by a short message; when nothing loads, an error state with a "Try again" button replaces the Forecast.
+- The Widget names its Location and shows its Update time and the Weather provider's Credit as a visible link.
+- A skeleton of the final size shows while loading. An Unavailable message replaces a failed Forecast part; when nothing loads, the Error state with a "Try again" button replaces the Forecast.
 - The Location picker searches by name (up to 5 results) and offers "Use my location" when the Geolocation API exists. Its errors appear as short inline messages, announced to screen readers. It credits Open-Meteo and GeoNames (CC BY 4.0).
 - Theming is limited to the documented CSS custom properties.
 - Out of scope: server rendering, Widget events, autocomplete, a Location UI inside the Widget, locales beyond `en` and `nl`, a units toggle, weather alerts, charts, PWA and offline support.

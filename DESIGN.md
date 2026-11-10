@@ -221,13 +221,13 @@ Every number that lines up with others uses tabular figures (set on the Widget).
 
 - **Display** (800, `clamp(3.5rem, 26.5cqi, 6.5rem)`, line height 1, -0.04em): the current temperature only. It is 6.5rem from about 390px wide and scales down in a sidebar.
 - **Headline** (800, 1.75rem, 1.15, -0.01em): the Location's name. Long names wrap and balance, and never overflow.
-- **Condition** (500, 1.2rem): the Condition label in Current weather; also the error state's heading (at 800).
+- **Condition** (500, 1.2rem): the Condition label in Current weather; also the Error state's heading (at 800).
 - **Title** (800, 1rem): "Next 12 hours" and "Next 5 days", 12px above their list.
 - **Value** (600, 1.05rem): fact values, hourly temperatures and daily highs. Daily lows use the same size at 400 in ink muted.
 - **Body** (400, 1.0625rem, line height 1.4): the base, day names (at 600) and the picker's text field.
 - **Button** (600, 1rem, line height 1.2): buttons in the Widget and the picker.
 - **Label** (400, 0.85rem): fact labels, hour times, chance of precipitation (600, rain blue), picker messages and result context.
-- **Footer** (400, 0.8rem, line height 1.6): the update time and the credits.
+- **Footer** (400, 0.8rem, line height 1.6): the Update time and the Credit.
 
 ### Named rules
 
@@ -285,7 +285,7 @@ The system is flat. There are no shadows. The Widget's edge comes from its groun
 
 ### Named rules
 
-**The One Box Rule.** Inside the Widget only the Daily forecast gets a filled background. Current weather, hours, messages and the error state sit directly on the ground.
+**The One Box Rule.** Inside the Widget only the Daily forecast gets a filled background. Current weather, hours, messages and the Error state sit directly on the ground.
 
 ## Shapes
 
@@ -325,7 +325,7 @@ Day name (600, without the dotted underline) in three lengths that follow the Wi
 
 ### Links
 
-Accent, 600, underlined (1px, 2px on hover) with a 3px offset. Used for credits.
+Accent, 600, underlined (1px, 2px on hover) with a 3px offset. Used for Credits.
 
 ### Buttons
 
@@ -348,7 +348,7 @@ When one Forecast part fails, its content is replaced by one line in ink soft: t
 
 ### Error state
 
-When every requested part fails, or the request itself fails, the name stays and the Forecast becomes a centred block with 24px block padding: the N/A icon (24px high), "Forecast unavailable" (800, condition size), one sentence in ink soft, and a secondary "Try again" button.
+When every requested part fails, or the request itself fails, the name stays and the Forecast becomes a centred block with 24px block padding: the N/A icon (24px high), "Forecast unavailable" (800, condition size), one sentence in ink soft, and a secondary "Try again" button. When the Host page gave missing or invalid coordinates, the sentence and the button are left out.
 
 ### Loading skeleton
 
@@ -361,7 +361,7 @@ The picker is its own element and uses the same tokens, theming properties and r
 1. A search form (`role="search"`): the visible label "Location" (600), then one row with a text field, a primary "Search" button and a secondary "Use my location" button. That last button is a 44px square showing only the Lucide `navigation` arrow. Its `aria-label` and `title` carry the name, so screen readers announce it and a mouse hover shows it. It renders only when the Geolocation API exists. While locating it is `aria-disabled="true"`, its cursor is `progress`, and the arrow pulses to 35% opacity (1.2s, alternate) under `prefers-reduced-motion: no-preference`. Below 20rem both buttons drop under the field, with Search filling the row next to the square.
 2. A `role="status"` message in ink soft at label size, hidden while empty.
 3. Up to 5 results as a list of full-width buttons: the name (600) over its region and country (ink muted, label size), separated by 1px track lines. Hover fills a row with the band color. Choosing one cancels a running search, clears the list and moves focus back to the text field.
-4. The credit: "Search by Open-Meteo, place names from GeoNames (CC BY 4.0)", with links.
+4. The Credit: "Search by Open-Meteo, place names from GeoNames (CC BY 4.0)", with links.
 
 The text field is 44px high with a 1.5px field-border outline, the body font (17px, so iOS doesn't zoom) and an accent caret. On focus its border turns accent and the focus ring sits 2px outside it.
 
@@ -423,7 +423,7 @@ Unknown uses the full-size Meteocons `not-available` icon, so it sits in an hour
 - Do keep skeleton bones as real placeholder text, so the loading state can't change size.
 - Do mix every secondary tone from ink and ground, so a theme keeps the hierarchy.
 - Do use tabular figures for numbers that align, and the minus sign (U+2212) for negative temperatures.
-- Do replace only the failed part with an unavailable line and keep every other part on screen.
+- Do replace only the failed part with an Unavailable message and keep every other part on screen.
 - Do give every focusable element the 2px accent outline with a 3px offset.
 
 ### Don't

@@ -79,7 +79,7 @@ The short message that takes the place of one Forecast part that failed.
 _Avoid_: Part error, empty state
 
 **Error state**:
-What the Widget shows instead of the Forecast when no Forecast part loads, with a Try again button.
+What the Widget shows instead of the Forecast when nothing loads. It offers Try again unless the Host page gave missing or invalid coordinates.
 _Avoid_: Error page, fallback
 
 ## Services
