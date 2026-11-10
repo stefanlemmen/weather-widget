@@ -166,7 +166,7 @@ describe("Conditions", () => {
     expect(page.getByRole("img").query()).toBeNull();
   });
 
-  it("animates the icons when the visitor has no motion preference", async () => {
+  it("animates the icons when the Visitor has no motion preference", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
     renderWidget(NIEUWEGEIN);
@@ -177,7 +177,7 @@ describe("Conditions", () => {
     );
   });
 
-  it("draws still icons when the visitor prefers reduced motion", async () => {
+  it("draws still icons when the Visitor prefers reduced motion", async () => {
     await commands.emulateMedia({ reducedMotion: "reduce" });
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
@@ -188,7 +188,7 @@ describe("Conditions", () => {
     expect(iconsIn(hourlyForecast())[0]?.name).toBe("rain");
   });
 
-  it("stops the icons when the visitor turns on reduced motion while the Forecast shows", async () => {
+  it("stops the icons when the Visitor turns on reduced motion while the Forecast shows", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
     const widget = renderWidget(NIEUWEGEIN);
     await expect.element(hourlyForecast()).toBeVisible();

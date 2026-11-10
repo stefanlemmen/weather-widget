@@ -1,6 +1,6 @@
 # Weather Widget
 
-`<weather-widget>` is a web component that shows the weather forecast for one Location: Current weather first, then the Hourly forecast, then the Daily forecast for the next 5 days. Any Host page can embed it, in any framework, as often as it likes. An optional `<weather-location-picker>` lets the visitor choose a Location by name or from their device.
+`<weather-widget>` is a web component that shows the weather forecast for one Location: Current weather first, then the Hourly forecast, then the Daily forecast for the next 5 days. Any Host page can embed it, in any framework, as often as it likes. An optional `<weather-location-picker>` lets the Visitor choose a Location by name or from their device.
 
 See it running at <https://weather-widget-ruby-delta.vercel.app/>, which links to the three Example hosts: plain HTML, React and Angular.
 
@@ -171,7 +171,7 @@ Every attribute has a property of the same meaning. Set either one.
 | `parts`         | `parts`        | space-separated list, default `current hourly daily` | The Forecast parts to show and fetch, from `current`, `hourly` and `daily`. They always appear in that order. Unknown names are ignored; a list with no known name shows all three |
 | `proxy-url`     | `proxyUrl`     | URL, default `/api`                                  | Where the Widget asks for Forecasts. A relative URL resolves against the page                                                                                                      |
 
-The Proxy rounds coordinates to 2 decimals (about 1 km) before it asks OpenWeather. Missing or invalid coordinates show a message instead of a Forecast. Hours and days are shown in Location time, not the visitor's own time.
+The Proxy rounds coordinates to 2 decimals (about 1 km) before it asks OpenWeather. Missing or invalid coordinates show a message instead of a Forecast. Hours and days are shown in Location time, not the Visitor's own time.
 
 The Widget emits no events. While it loads, it sets `aria-busy="true"` on itself and shows a skeleton of its final size.
 
@@ -184,7 +184,7 @@ The Widget emits no events. While it loads, it sets `aria-busy="true"` on itself
 
 | Event             | `detail`                                                        | When                                                                                                                                                        |
 | ----------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `location-select` | `{ latitude: number; longitude: number; name: string \| null }` | The visitor picks a search result, or uses their device's Location. `name` is `null` for the device's Location, whose coordinates are rounded to 2 decimals |
+| `location-select` | `{ latitude: number; longitude: number; name: string \| null }` | The Visitor picks a search result, or uses their device's Location. `name` is `null` for the device's Location, whose coordinates are rounded to 2 decimals |
 
 The event bubbles and crosses shadow roots (`composed`). "Use my location" only appears when the browser has the Geolocation API.
 

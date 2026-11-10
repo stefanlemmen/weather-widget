@@ -8,7 +8,7 @@ web
 
 ## Users
 
-A visitor who wants to know what the weather will do at one Location: is it raining now, will it rain in the next few hours, what are the coming days like. They may be on a phone with a slow connection, use a screen reader or keyboard only, zoom to 200%, prefer reduced motion, or read in a dark or light color scheme. Design decisions are made for this visitor first.
+A Visitor who wants to know what the weather will do at one Location: is it raining now, will it rain in the next few hours, what are the coming days like. They may be on a phone with a slow connection, use a screen reader or keyboard only, zoom to 200%, prefer reduced motion, or read in a dark or light color scheme. Design decisions are made for this Visitor first.
 
 A Host page developer embeds the Widget in a page built with any framework, as often as they like, and configures it through attributes: Location, locale, units and Forecast parts. They can adjust a small set of documented CSS custom properties to match their brand, and can add the optional Location picker.
 
@@ -16,7 +16,7 @@ A reviewer reads the repository and the Example hosts. The project is an assessm
 
 ## Product Purpose
 
-A Widget that shows the Forecast for one Location: Current weather first, then the Hourly forecast, then the Daily forecast. Success means a visitor reads the current temperature at a glance, spots when the weather turns and compares the coming days, on any device and with any assistive technology. For the Host page developer, success means dropping the Widget into any page without building a weather integration.
+A Widget that shows the Forecast for one Location: Current weather first, then the Hourly forecast, then the Daily forecast. Success means a Visitor reads the current temperature at a glance, spots when the weather turns and compares the coming days, on any device and with any assistive technology. For the Host page developer, success means dropping the Widget into any page without building a weather integration.
 
 ## Positioning
 
@@ -53,7 +53,7 @@ The Widget is a framework-agnostic web component, so the same element works in p
 
 ## Product Principles
 
-1. Current weather comes first, and the current temperature is the first thing a visitor reads.
+1. Current weather comes first, and the current temperature is the first thing a Visitor reads.
 2. A failure removes only the part that failed; the rest of the Forecast stays on screen.
 3. Text carries the meaning: a visible label, or alt text where an hour or day shows only an icon. Values are announced in full.
 4. Every Widget is independent: its own Location, configuration, state and layout.

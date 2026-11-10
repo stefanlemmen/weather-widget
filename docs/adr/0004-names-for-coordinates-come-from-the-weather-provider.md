@@ -5,7 +5,7 @@ The Widget names its Location even when the Host page gives only coordinates, so
 ## Considered Options
 
 - **A second geocoding service for reverse lookups**: another service with its own terms and limits, for a single lookup per Forecast.
-- **No name from the Proxy**: the Widget would show coordinates unless the Host page sets `location-name`, which reads poorly for a visitor using their device's Location.
+- **No name from the Proxy**: the Widget would show coordinates unless the Host page sets `location-name`, which reads poorly for a Visitor using their device's Location.
 
 ## Consequences
 

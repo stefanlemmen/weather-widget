@@ -756,7 +756,7 @@ describe("Conditions", () => {
   );
 });
 
-describe("day or night", () => {
+describe("Day or night", () => {
   const { sunrise, sunset } = RECORDED_RESPONSES.current.data[0] ?? {
     sunrise: 0,
     sunset: 0,

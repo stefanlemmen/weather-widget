@@ -94,7 +94,7 @@ describe("<weather-widget>", () => {
       .toBeVisible();
   });
 
-  it('fetches again when the visitor presses "Try again"', async () => {
+  it('fetches again when the Visitor presses "Try again"', async () => {
     fakeProxy
       .mockImplementationOnce(() => respondWith(unavailable, 503))
       .mockImplementationOnce(() => respondWith(forecastWithTemperature(11)));
@@ -194,7 +194,7 @@ describe("<weather-widget>", () => {
       expect(announcement().element().textContent.trim()).toBe("");
     });
 
-    it("stays where the visitor moved it while the Widget fetched", async () => {
+    it("stays where the Visitor moved it while the Widget fetched", async () => {
       const { widget, answer } = await retryingAfterFailure();
       const elsewhere = document.createElement("input");
       document.body.append(elsewhere);
@@ -219,7 +219,7 @@ describe("<weather-widget>", () => {
       expect(focusedIn(widget)).toBe(tryAgain);
     });
 
-    it("fetches only once when the visitor presses Try again while it fetches", async () => {
+    it("fetches only once when the Visitor presses Try again while it fetches", async () => {
       await retryingAfterFailure();
       await expect
         .element(announcement())

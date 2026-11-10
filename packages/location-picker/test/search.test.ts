@@ -57,7 +57,7 @@ describe("the Location picker's search", () => {
     );
   });
 
-  it("searches when the visitor presses Enter in the field", async () => {
+  it("searches when the Visitor presses Enter in the field", async () => {
     answering(found(PARIS));
     renderPicker();
 
@@ -124,7 +124,7 @@ describe("the Location picker's search", () => {
     await expect.element(message()).toHaveTextContent("Searching for “Paris”…");
   });
 
-  it("announces that it found nothing, with the term the visitor typed", async () => {
+  it("announces that it found nothing, with the term the Visitor typed", async () => {
     answering(found());
     renderPicker();
 
@@ -201,7 +201,7 @@ describe("the Location picker's search", () => {
     await expectFocusOn(picker, field());
   });
 
-  it("cancels a running search when the visitor chooses a Location", async () => {
+  it("cancels a running search when the Visitor chooses a Location", async () => {
     fakeProxy
       .mockImplementationOnce(() => respondWith(found(PARIS)))
       .mockImplementationOnce(() => new Promise<Response>(() => undefined));
@@ -216,7 +216,7 @@ describe("the Location picker's search", () => {
     await expect.element(message()).toHaveTextContent("Paris chosen");
   });
 
-  it("lets a keyboard user search and choose a Location in visual order", async () => {
+  it("lets a Visitor using only the keyboard search and choose a Location in visual order", async () => {
     answering(found(PARIS, PARIS_TEXAS));
     fakeGeolocation(() => undefined);
     const { selected } = selections();

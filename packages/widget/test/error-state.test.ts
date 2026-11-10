@@ -42,7 +42,7 @@ describe("the Error state", () => {
     await expect.element(locationName()).toHaveTextContent("52.03° N, 5.08° E");
   });
 
-  it("explains what happened and what the visitor can do", async () => {
+  it("explains what happened and what the Visitor can do", async () => {
     failing();
 
     renderWidget(NIEUWEGEIN);
@@ -131,7 +131,7 @@ describe("focus", () => {
     return { outlineStyle, outlineWidth, outlineColor, outlineOffset };
   };
 
-  it("rings Try again in the accent when the visitor reaches it by keyboard", async () => {
+  it("rings Try again in the accent when the Visitor reaches it by keyboard", async () => {
     failing();
     renderWidget(NIEUWEGEIN);
     await expect.element(tryAgain()).toBeVisible();

@@ -153,7 +153,7 @@ The design comes from the archived Astro project, where the Widget was a whole p
 
 ## Theming
 
-The Host page sets these on the element or any ancestor, for example through the `style` attribute. Every default follows the visitor's color scheme through `light-dark()`.
+The Host page sets these on the element or any ancestor, for example through the `style` attribute. Every default follows the Visitor's color scheme through `light-dark()`.
 
 | Property               | Default (light / dark)            | Drives                                                            |
 | ---------------------- | --------------------------------- | ----------------------------------------------------------------- |
@@ -365,7 +365,7 @@ The picker is its own element and uses the same tokens, theming properties and r
 
 The text field is 44px high with a 1.5px field-border outline, the body font (17px, so iOS doesn't zoom) and an accent caret. On focus its border turns accent and the focus ring sits 2px outside it.
 
-**Messages.** Each one says what happened and what the visitor can do:
+**Messages.** Each one says what happened and what the Visitor can do:
 
 | Situation            | Message                                                                    |
 | -------------------- | -------------------------------------------------------------------------- |
@@ -438,8 +438,8 @@ Unknown uses the full-size Meteocons `not-available` icon, so it sits in an hour
 
 Build requirements the reference sheet can't show, for #6 to #12.
 
-- **Shadow DOM:** `style.css` uses `.weather` where the component uses `:host`. Keep `color-scheme: light dark` on `:host` so `light-dark()` follows the visitor; a Host page can force a scheme with `color-scheme` on the element.
-- **Font:** the Widget never loads a font. A `@font-face` inside a shadow root doesn't apply, and loading fonts would add a request to every Host page. The Example hosts load no font either, so the Widget falls back to `system-ui` unless the visitor has Lexend installed.
+- **Shadow DOM:** `style.css` uses `.weather` where the component uses `:host`. Keep `color-scheme: light dark` on `:host` so `light-dark()` follows the Visitor; a Host page can force a scheme with `color-scheme` on the element.
+- **Font:** the Widget never loads a font. A `@font-face` inside a shadow root doesn't apply, and loading fonts would add a request to every Host page. The Example hosts load no font either, so the Widget falls back to `system-ui` unless the Visitor has Lexend installed.
 - **Icons:** `@meteocons/svg` (animated) and `@meteocons/svg-static` (static), both `3.0.0-next.10`, MIT, no install scripts. That is a pre-release, published 2026-04-12; the only stable release (`0.1.0`) predates the monochrome set. The owner approved both at this pre-release as dependencies for #10; add them with `--save-exact`. Inline the SVG markup so `currentColor` applies, and pick the static or animated variant from `matchMedia("(prefers-reduced-motion: reduce)")`, listening for changes. The reference sheet uses CSS masks instead, which only works over HTTP.
 - **Wind direction:** the compass needle sits in a `rotate(0 64 64)` group, pointing north-east at 0 degrees. Rotate it by the wind direction plus 135 degrees, so a south-west wind (225) points north-east and every needle points where the wind blows to. Drop the needle's sway animation under reduced motion.
 - **Minus sign:** `Intl.NumberFormat` outputs a hyphen-minus, so replace it with U+2212 when formatting (#9).
