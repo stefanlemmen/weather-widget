@@ -36,9 +36,9 @@ _Avoid_: City, place, position
 An optional component, separate from the Widget, that a Host page can use to let the visitor choose a Location by name or from their device.
 _Avoid_: Search box, city selector, location input
 
-**Location's local time**:
+**Location time**:
 The clock time and calendar day at the Location, which can differ from the visitor's own.
-_Avoid_: Local time, visitor time
+_Avoid_: Local time, Location's local time, visitor time
 
 ## Forecast
 

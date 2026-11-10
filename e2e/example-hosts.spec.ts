@@ -239,7 +239,7 @@ for (const host of EXAMPLE_HOSTS) {
       ).toBeVisible();
     });
 
-    test("shows the Hourly and Daily forecast in the Location's local time", async ({
+    test("shows the Hourly and Daily forecast in Location time", async ({
       page,
     }) => {
       await page.clock.setFixedTime(RECORDED_AT);

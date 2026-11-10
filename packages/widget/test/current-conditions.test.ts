@@ -46,7 +46,7 @@ describe("<weather-widget>", () => {
       ).toHaveTextContent("85%");
     });
 
-    it("shows when the Weather provider observed them, in the Location's local time", async () => {
+    it("shows when the Weather provider observed them, in Location time", async () => {
       renderWidget(NIEUWEGEIN);
 
       const updated = shownMessage("Updated at");
