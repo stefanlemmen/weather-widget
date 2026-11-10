@@ -274,7 +274,7 @@ Set up the workspace as in the [Quick start](#quick-start).
 
 Browser tests need Chromium: `pnpm exec playwright install chromium`. [TESTING.md](TESTING.md) says which kind of test owns which behaviour.
 
-CI runs all of these on every pull request. To deploy, connect the repository to a Vercel project and set `OPENWEATHER_API_KEY` in its environment variables. Vercel runs `pnpm build`, which writes the whole site and the Proxy function to `.vercel/output` ([ADR 0003](docs/adr/0003-our-build-writes-the-vercel-build-output.md)).
+CI runs every command above except `pnpm preview` on each pull request and each push to `main`. To deploy, connect the repository to a Vercel project and set `OPENWEATHER_API_KEY` in its environment variables. Vercel runs `pnpm build`, which writes the whole site and the Proxy function to `.vercel/output` ([ADR 0003](docs/adr/0003-our-build-writes-the-vercel-build-output.md)).
 
 ## Next steps
 
