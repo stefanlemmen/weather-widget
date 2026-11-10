@@ -11,4 +11,4 @@ The Widget is a Lit web component, so any Host page can embed it, whatever its f
 ## Consequences
 
 - Nothing renders until the Widget's script runs. The Widget shows a skeleton of fixed size while it loads, and SEO is the Host page's job.
-- The Proxy is built as if third-party sites call it, even though the Example hosts are our own: CORS for any origin, a 10-minute CDN cache and a hard daily cap at the Weather provider. Rate limiting is left for later.
+- The Proxy is built as if third-party sites call it, even though the Example hosts are our own: CORS for any origin and a 10-minute CDN cache. The Proxy doesn't count calls; the only cap is the daily call limit in the OpenWeather account, set at the 1,000 free calls. Rate limiting is left for later.

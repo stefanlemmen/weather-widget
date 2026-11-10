@@ -71,7 +71,7 @@ Whether a period at the Location falls by day or by night, which decides whether
 _Avoid_: Daylight, time of day, day/night flag, is day
 
 **Update time**:
-The moment the Weather provider observed the Current weather, shown in Location time. It can be up to an hour old.
+The moment the Weather provider observed the Current weather, shown in Location time. It can be more than an hour old.
 _Avoid_: Last updated, refresh time, timestamp
 
 **Unavailable message**:

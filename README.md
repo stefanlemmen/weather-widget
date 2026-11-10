@@ -34,7 +34,7 @@ The repository is one pnpm workspace:
 ### Why it's built this way
 
 - The Widget is a custom element ([ADR 0001](docs/adr/0001-lit-widget-and-hono-proxy-in-a-pnpm-monorepo.md)). A React or Angular component only embeds in hosts that use that framework and version. A custom element works in all of them, which the React and Angular Example hosts prove. Lit keeps the standalone module small (the Lighthouse budget allows 50 KiB of script on the plain HTML host).
-- Widgets ask our Proxy, never the Weather provider ([ADR 0001](docs/adr/0001-lit-widget-and-hono-proxy-in-a-pnpm-monorepo.md)), so the OpenWeather key never reaches the browser. The Proxy lets the CDN cache each Forecast for 10 minutes and serve a stale copy for up to an hour when OpenWeather fails. Widgets that share a Location and differ only in locale or units ask for the same URL, so they share one cached Forecast.
+- Widgets ask our Proxy, never the Weather provider ([ADR 0001](docs/adr/0001-lit-widget-and-hono-proxy-in-a-pnpm-monorepo.md)), so the OpenWeather key never reaches the browser. The Proxy lets the CDN cache each Forecast for 10 minutes, or 1 minute when one Forecast part failed. When OpenWeather delivers no Forecast part at all, the CDN can serve the cached copy for up to an hour longer. Widgets that share a Location and differ only in locale or units ask for the same URL, so they share one cached Forecast.
 - Everything lives in one workspace ([ADR 0001](docs/adr/0001-lit-widget-and-hono-proxy-in-a-pnpm-monorepo.md)), so a change to the Widget or to the Proxy's contract is checked against every Example host in the same commit.
 - The Host page owns the Location ([ADR 0002](docs/adr/0002-the-host-page-owns-the-location.md)). The Widget has no search box, because on a page with several Widgets a search box in each would repeat the same control. The Location picker is its own package: it emits a `location-select` event and the Host page decides which Widget gets the Location. A page without a picker never loads its code.
 - Our build writes Vercel's Build Output ([ADR 0003](docs/adr/0003-our-build-writes-the-vercel-build-output.md)). One Vercel project serves the landing page, the Example hosts, the standalone modules and the Proxy from one domain, so every Example host is same-origin with the Proxy.
@@ -238,7 +238,7 @@ The Proxy answers GET requests from any origin, without credentials, so the Host
 
 On the Proxy's own domain you can leave `proxy-url` out, because it defaults to `/api`.
 
-OpenWeather's One Call API 4.0 is free for 1,000 calls a day, and calls above that are billed. A Forecast that isn't cached yet costs up to 4 calls: one per Forecast part, plus one for the Location's name.
+OpenWeather's One Call API 4.0 is free for 1,000 calls a day, and calls above that are billed unless the account caps them. A Forecast that isn't cached yet costs up to 4 calls: one each for the Current weather, the Hourly forecast and the Daily forecast, and one for the Location's name. The Current weather on its own also costs the call for the Hourly forecast, because its chance of precipitation comes from the Hourly forecast's first hour.
 
 ## Running, testing and deploying
 
@@ -266,6 +266,6 @@ CI runs all of these on every pull request. To deploy, connect the repository to
 
 ## Next steps
 
-- Rate limiting on the Proxy. The CDN cache absorbs repeat requests, but every uncached Location still costs OpenWeather calls, and calls beyond the free 1,000 a day are billed.
+- Rate limiting on the Proxy. It answers any origin, so another site can point its Widgets at our Proxy and use up our 1,000 free OpenWeather calls a day. After that, Forecasts that aren't cached fail until the next day. The CDN cache absorbs repeat requests, but every Forecast that isn't cached yet still costs calls.
 - Widget events such as `forecast-load` and `forecast-error`, so a Host page can react when a Forecast arrives or fails.
 - More locales. Every text lives in one messages module per package, and dates and numbers already go through `Intl`, so a locale is mostly a translation.
