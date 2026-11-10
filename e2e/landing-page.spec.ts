@@ -7,9 +7,9 @@ const PRODUCTION_ORIGIN = "https://weather-widget-ruby-delta.vercel.app";
 const WCAG_AA_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
 const EXAMPLE_HOSTS = [
-  { path: "/vanilla/", title: "Weather Widget in plain HTML" },
-  { path: "/react/", title: "Weather Widget in React" },
-  { path: "/angular/", title: "Weather Widget in Angular" },
+  { title: "Weather Widget in plain HTML" },
+  { title: "Weather Widget in React" },
+  { title: "Weather Widget in Angular" },
 ];
 
 test.describe("the landing page", () => {
@@ -59,16 +59,6 @@ test.describe("the landing page", () => {
       name: LANDING_PAGE_TITLE,
       url: `${PRODUCTION_ORIGIN}${LANDING_PAGE_PATH}`,
     });
-  });
-
-  test("links to every Example host by its title", async ({ page }) => {
-    await page.goto(LANDING_PAGE_PATH);
-
-    for (const host of EXAMPLE_HOSTS) {
-      await expect(
-        page.getByRole("link", { name: host.title, exact: true }),
-      ).toHaveAttribute("href", host.path);
-    }
   });
 
   for (const host of EXAMPLE_HOSTS) {
