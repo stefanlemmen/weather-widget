@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 import {
   ForecastResponseSchema,
   LocationsResponseSchema,
@@ -9,6 +11,15 @@ import { createLocalProxy } from "../src/local-proxy.ts";
 
 const FIXTURES_ENVIRONMENT = { PROVIDER_MODE: "fixtures" };
 
+const EXAMPLE_ENVIRONMENT_FILE = new URL(
+  "../../../.env.example",
+  import.meta.url,
+);
+
+const EXAMPLE_ENVIRONMENT = parseEnv(
+  readFileSync(EXAMPLE_ENVIRONMENT_FILE, "utf8"),
+);
+
 const blockNetwork = () =>
   vi
     .spyOn(globalThis, "fetch")
@@ -19,19 +30,28 @@ describe("the local Proxy", () => {
     vi.restoreAllMocks();
   });
 
-  it("answers a Forecast from the recordings in fixture mode, without a key or a network call", async () => {
-    const networkFetch = blockNetwork();
-    const proxy = createLocalProxy(FIXTURES_ENVIRONMENT);
+  it.each([
+    ["in fixture mode", FIXTURES_ENVIRONMENT],
+    [
+      "with the example environment, so a fresh clone needs no key",
+      EXAMPLE_ENVIRONMENT,
+    ],
+  ])(
+    "answers a Forecast from the recordings %s, without a network call",
+    async (_, environment) => {
+      const networkFetch = blockNetwork();
+      const proxy = createLocalProxy(environment);
 
-    const response = await proxy.request(
-      "/api/forecast?latitude=52.03&longitude=5.08",
-    );
+      const response = await proxy.request(
+        "/api/forecast?latitude=52.03&longitude=5.08",
+      );
 
-    expect(
-      v.parse(ForecastResponseSchema, await response.json()).location.name,
-    ).toBe("Nieuwegein");
-    expect(networkFetch).not.toHaveBeenCalled();
-  });
+      expect(
+        v.parse(ForecastResponseSchema, await response.json()).location.name,
+      ).toBe("Nieuwegein");
+      expect(networkFetch).not.toHaveBeenCalled();
+    },
+  );
 
   it("answers a search from the recordings in fixture mode, without a network call", async () => {
     const networkFetch = blockNetwork();

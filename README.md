@@ -6,6 +6,26 @@ See it running at <https://weather-widget-ruby-delta.vercel.app/>, which links t
 
 The words used here (Widget, Host page, Location, Forecast part, Proxy and so on) are defined in [GLOSSARY.md](GLOSSARY.md).
 
+## Quick start
+
+You need Node 26 and pnpm 11. You don't need an OpenWeather key: `.env.example` puts the Proxy in fixture mode, so it answers from recorded responses.
+
+```sh
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+`pnpm dev` starts the Proxy on port 8787 and the three Example hosts, each showing a Forecast for Nieuwegein:
+
+- Plain HTML: <http://localhost:5173/vanilla/>
+- React: <http://localhost:5174/react/>
+- Angular: <http://localhost:4200/angular/>
+
+The recordings cover a Forecast for Nieuwegein and searches for "Paris", "Parijs" and "Parjs". In fixture mode every Location gets Nieuwegein's Forecast, and any other search finds nothing.
+
+For live data, set `PROVIDER_MODE=live` and `OPENWEATHER_API_KEY` in `.env` ([Running your own Proxy](#running-your-own-proxy) says which key). `pnpm dev` and `pnpm preview` both read `.env`.
+
 ## Architecture
 
 ```text
@@ -242,15 +262,7 @@ OpenWeather's One Call API 4.0 is free for 1,000 calls a day, and calls above th
 
 ## Running, testing and deploying
 
-You need Node 26 and pnpm 11.
-
-```sh
-pnpm install
-cp .env.example .env   # then set OPENWEATHER_API_KEY, or PROVIDER_MODE=fixtures
-pnpm dev               # the Proxy on :8787 and every Example host, each with its own URL
-```
-
-With `PROVIDER_MODE=fixtures` the Proxy answers from recorded responses instead of calling OpenWeather and Open-Meteo, so you don't need a key. The recordings cover a Forecast for Nieuwegein and searches for "Paris", "Parijs" and "Parjs".
+Set up the workspace as in the [Quick start](#quick-start).
 
 | Command                                            | What it checks                                                                                 |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
