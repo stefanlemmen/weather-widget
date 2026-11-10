@@ -70,6 +70,18 @@ _Avoid_: Weather type, weather code, status
 Whether a period at the Location falls by day or by night, which decides whether its Condition shows the sun or the moon. The Daily forecast is always by day.
 _Avoid_: Daylight, time of day, day/night flag, is day
 
+**Update time**:
+The moment the Weather provider observed the Current weather, shown in Location time. It can be up to an hour old.
+_Avoid_: Last updated, refresh time, timestamp
+
+**Unavailable message**:
+The short message that takes the place of one Forecast part that failed.
+_Avoid_: Part error, empty state
+
+**Error state**:
+What the Widget shows instead of the Forecast when no Forecast part loads, with a Try again button.
+_Avoid_: Error page, fallback
+
 ## Services
 
 **Weather provider**:
@@ -79,6 +91,10 @@ _Avoid_: Provider, API, source, backend
 **Search provider**:
 The external service that finds a Location by the name a Visitor types.
 _Avoid_: Geocoder, places API
+
+**Credit**:
+The visible link to the Weather provider or the Search provider that their terms of use require.
+_Avoid_: Attribution, footer
 
 **Proxy**:
 Our own server that Widgets and the Location picker call, and the only party that talks to the Weather provider and the Search provider.
