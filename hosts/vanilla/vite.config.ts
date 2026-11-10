@@ -6,6 +6,7 @@ import { WIDGET_MODULE_PATH } from "@weather-widget/widget/build-output";
 import { defineConfig, type Plugin } from "vite";
 
 const VANILLA_HOST_BASE = "/vanilla/";
+const VANILLA_HOST_DEV_PORT = 5173;
 const sourceOf = (entryPoint: string) =>
   fileURLToPath(import.meta.resolve(entryPoint));
 const STANDALONE_MODULE_SOURCES = new Map([
@@ -35,6 +36,8 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    port: VANILLA_HOST_DEV_PORT,
+    strictPort: true,
     proxy: {
       [PROXY_BASE_PATH]: PROXY_DEV_ORIGIN,
     },
