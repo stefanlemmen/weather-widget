@@ -20,7 +20,7 @@ pnpm dev
 
 - Plain HTML: <http://localhost:5173/vanilla/>
 - React: <http://localhost:5174/react/>
-- Angular: <http://localhost:4200/angular/>
+- Angular: <http://localhost:5175/angular/>
 
 The recordings cover a Forecast for Nieuwegein and searches for "Paris", "Parijs" and "Parjs". In fixture mode every Location gets Nieuwegein's Forecast, and any other search finds nothing.
 

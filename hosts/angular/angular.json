@@ -39,6 +39,7 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "host-angular:build:development",
+            "port": 5175,
             "proxyConfig": "proxy-config.ts"
           }
         }
