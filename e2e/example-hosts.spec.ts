@@ -356,13 +356,13 @@ for (const host of EXAMPLE_HOSTS) {
           .getByRole("searchbox", { name: "Location" })
           .fill("Paris");
         await picker(page).getByRole("button", { name: "Search" }).click();
-        const forecast = forecastRequestAt(page, "33.66094");
+        const forecast = forecastRequestAt(page, "33.66");
         await picker(page)
           .getByRole("button", { name: "Paris Texas, United States" })
           .click();
 
         const url = new URL((await forecast).url());
-        expect(url.searchParams.get("longitude")).toBe("-95.55551");
+        expect(url.searchParams.get("longitude")).toBe("-95.56");
         await expect(
           controlledWidget(page).getByRole("heading", {
             level: 2,

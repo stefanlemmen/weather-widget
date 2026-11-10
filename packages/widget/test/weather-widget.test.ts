@@ -46,6 +46,17 @@ describe("<weather-widget>", () => {
     );
   });
 
+  it("asks the Proxy for the Location rounded to two decimals, so nearby Widgets share a stored copy", async () => {
+    fakeProxy.mockImplementation(() => respondWith(forecastWithTemperature(5)));
+
+    renderWidget({ latitude: "52.0307", longitude: "5.0851" });
+
+    await expect.element(page.getByText("5°")).toBeVisible();
+    const [url] = requestedUrls();
+    expect(url?.searchParams.get("latitude")).toBe("52.03");
+    expect(url?.searchParams.get("longitude")).toBe("5.09");
+  });
+
   it.each([
     [12.5, "13°"],
     [-3.4, "−3°"],

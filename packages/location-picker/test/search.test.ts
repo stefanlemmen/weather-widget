@@ -66,6 +66,16 @@ describe("the Location picker's search", () => {
     await expect.element(results()).toBeVisible();
   });
 
+  it("stops the term at the 100 characters the Proxy accepts", async () => {
+    answering(found(PARIS));
+    renderPicker();
+
+    await userEvent.type(field(), `${"a".repeat(100)}b{Enter}`);
+
+    await expect.element(results()).toBeVisible();
+    expect(requestedUrls()[0]?.searchParams.get("name")).toBe("a".repeat(100));
+  });
+
   it("doesn't search for a blank term", async () => {
     renderPicker();
 

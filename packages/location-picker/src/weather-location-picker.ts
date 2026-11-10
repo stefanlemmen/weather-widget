@@ -3,6 +3,7 @@ import {
   parseLocale,
   PROXY_BASE_PATH,
   roundCoordinates,
+  SEARCH_TERM_MAX_LENGTH,
   type Coordinates,
   type FoundLocation,
   type Locale,
@@ -255,6 +256,7 @@ export class WeatherLocationPicker extends LitElement {
             id=${SEARCH_FIELD_ID}
             type="search"
             name=${SEARCH_FIELD_NAME}
+            maxlength=${SEARCH_TERM_MAX_LENGTH}
             autocomplete="off"
             spellcheck="false"
           />

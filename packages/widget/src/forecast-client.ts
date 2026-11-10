@@ -11,6 +11,7 @@ import {
   type HourlyForecast,
   type Location,
   type Result,
+  roundCoordinates,
 } from "@weather-widget/contract";
 import * as v from "valibot";
 
@@ -37,9 +38,10 @@ export const requestedParts = (
 
 const forecastUrl = (
   proxyUrl: string,
-  { latitude, longitude }: Coordinates,
+  coordinates: Coordinates,
   parts: readonly ForecastPart[],
 ) => {
+  const { latitude, longitude } = roundCoordinates(coordinates);
   const url = new URL(`${proxyUrl}${FORECAST_PATH}`, document.baseURI);
   url.search = new URLSearchParams({
     latitude: String(latitude),

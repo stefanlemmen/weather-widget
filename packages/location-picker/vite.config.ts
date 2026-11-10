@@ -1,5 +1,6 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { BROWSER_BUILD_TARGET } from "../../scripts/browser-build-target.ts";
 import { MINIFIED_BUILD_OUTPUT } from "../../scripts/minified-build-output.ts";
 import { vitestCiReporting } from "../../scripts/vitest-summary-reporter.ts";
 import {
@@ -9,6 +10,7 @@ import {
 
 export default defineConfig({
   build: {
+    target: BROWSER_BUILD_TARGET,
     lib: {
       entry: "src/index.ts",
       formats: ["es"],

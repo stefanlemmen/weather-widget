@@ -191,7 +191,7 @@ Every attribute has a property of the same meaning. Set either one.
 | `parts`         | `parts`        | space-separated list, default `current hourly daily` | The Forecast parts to show and fetch, from `current`, `hourly` and `daily`. They always appear in that order. Unknown names are ignored; a list with no known name shows all three |
 | `proxy-url`     | `proxyUrl`     | URL, default `/api`                                  | Where the Widget asks for Forecasts. A relative URL resolves against the page                                                                                                      |
 
-The Proxy rounds coordinates to 2 decimals (about 1 km) before it asks OpenWeather. Missing or invalid coordinates show a message instead of a Forecast. Hours and days are shown in Location time, not the Visitor's own time.
+The Widget rounds coordinates to 2 decimals (about 1 km) before it asks the Proxy, so Widgets whose coordinates round to the same values share one cached Forecast. The Proxy rounds them as well. Missing or invalid coordinates show a message instead of a Forecast. Hours and days are shown in Location time, not the Visitor's own time.
 
 The Widget emits no events. While it loads, it sets `aria-busy="true"` on itself and shows a skeleton of its final size.
 
@@ -233,7 +233,7 @@ weather-location-picker {
 
 ### Browser support
 
-The Widget and the Location picker need `light-dark()` in CSS, which sets the oldest supported versions: Chrome and Edge 123, Firefox 120, and Safari 17.5 on macOS and iOS. They also use container queries, `color-mix()` and custom elements with Shadow DOM, which those versions support. Nothing renders without JavaScript.
+The Widget and the Location picker need `light-dark()` in CSS, which sets the oldest supported versions: Chrome and Edge 123, Firefox 120, and Safari 17.5 on macOS and iOS. They also use container queries, `color-mix()` and custom elements with Shadow DOM, which those versions support. The build compiles JavaScript for Vite's `baseline-widely-available` target (Chrome and Edge 111, Firefox 114, Safari 16.4), which is older, so the CSS sets the limit. Nothing renders without JavaScript.
 
 ## Running your own Proxy
 
