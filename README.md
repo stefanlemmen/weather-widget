@@ -239,7 +239,7 @@ The Widget and the Location picker need `light-dark()` in CSS, which sets the ol
 
 The Widget never calls OpenWeather itself, so a Host page needs a Proxy. To run your own:
 
-1. Get an OpenWeather API key with access to One Call API 4.0 and set it as `OPENWEATHER_API_KEY` in the Proxy's environment. Without it, the Proxy stops at startup with an error that names the variable.
+1. Subscribe to [One Call API 4.0](https://openweathermap.org/api/one-call-4) on OpenWeather to get an API key with access to it, and set the key as `OPENWEATHER_API_KEY` in the Proxy's environment. Without it, the Proxy stops at startup with an error that names the variable.
 2. Deploy the Proxy. This repository deploys to Vercel as it is: import it as a project, add `OPENWEATHER_API_KEY` under Environment Variables and deploy. The Proxy then answers under `/api` on that project's domain. It is a Hono app (`createProxy` in `packages/proxy`), but Vercel is the only platform this repository builds it for.
 3. Point each Widget's and Location picker's `proxy-url` at the Proxy's `/api` URL.
 
