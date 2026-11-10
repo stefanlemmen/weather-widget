@@ -21,7 +21,7 @@ A Host page we build ourselves in one framework to show how Widgets are embedded
 _Avoid_: Demo app, showcase, playground
 
 **Widget settings**:
-A form on an Example host that changes one Widget: its locale, units and Forecast parts, its theme and color scheme, and the width it gets.
+A form on an Example host that changes one Widget: its locale, units and Forecast parts, its Theme and color scheme, and the width it gets.
 _Avoid_: Playground, config panel, controls
 
 **Theme**:
@@ -29,15 +29,15 @@ The Host page's own font, colors and corner radius for a Widget and its Location
 _Avoid_: Skin, branding, style
 
 **Location**:
-The place a Forecast is for, with coordinates, a name and a time zone. The Host page gives the coordinates and may give the name; the Weather provider supplies the rest.
+The place a Forecast is for, with coordinates, a time zone and usually a name. The Host page gives the coordinates and may give the name; the Weather provider supplies the time zone and, if it finds one, the name.
 _Avoid_: City, place, position
 
 **Location picker**:
-An optional component, separate from the Widget, that a Host page can use to let the visitor choose a Location by name or from their device.
+An optional component, separate from the Widget, that a Host page can use to let the Visitor choose a Location by name or from their device.
 _Avoid_: Search box, city selector, location input
 
 **Location time**:
-The clock time and calendar day at the Location, which can differ from the visitor's own.
+The clock time and calendar day at the Location, which can differ from the Visitor's own.
 _Avoid_: Local time, Location's local time, visitor time
 
 ## Forecast
@@ -77,7 +77,7 @@ The external weather service the Forecast comes from, which also names a Locatio
 _Avoid_: Provider, API, source, backend
 
 **Search provider**:
-The external service that finds a Location by the name a visitor types.
+The external service that finds a Location by the name a Visitor types.
 _Avoid_: Geocoder, places API
 
 **Proxy**:
