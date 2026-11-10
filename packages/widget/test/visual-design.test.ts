@@ -193,7 +193,7 @@ describe("type scale", () => {
     ["light", "#13243a", "#eef3f9"],
     ["dark", "#f2f5f9", "#16263b"],
   ] as const)(
-    "paints a chance of rain in rain blue and a dry hour in muted ink in the %s scheme",
+    "paints a chance of precipitation in rain blue and a dry hour in muted ink in the %s scheme",
     async (colorScheme, ink, ground) => {
       await commands.emulateMedia({ colorScheme });
       await renderAt(COLUMN);
@@ -295,7 +295,7 @@ describe("layout by the Widget's own width", () => {
     },
   );
 
-  describe("Current conditions", () => {
+  describe("Current weather", () => {
     it("puts the facts in three columns under the temperature in a column", async () => {
       const widget = await renderAt(COLUMN);
 

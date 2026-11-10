@@ -1,6 +1,6 @@
 import {
   CONDITIONS,
-  DAYLIGHTS,
+  DAY_OR_NIGHT_VALUES,
   type Condition,
   type Hour,
 } from "@weather-widget/contract";
@@ -48,7 +48,7 @@ describe("Conditions", () => {
   const iconsIn = (list: ReturnType<typeof page.getByRole>) =>
     list.getByRole("img").elements().map(drawnIcon);
 
-  const oneHour = (hour: Pick<Hour, "condition" | "daylight">) =>
+  const oneHour = (hour: Pick<Hour, "condition" | "dayOrNight">) =>
     forecastWith(
       {},
       {},
@@ -74,16 +74,16 @@ describe("Conditions", () => {
 
   it.each(
     CONDITIONS.flatMap((condition) =>
-      DAYLIGHTS.map(
-        (daylight, index) =>
-          [condition, daylight, METEOCONS_ICONS[condition][index]] as const,
+      DAY_OR_NIGHT_VALUES.map(
+        (dayOrNight, index) =>
+          [condition, dayOrNight, METEOCONS_ICONS[condition][index]] as const,
       ),
     ),
   )(
     "draws %s by %s as the Meteocons icon %s",
-    async (condition, daylight, icon) => {
+    async (condition, dayOrNight, icon) => {
       fakeProxy.mockImplementation(() =>
-        respondWith(oneHour({ condition, daylight })),
+        respondWith(oneHour({ condition, dayOrNight })),
       );
 
       renderWidget({ ...NIEUWEGEIN, parts: "hourly" });
@@ -145,10 +145,10 @@ describe("Conditions", () => {
     expect(iconsIn(dailyForecast())[0]?.name).toBe("partly-cloudy-day");
   });
 
-  it("labels the Condition of Current conditions in text, beside an icon screen readers skip", async () => {
+  it("labels the Condition of Current weather in text, beside an icon screen readers skip", async () => {
     fakeProxy.mockImplementation(() =>
       respondWith(
-        forecastWith({ condition: "partly-cloudy", daylight: "night" }),
+        forecastWith({ condition: "partly-cloudy", dayOrNight: "night" }),
       ),
     );
 
@@ -166,7 +166,7 @@ describe("Conditions", () => {
     expect(page.getByRole("img").query()).toBeNull();
   });
 
-  it("animates the icons when the visitor has no motion preference", async () => {
+  it("animates the icons when the Visitor has no motion preference", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
     renderWidget(NIEUWEGEIN);
@@ -177,7 +177,7 @@ describe("Conditions", () => {
     );
   });
 
-  it("draws still icons when the visitor prefers reduced motion", async () => {
+  it("draws still icons when the Visitor prefers reduced motion", async () => {
     await commands.emulateMedia({ reducedMotion: "reduce" });
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
 
@@ -188,7 +188,7 @@ describe("Conditions", () => {
     expect(iconsIn(hourlyForecast())[0]?.name).toBe("rain");
   });
 
-  it("stops the icons when the visitor turns on reduced motion while the Forecast shows", async () => {
+  it("stops the icons when the Visitor turns on reduced motion while the Forecast shows", async () => {
     fakeProxy.mockImplementation(() => respondWith(fullForecast()));
     const widget = renderWidget(NIEUWEGEIN);
     await expect.element(hourlyForecast()).toBeVisible();

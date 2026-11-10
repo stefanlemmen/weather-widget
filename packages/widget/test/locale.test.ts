@@ -20,7 +20,7 @@ import {
 describe("locale", () => {
   const DUTCH = { ...NIEUWEGEIN, locale: "nl" };
 
-  it("shows Current conditions in Dutch, with Dutch numbers and the Location's local time", async () => {
+  it("shows Current weather in Dutch, with Dutch numbers and Location time", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastWith()));
 
     renderWidget(DUTCH);
@@ -47,7 +47,7 @@ describe("locale", () => {
       .toHaveTextContent("Bijgewerkt om 10:41");
   });
 
-  it("keeps the Weather provider's credit in English, as the Weather provider requires", async () => {
+  it("keeps the Weather provider's Credit in English, as the Weather provider requires", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastWith()));
 
     renderWidget(DUTCH);
@@ -58,7 +58,7 @@ describe("locale", () => {
     );
   });
 
-  it("tells screen readers the Weather provider's credit is in English", async () => {
+  it("tells screen readers the Weather provider's Credit is in English", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastWith()));
 
     renderWidget(DUTCH);

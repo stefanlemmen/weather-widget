@@ -25,7 +25,7 @@ const failing = () => {
 
 const tryAgain = () => page.getByRole("button", { name: "Try again" });
 
-describe("the error state", () => {
+describe("the Error state", () => {
   it("keeps the name the Host page set in location-name", async () => {
     failing();
 
@@ -42,7 +42,7 @@ describe("the error state", () => {
     await expect.element(locationName()).toHaveTextContent("52.03° N, 5.08° E");
   });
 
-  it("explains what happened and what the visitor can do", async () => {
+  it("explains what happened and what the Visitor can do", async () => {
     failing();
 
     renderWidget(NIEUWEGEIN);
@@ -108,7 +108,7 @@ describe("the error state", () => {
   });
 });
 
-describe("the unavailable line", () => {
+describe("the Unavailable message", () => {
   it("draws the N/A mark before the message, hidden from screen readers", async () => {
     fakeProxy.mockImplementation(() => respondWith(forecastFailing("hourly")));
 
@@ -131,7 +131,7 @@ describe("focus", () => {
     return { outlineStyle, outlineWidth, outlineColor, outlineOffset };
   };
 
-  it("rings Try again in the accent when the visitor reaches it by keyboard", async () => {
+  it("rings Try again in the accent when the Visitor reaches it by keyboard", async () => {
     failing();
     renderWidget(NIEUWEGEIN);
     await expect.element(tryAgain()).toBeVisible();

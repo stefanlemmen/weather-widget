@@ -7,7 +7,7 @@ The Widget's Forecast loader keeps every behaviour it has now, and we don't trim
 The spec in #1 asks for each behaviour:
 
 - Story 17: a "Try again" button when nothing loaded
-- Story 18: a fresh Forecast when the visitor returns to the tab and the Forecast is more than 10 minutes old
+- Story 18: a fresh Forecast when the Visitor returns to the tab and the Forecast is more than 10 minutes old
 - Story 19: the Forecast on screen stays when a background refresh fails
 - The Widget fetches once it nears the viewport, and refetches when its configuration changes or the page becomes visible again with a Forecast older than 10 minutes
 

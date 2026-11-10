@@ -5,7 +5,7 @@ import {
   FORECAST_PATH,
   ForecastResponseSchema,
   type Coordinates,
-  type CurrentConditions,
+  type CurrentWeather,
   type DailyForecast,
   type ForecastPart,
   type HourlyForecast,
@@ -19,7 +19,7 @@ const PARTS_ATTRIBUTE_SEPARATOR = /\s+/;
 export interface Forecast {
   readonly coordinates: Coordinates;
   readonly location: Location;
-  readonly current?: Result<CurrentConditions>;
+  readonly current?: Result<CurrentWeather>;
   readonly hourly?: Result<HourlyForecast>;
   readonly daily?: Result<DailyForecast>;
 }

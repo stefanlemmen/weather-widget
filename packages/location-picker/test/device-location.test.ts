@@ -65,7 +65,7 @@ describe("the Location picker's device Location", () => {
     expect(getCurrentPosition.mock.calls[0]?.[2]?.timeout).toBeGreaterThan(0);
   });
 
-  it("clears the message and lets the visitor locate again once found", async () => {
+  it("clears the message and lets the Visitor locate again once found", async () => {
     fakeGeolocation((success) => {
       success(positionAt(52.03, 5.08));
     });

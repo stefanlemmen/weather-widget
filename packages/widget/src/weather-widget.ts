@@ -10,7 +10,7 @@ import { formatterFor, type Formatter, type Spoken } from "./formatter.ts";
 import { requestedParts, type Forecast } from "./forecast-client.ts";
 import { ForecastLoader, type ForecastState } from "./forecast-loader.ts";
 import {
-  errorView,
+  errorStateView,
   forecastAnnouncement,
   forecastView,
 } from "./forecast-view.ts";
@@ -130,7 +130,7 @@ export class WeatherWidget extends LitElement {
         );
       case "error":
       case "retrying":
-        return errorView(
+        return errorStateView(
           this.#format,
           this.#requestedName(),
           html`<button
@@ -145,7 +145,7 @@ export class WeatherWidget extends LitElement {
           </button>`,
         );
       case "invalid-location":
-        return errorView(this.#format, nonBlank(this.locationName));
+        return errorStateView(this.#format, nonBlank(this.locationName));
     }
   }
 

@@ -12,7 +12,7 @@ import {
 } from "./support.ts";
 
 describe("<weather-widget>", () => {
-  describe("Current conditions", () => {
+  describe("Current weather", () => {
     beforeEach(() => {
       fakeProxy.mockImplementation(() => respondWith(forecastWith()));
     });
@@ -46,7 +46,7 @@ describe("<weather-widget>", () => {
       ).toHaveTextContent("85%");
     });
 
-    it("shows when the Weather provider observed them, in the Location's local time", async () => {
+    it("shows when the Weather provider observed it, in Location time", async () => {
       renderWidget(NIEUWEGEIN);
 
       const updated = shownMessage("Updated at");
@@ -56,7 +56,7 @@ describe("<weather-widget>", () => {
       );
     });
 
-    it("credits OpenWeather with the whole credit as a visible link", async () => {
+    it("credits OpenWeather with the whole Credit as a visible link", async () => {
       renderWidget(NIEUWEGEIN);
 
       await expect

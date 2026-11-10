@@ -213,7 +213,7 @@ for (const host of EXAMPLE_HOSTS) {
       );
     });
 
-    test("shows the Current conditions for the Widget's Location", async ({
+    test("shows the Current weather for the Widget's Location", async ({
       page,
     }) => {
       await page.goto(host.path);
@@ -239,7 +239,7 @@ for (const host of EXAMPLE_HOSTS) {
       ).toBeVisible();
     });
 
-    test("shows the Hourly and Daily forecast in the Location's local time", async ({
+    test("shows the Hourly and Daily forecast in Location time", async ({
       page,
     }) => {
       await page.clock.setFixedTime(RECORDED_AT);
@@ -636,7 +636,7 @@ for (const host of EXAMPLE_HOSTS) {
           .getByRole("radio", { name: "Metric" }),
       ).toBeChecked();
       for (const name of [
-        "Current conditions",
+        "Current weather",
         "Hourly forecast",
         "Daily forecast",
       ]) {
@@ -805,7 +805,7 @@ for (const host of EXAMPLE_HOSTS) {
       await page.keyboard.press("Space");
 
       const current = forecastParts(page).getByRole("checkbox", {
-        name: "Current conditions",
+        name: "Current weather",
       });
       await expect(current).not.toBeChecked();
       await expect(current).toBeFocused();
@@ -895,9 +895,7 @@ for (const host of EXAMPLE_HOSTS) {
     }) => {
       await page.goto(host.path);
       const parts = forecastParts(page);
-      await parts
-        .getByRole("checkbox", { name: "Current conditions" })
-        .uncheck();
+      await parts.getByRole("checkbox", { name: "Current weather" }).uncheck();
       await parts.getByRole("checkbox", { name: "Hourly forecast" }).uncheck();
       const daily = parts.getByRole("checkbox", { name: "Daily forecast" });
       await daily.focus();

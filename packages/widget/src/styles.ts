@@ -62,7 +62,7 @@ const icons = css`
   }
 `;
 
-const currentConditions = css`
+const currentWeather = css`
   .current {
     margin-block-start: calc(var(--_space-group) - var(--_space-part));
     display: grid;
@@ -554,7 +554,7 @@ export const styles = [
   base,
   frame,
   icons,
-  currentConditions,
+  currentWeather,
   hourlyForecast,
   dailyForecast,
   messages,

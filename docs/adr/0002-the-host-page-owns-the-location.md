@@ -1,6 +1,6 @@
 # The Host page owns the Location
 
-The Widget has no location UI: it shows the Forecast for the coordinates its Host page gives it, and nothing inside the Widget can change them. On a page with several Widgets, a search box or "use my location" button in each one would repeat the same control and leave the visitor unsure which Widget it changes. Location search and "use my location" ship as an optional Location picker that emits the chosen Location, and the Host page decides which Widget receives it.
+The Widget has no Location UI: it shows the Forecast for the coordinates its Host page gives it, and nothing inside the Widget can change them. On a page with several Widgets, a search box or "use my location" button in each one would repeat the same control and leave the Visitor unsure which Widget it changes. Location search and "use my location" ship as an optional Location picker that emits the chosen Location, and the Host page decides which Widget receives it.
 
 ## Considered Options
 
