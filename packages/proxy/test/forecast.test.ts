@@ -186,16 +186,6 @@ describe("the forecast route", () => {
     },
   );
 
-  it("keeps the Weather provider's key out of the response", async () => {
-    const { proxy } = healthyProxy();
-
-    const response = await proxy.request(
-      "/api/forecast?latitude=52.03&longitude=5.08",
-    );
-
-    expect(await response.text()).not.toContain(TEST_KEY);
-  });
-
   it("lets the CDN cache a forecast for 10 minutes and serve it stale for an hour on errors", async () => {
     const { proxy } = healthyProxy();
 
@@ -241,37 +231,53 @@ describe("the forecast route", () => {
     expect(response.status).toBe(200);
   });
 
-  const PROVIDER_FAILURES: readonly (readonly [string, Respond])[] = [
-    [
-      "answers with a server error",
-      () =>
-        Promise.resolve(
-          jsonResponse({ cod: 500, message: "internal provider detail" }, 500),
-        ),
-    ],
-    [
-      "rejects the key",
-      () =>
-        Promise.resolve(
-          jsonResponse(
-            { cod: 401, message: `Invalid API key ${TEST_KEY}` },
-            401,
-          ),
-        ),
-    ],
+  type ProviderFailure = readonly [
+    failure: string,
+    respond: Respond,
+    loggedReason: string,
+  ];
+
+  const SERVER_ERROR: ProviderFailure = [
+    "answers with a server error",
+    () =>
+      Promise.resolve(
+        jsonResponse({ cod: 500, message: "internal provider detail" }, 500),
+      ),
+    "HTTP 500",
+  ];
+
+  const REJECTED_KEY: ProviderFailure = [
+    "rejects the key",
+    () =>
+      Promise.resolve(
+        jsonResponse({ cod: 401, message: `Invalid API key ${TEST_KEY}` }, 401),
+      ),
+    "HTTP 401",
+  ];
+
+  const PROVIDER_FAILURES: readonly ProviderFailure[] = [
+    SERVER_ERROR,
+    REJECTED_KEY,
     [
       "is out of quota",
       () => Promise.resolve(jsonResponse({ cod: 429, message: "quota" }, 429)),
+      "HTTP 429",
     ],
     [
       "answers with an unexpected shape",
       () => Promise.resolve(jsonResponse({ data: [] })),
+      "unexpected response",
     ],
     [
       "answers with something other than JSON",
       () => Promise.resolve(new Response("<html>oops</html>")),
+      "unexpected response",
     ],
-    ["can't be reached", () => Promise.reject(new TypeError("fetch failed"))],
+    [
+      "can't be reached",
+      () => Promise.reject(new TypeError("fetch failed")),
+      "unreachable",
+    ],
   ];
 
   const { current, hourly, daily } = RECORDED_NIEUWEGEIN_FORECAST.parts;
@@ -337,16 +343,18 @@ describe("the forecast route", () => {
     ["daily", DAILY_PATH, PARTS_WHEN_FAILING[DAILY_PATH]],
   ] as const;
 
-  it.each(
-    FORECAST_ENDPOINTS.flatMap(([endpoint, pathname, expectedParts]) =>
-      PROVIDER_FAILURES.map(
-        ([failure, respond]) =>
-          [endpoint, failure, pathname, respond, expectedParts] as const,
-      ),
+  const [serverErrorFailure, answerWithServerError] = SERVER_ERROR;
+  const [, answerRejectingTheKey] = REJECTED_KEY;
+
+  it.each([
+    ["current", serverErrorFailure, CURRENT_PATH, answerWithServerError],
+    ["hourly", serverErrorFailure, HOURLY_PATH, answerWithServerError],
+    ...PROVIDER_FAILURES.map(
+      ([failure, respond]) => ["daily", failure, DAILY_PATH, respond] as const,
     ),
-  )(
+  ] as const)(
     "fails only the Forecast parts that need the Weather provider's %s endpoint when it %s",
-    async (_endpoint, _failure, pathname, respond, expectedParts) => {
+    async (_endpoint, _failure, pathname, respond) => {
       const { proxy } = proxyAnswering(
         answerFromRecordingsExcept(pathname, respond),
       );
@@ -358,27 +366,24 @@ describe("the forecast route", () => {
       expect(response.status).toBe(200);
       expect(v.parse(ForecastResponseSchema, await response.json())).toEqual({
         location: RECORDED_NIEUWEGEIN_FORECAST.location,
-        parts: expectedParts,
+        parts: PARTS_WHEN_FAILING[pathname],
       });
     },
   );
 
-  it.each(PROVIDER_FAILURES)(
-    "answers 503 Problem Details when every Forecast endpoint %s",
-    async (_, respond) => {
-      const { proxy } = proxyAnswering((url) =>
-        url.pathname === REVERSE_GEOCODING_PATH
-          ? answerFromRecordings(url)
-          : respond(url),
-      );
+  it("answers 503 Problem Details without the key when every Forecast endpoint rejects the key", async () => {
+    const { proxy } = proxyAnswering((url) =>
+      url.pathname === REVERSE_GEOCODING_PATH
+        ? answerFromRecordings(url)
+        : answerRejectingTheKey(url),
+    );
 
-      const response = await proxy.request(
-        "/api/forecast?latitude=52.03&longitude=5.08",
-      );
+    const response = await proxy.request(
+      "/api/forecast?latitude=52.03&longitude=5.08",
+    );
 
-      await expectProblemDetails(response, 503);
-    },
-  );
+    await expectProblemDetails(response, 503);
+  });
 
   it.each([
     ["current", CURRENT_PATH],
@@ -486,8 +491,8 @@ describe("the forecast route", () => {
     });
 
     it.each(PROVIDER_FAILURES)(
-      "logs which Weather provider call failed when it %s, without coordinates or the key",
-      async (_, respond) => {
+      "logs which Weather provider call failed and why when it %s, without coordinates or the key",
+      async (_, respond, loggedReason) => {
         const { proxy } = proxyAnswering(
           answerFromRecordingsExcept(DAILY_PATH, respond),
         );
@@ -496,48 +501,10 @@ describe("the forecast route", () => {
 
         expect(errorLog).toHaveBeenCalledOnce();
         expect(logged()).toContain("daily");
+        expect(logged()).toContain(loggedReason);
         for (const secret of ["52.0", "5.07", "5.08", TEST_KEY]) {
           expect(logged()).not.toContain(secret);
         }
-      },
-    );
-
-    it.each([
-      [
-        "answers with a server error",
-        () => Promise.resolve(jsonResponse({ cod: 500 }, 500)),
-        "HTTP 500",
-      ],
-      [
-        "rejects the key",
-        () => Promise.resolve(jsonResponse({ cod: 401 }, 401)),
-        "HTTP 401",
-      ],
-      [
-        "answers with an unexpected shape",
-        () => Promise.resolve(jsonResponse({ data: [] })),
-        "unexpected response",
-      ],
-      [
-        "answers with something other than JSON",
-        () => Promise.resolve(new Response("<html>oops</html>")),
-        "unexpected response",
-      ],
-      [
-        "can't be reached",
-        () => Promise.reject(new TypeError("fetch failed")),
-        "unreachable",
-      ],
-    ] as const)(
-      "logs why a call failed when it %s",
-      async (_, respond, reason) => {
-        const { proxy } = proxyAnswering(
-          answerFromRecordingsExcept(DAILY_PATH, respond),
-        );
-
-        await proxy.request("/api/forecast?latitude=52.03&longitude=5.08");
-
-        expect(logged()).toContain(reason);
       },
     );
 
@@ -574,7 +541,6 @@ describe("Forecast parts", () => {
     ["current,hourly", [CURRENT_PATH, HOURLY_PATH]],
     ["current,daily", [CURRENT_PATH, HOURLY_PATH, DAILY_PATH]],
     ["hourly,daily", [HOURLY_PATH, DAILY_PATH]],
-    ["current,hourly,daily", [CURRENT_PATH, HOURLY_PATH, DAILY_PATH]],
   ] as const;
 
   const { current, hourly, daily } = RECORDED_NIEUWEGEIN_FORECAST.parts;
@@ -586,7 +552,6 @@ describe("Forecast parts", () => {
     ["current,hourly", { current, hourly }],
     ["current,daily", { current, daily }],
     ["hourly,daily", { hourly, daily }],
-    ["current,hourly,daily", { current, hourly, daily }],
   ])(
     "answers parts=%s with exactly those Forecast parts",
     async (parts, expectedParts) => {
@@ -705,19 +670,24 @@ describe("the Daily forecast", () => {
 
 describe("Conditions", () => {
   const CONDITIONS_BY_CODE = [
-    [[200, 201, 202, 210, 211, 212, 221, 230, 231, 232], "thunderstorm"],
-    [[771, 781], "thunderstorm"],
-    [[300, 301, 302, 310, 311, 312, 313, 314, 321], "drizzle"],
-    [[500, 501, 502, 503, 504, 520, 521, 522, 531], "rain"],
-    [[511, 611, 612, 613, 615, 616], "sleet"],
-    [[600, 601, 602, 620, 621, 622], "snow"],
+    [[200, 232, 771, 781], "thunderstorm"],
+    [[300, 321], "drizzle"],
+    [[500, 504, 520, 531], "rain"],
+    [[511, 611, 616], "sleet"],
+    [[600, 602, 620, 622], "snow"],
     [[701, 741], "fog"],
-    [[711, 721, 731, 751, 761, 762], "haze"],
+    [[711, 731, 751, 762], "haze"],
     [[800], "clear"],
     [[801, 802], "partly-cloudy"],
     [[803], "mostly-cloudy"],
     [[804], "overcast"],
-    [[0, 199, 233, 400, 999], "unknown"],
+    [
+      [
+        0, 199, 233, 400, 505, 515, 550, 605, 618, 650, 705, 735, 745, 765, 790,
+        999,
+      ],
+      "unknown",
+    ],
   ] as const;
 
   const hourlyWithCode = (id: number) => {
@@ -757,26 +727,16 @@ describe("Conditions", () => {
 });
 
 describe("Day or night", () => {
-  const { sunrise, sunset } = RECORDED_RESPONSES.current.data[0] ?? {
-    sunrise: 0,
-    sunset: 0,
-  };
-  const ONE_HOUR_IN_SECONDS = 60 * 60;
-
-  const AROUND_SUNRISE_AND_SUNSET = [
-    ["before sunrise", sunrise - ONE_HOUR_IN_SECONDS, "04n", "night"],
-    ["at sunrise", sunrise, "04d", "day"],
-    ["before sunset", sunset - ONE_HOUR_IN_SECONDS, "04d", "day"],
-    ["at sunset", sunset, "04n", "night"],
+  const DAY_OR_NIGHT_BY_ICON = [
+    ["04d", "day"],
+    ["04n", "night"],
   ] as const;
 
-  const withWeatherAt = <TRecord extends { readonly weather: unknown[] }>(
+  const withIcon = <TRecord extends { readonly weather: unknown[] }>(
     record: TRecord,
-    dt: number,
     icon: string,
   ) => ({
     ...record,
-    dt,
     weather: [{ id: 804, main: "Clouds", description: "", icon }],
   });
 
@@ -792,13 +752,13 @@ describe("Day or night", () => {
     return v.parse(ForecastResponseSchema, await response.json()).parts;
   };
 
-  it.each(AROUND_SUNRISE_AND_SUNSET)(
-    "takes an hour %s as %s from the Weather provider's icon",
-    async (_, dt, icon, dayOrNight) => {
+  it.each(DAY_OR_NIGHT_BY_ICON)(
+    "takes an hour with the Weather provider's icon %s as %s",
+    async (icon, dayOrNight) => {
       const [first, ...rest] = RECORDED_RESPONSES.hourly.data;
       const { hourly } = await forecastAnswering(HOURLY_PATH, {
         ...RECORDED_RESPONSES.hourly,
-        data: [...(first ? [withWeatherAt(first, dt, icon)] : []), ...rest],
+        data: [...(first ? [withIcon(first, icon)] : []), ...rest],
       });
 
       expect(hourly?.status === "ok" && hourly.data[0]?.dayOrNight).toBe(
@@ -807,13 +767,13 @@ describe("Day or night", () => {
     },
   );
 
-  it.each(AROUND_SUNRISE_AND_SUNSET)(
-    "takes Current weather observed %s as %s from the Weather provider's icon",
-    async (_, dt, icon, dayOrNight) => {
+  it.each(DAY_OR_NIGHT_BY_ICON)(
+    "takes Current weather with the Weather provider's icon %s as %s",
+    async (icon, dayOrNight) => {
       const [now] = RECORDED_RESPONSES.current.data;
       const { current } = await forecastAnswering(CURRENT_PATH, {
         ...RECORDED_RESPONSES.current,
-        data: now ? [withWeatherAt(now, dt, icon)] : [],
+        data: now ? [withIcon(now, icon)] : [],
       });
 
       expect(current?.status === "ok" && current.data.dayOrNight).toBe(

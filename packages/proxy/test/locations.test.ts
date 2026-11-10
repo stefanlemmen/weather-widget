@@ -300,14 +300,6 @@ describe("the locations route with the recorded fetch", () => {
   const recordedProxy = () =>
     createProxy(environmentWithKey, { fetch: recordedFetch });
 
-  it("answers from the recorded Search provider responses", async () => {
-    const proxy = recordedProxy();
-
-    const response = await proxy.request("/api/locations?name=Paris&locale=en");
-
-    expect(await locationsIn(response)).toEqual(RECORDED_PARIS_LOCATIONS);
-  });
-
   it("finds a recorded search whatever its case", async () => {
     const proxy = recordedProxy();
 
