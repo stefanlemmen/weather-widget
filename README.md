@@ -233,7 +233,7 @@ weather-location-picker {
 
 ### Browser support
 
-The Widget and the Location picker need `light-dark()` in CSS, which sets the oldest supported versions: Chrome and Edge 123, Firefox 120, and Safari 17.5 on macOS and iOS. They also use container queries, `color-mix()` and custom elements with Shadow DOM, which those versions support. Nothing renders without JavaScript.
+The Widget and the Location picker need `light-dark()` in CSS, which sets the oldest supported versions: Chrome and Edge 123, Firefox 120, and Safari 17.5 on macOS and iOS. They also use container queries, `color-mix()` and custom elements with Shadow DOM, which those versions support. The build compiles JavaScript for Vite's `baseline-widely-available` target (Chrome and Edge 111, Firefox 114, Safari 16.4), which is older, so the CSS sets the limit. Nothing renders without JavaScript.
 
 ## Running your own Proxy
 
