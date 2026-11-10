@@ -66,9 +66,9 @@ _Avoid_: Week forecast, daily data
 The kind of weather in a period (clear, cloudy, rain, snow and so on), shown as an icon. Current weather shows its name; elsewhere only screen readers read it.
 _Avoid_: Weather type, weather code, status
 
-**Daylight**:
+**Day or night**:
 Whether a period at the Location falls by day or by night, which decides whether its Condition shows the sun or the moon. The Daily forecast is always by day.
-_Avoid_: Time of day, day/night flag, is day
+_Avoid_: Daylight, time of day, day/night flag, is day
 
 ## Services
 

@@ -1,4 +1,4 @@
-import type { Condition, Daylight } from "@weather-widget/contract";
+import type { Condition, DayOrNight } from "@weather-widget/contract";
 import { html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { ICON_SVGS } from "../generated/icon-svgs.ts";
@@ -11,7 +11,7 @@ const METEOCONS = ICON_SVGS.meteocons satisfies Record<string, IconMarkup>;
 type Meteocon = keyof typeof METEOCONS;
 
 const METEOCON_FOR_CONDITION: Readonly<
-  Record<Condition, Readonly<Record<Daylight, Meteocon>>>
+  Record<Condition, Readonly<Record<DayOrNight, Meteocon>>>
 > = {
   clear: { day: "clear-day", night: "clear-night" },
   "partly-cloudy": { day: "partly-cloudy-day", night: "partly-cloudy-night" },
@@ -29,7 +29,7 @@ const METEOCON_FOR_CONDITION: Readonly<
 
 export interface ConditionIcon {
   readonly condition: Condition;
-  readonly daylight: Daylight;
+  readonly dayOrNight: DayOrNight;
   readonly motion: Motion;
   readonly placement: string;
 }
@@ -49,8 +49,13 @@ const svgOf = (meteocon: Meteocon, motion: Motion, placement: string) =>
       ),
   );
 
-const markupOf = ({ condition, daylight, motion, placement }: ConditionIcon) =>
-  svgOf(METEOCON_FOR_CONDITION[condition][daylight], motion, placement);
+const markupOf = ({
+  condition,
+  dayOrNight,
+  motion,
+  placement,
+}: ConditionIcon) =>
+  svgOf(METEOCON_FOR_CONDITION[condition][dayOrNight], motion, placement);
 
 export const decorativeConditionIcon = (icon: ConditionIcon) =>
   html`<span class="icon">${markupOf(icon)}</span>`;

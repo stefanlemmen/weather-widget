@@ -20,7 +20,7 @@ const PLACEHOLDER_LOCATION: Location = {
 
 const placeholderCurrentWeather = (now: Date): CurrentWeather => ({
   condition: "partly-cloudy",
-  daylight: DAY,
+  dayOrNight: DAY,
   temperatureCelsius: 12,
   feelsLikeCelsius: 10,
   windSpeedMetresPerSecond: 4,
@@ -37,7 +37,7 @@ const placeholderHours = (now: Date): Hour[] => {
       hourUnderWay + index * MILLISECONDS_PER_HOUR,
     ).toISOString(),
     condition: "partly-cloudy",
-    daylight: DAY,
+    dayOrNight: DAY,
     temperatureCelsius: 12,
     precipitationChance: 0.4,
   }));

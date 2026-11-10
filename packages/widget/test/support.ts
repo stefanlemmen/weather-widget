@@ -16,7 +16,7 @@ export const NIEUWEGEIN = { latitude: "52.03", longitude: "5.08" };
 
 export const RECORDED_CURRENT_WEATHER: CurrentWeather = {
   condition: "overcast",
-  daylight: "day",
+  dayOrNight: "day",
   temperatureCelsius: 8.85,
   feelsLikeCelsius: 6.93,
   windSpeedMetresPerSecond: 3.35,
@@ -46,7 +46,7 @@ export const hoursFrom = (firstHourStartsAt: string, count = 20): Hour[] =>
       Date.parse(firstHourStartsAt) + index * MILLISECONDS_PER_HOUR,
     ).toISOString(),
     condition: CONDITION_CYCLE[index % CONDITION_CYCLE.length] ?? "unknown",
-    daylight: "day",
+    dayOrNight: "day",
     temperatureCelsius: 30.75 + index,
     precipitationChance: index === 0 ? 0.85 : 0,
   }));

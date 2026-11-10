@@ -242,7 +242,7 @@ const dailyForecast = (
               ${namedConditionIcon(
                 {
                   condition: day.condition,
-                  daylight: DAY,
+                  dayOrNight: DAY,
                   motion,
                   placement: `day-${String(index)}`,
                 },

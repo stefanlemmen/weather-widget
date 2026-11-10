@@ -31,7 +31,7 @@ const RECORDED_NIEUWEGEIN_FORECAST = {
       status: "ok",
       data: {
         condition: "overcast",
-        daylight: "day",
+        dayOrNight: "day",
         temperatureCelsius: 8.85,
         feelsLikeCelsius: 6.93,
         windSpeedMetresPerSecond: 3.35,
@@ -794,29 +794,31 @@ describe("day or night", () => {
 
   it.each(AROUND_SUNRISE_AND_SUNSET)(
     "takes an hour %s as %s from the Weather provider's icon",
-    async (_, dt, icon, daylight) => {
+    async (_, dt, icon, dayOrNight) => {
       const [first, ...rest] = RECORDED_RESPONSES.hourly.data;
       const { hourly } = await forecastAnswering(HOURLY_PATH, {
         ...RECORDED_RESPONSES.hourly,
         data: [...(first ? [withWeatherAt(first, dt, icon)] : []), ...rest],
       });
 
-      expect(hourly?.status === "ok" && hourly.data[0]?.daylight).toBe(
-        daylight,
+      expect(hourly?.status === "ok" && hourly.data[0]?.dayOrNight).toBe(
+        dayOrNight,
       );
     },
   );
 
   it.each(AROUND_SUNRISE_AND_SUNSET)(
     "takes Current weather observed %s as %s from the Weather provider's icon",
-    async (_, dt, icon, daylight) => {
+    async (_, dt, icon, dayOrNight) => {
       const [now] = RECORDED_RESPONSES.current.data;
       const { current } = await forecastAnswering(CURRENT_PATH, {
         ...RECORDED_RESPONSES.current,
         data: now ? [withWeatherAt(now, dt, icon)] : [],
       });
 
-      expect(current?.status === "ok" && current.data.daylight).toBe(daylight);
+      expect(current?.status === "ok" && current.data.dayOrNight).toBe(
+        dayOrNight,
+      );
     },
   );
   it("takes the Daily forecast's Conditions without the Weather provider's day or night", async () => {

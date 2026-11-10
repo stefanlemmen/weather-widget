@@ -1,6 +1,6 @@
 import {
   CONDITIONS,
-  DAYLIGHTS,
+  DAY_OR_NIGHT_VALUES,
   type Condition,
   type Hour,
 } from "@weather-widget/contract";
@@ -48,7 +48,7 @@ describe("Conditions", () => {
   const iconsIn = (list: ReturnType<typeof page.getByRole>) =>
     list.getByRole("img").elements().map(drawnIcon);
 
-  const oneHour = (hour: Pick<Hour, "condition" | "daylight">) =>
+  const oneHour = (hour: Pick<Hour, "condition" | "dayOrNight">) =>
     forecastWith(
       {},
       {},
@@ -74,16 +74,16 @@ describe("Conditions", () => {
 
   it.each(
     CONDITIONS.flatMap((condition) =>
-      DAYLIGHTS.map(
-        (daylight, index) =>
-          [condition, daylight, METEOCONS_ICONS[condition][index]] as const,
+      DAY_OR_NIGHT_VALUES.map(
+        (dayOrNight, index) =>
+          [condition, dayOrNight, METEOCONS_ICONS[condition][index]] as const,
       ),
     ),
   )(
     "draws %s by %s as the Meteocons icon %s",
-    async (condition, daylight, icon) => {
+    async (condition, dayOrNight, icon) => {
       fakeProxy.mockImplementation(() =>
-        respondWith(oneHour({ condition, daylight })),
+        respondWith(oneHour({ condition, dayOrNight })),
       );
 
       renderWidget({ ...NIEUWEGEIN, parts: "hourly" });
@@ -148,7 +148,7 @@ describe("Conditions", () => {
   it("labels the Condition of Current weather in text, beside an icon screen readers skip", async () => {
     fakeProxy.mockImplementation(() =>
       respondWith(
-        forecastWith({ condition: "partly-cloudy", daylight: "night" }),
+        forecastWith({ condition: "partly-cloudy", dayOrNight: "night" }),
       ),
     );
 
