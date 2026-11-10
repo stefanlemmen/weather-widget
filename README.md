@@ -258,7 +258,7 @@ The Proxy answers GET requests from any origin, without credentials, so the Host
 
 On the Proxy's own domain you can leave `proxy-url` out, because it defaults to `/api`.
 
-OpenWeather's One Call API 4.0 is free for 1,000 calls a day, and calls above that are billed unless the account caps them. A Forecast that isn't cached yet costs up to 4 calls: one each for the Current weather, the Hourly forecast and the Daily forecast, and one for the Location's name. The Current weather on its own also costs the call for the Hourly forecast, because its chance of precipitation comes from the Hourly forecast's first hour.
+OpenWeather's One Call API 4.0 is free for 1,000 calls a day. A new subscription is capped at 2,000 calls a day, so up to 1,000 calls a day can be billed. To keep it free, lower the cap to 1,000 under [Billing plans](https://home.openweathermap.org/subscriptions) in your OpenWeather account. A Forecast that isn't cached yet costs up to 4 calls: one each for the Current weather, the Hourly forecast and the Daily forecast, and one for the Location's name. The Current weather on its own also costs the call for the Hourly forecast, because its chance of precipitation comes from the Hourly forecast's first hour.
 
 ## Running, testing and deploying
 
