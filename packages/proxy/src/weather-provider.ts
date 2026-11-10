@@ -11,12 +11,8 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
-import {
-  RECORDED_RESPONSES,
-  recordedFetchFor,
-} from "../fixtures/recorded-responses.ts";
 import { conditionFor } from "./weather-provider-conditions.ts";
-import { PROVIDER_MODES, type Environment } from "./environment.ts";
+import type { Environment } from "./environment.ts";
 import {
   fetchParsedWith,
   type ProviderCall,
@@ -25,7 +21,6 @@ import {
 
 const WEATHER_PROVIDER_ORIGIN = "https://api.openweathermap.org";
 const WEATHER_PROVIDER_TIMEOUT_MS = 3000;
-const FIXTURE_KEY = "fixtures";
 const WEATHER_PROVIDER = "Weather provider";
 const METRIC_UNITS = "metric";
 const NAMES_WANTED = "1";
@@ -158,7 +153,7 @@ const ReverseGeocodingResponseSchema = v.union([
   ),
 ]);
 
-const WEATHER_PROVIDER_CALLS = {
+export const WEATHER_PROVIDER_CALLS = {
   current: {
     name: "current",
     url: `${WEATHER_PROVIDER_ORIGIN}/data/4.0/onecall/current`,
@@ -303,16 +298,6 @@ const fetchForecastWith = (options: WeatherProviderOptions): FetchForecast => {
   };
 };
 
-const recordedFetch = recordedFetchFor([
-  [WEATHER_PROVIDER_CALLS.current.url, RECORDED_RESPONSES.current],
-  [WEATHER_PROVIDER_CALLS.hourly.url, RECORDED_RESPONSES.hourly],
-  [WEATHER_PROVIDER_CALLS.daily.url, RECORDED_RESPONSES.daily],
-  [
-    WEATHER_PROVIDER_CALLS.reverseGeocoding.url,
-    RECORDED_RESPONSES.reverseGeocoding,
-  ],
-]);
-
 const optionsFor = (
   environment: Environment,
   dependencies: WeatherProviderDependencies,
@@ -320,9 +305,8 @@ const optionsFor = (
   provider: WEATHER_PROVIDER,
   timeoutMs:
     dependencies.weatherProviderTimeoutMs ?? WEATHER_PROVIDER_TIMEOUT_MS,
-  ...(environment.mode === PROVIDER_MODES.fixtures
-    ? { key: FIXTURE_KEY, fetch: recordedFetch }
-    : { key: environment.weatherProviderKey, fetch: dependencies.fetch }),
+  key: environment.weatherProviderKey,
+  fetch: dependencies.fetch,
 });
 
 export const createWeatherProvider = (

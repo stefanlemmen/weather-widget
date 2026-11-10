@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./dev-server": "./src/dev-server.ts",
-    "./build-output": "./src/build-output.ts"
+    "./build-output": "./src/build-output.ts",
+    "./local-proxy": "./src/local-proxy.ts"
   },
   "scripts": {
     "dev": "node --watch --env-file-if-exists=../../.env src/serve.ts",

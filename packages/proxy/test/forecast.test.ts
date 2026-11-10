@@ -5,7 +5,11 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RECORDED_RESPONSES, urlOf } from "../fixtures/recorded-responses.ts";
+import {
+  RECORDED_RESPONSES,
+  recordedFetch,
+  urlOf,
+} from "../fixtures/recorded-responses.ts";
 import { createProxy } from "../src/index.ts";
 import {
   RECORDED_NIEUWEGEIN_DAYS,
@@ -13,7 +17,7 @@ import {
 } from "./recorded-nieuwegein.ts";
 
 const TEST_KEY = "test-key-that-must-stay-secret";
-const liveEnvironment = { OPENWEATHER_API_KEY: TEST_KEY };
+const environmentWithKey = { OPENWEATHER_API_KEY: TEST_KEY };
 
 const CURRENT_PATH = "/data/4.0/onecall/current";
 const HOURLY_PATH = "/data/4.0/onecall/timeline/1h";
@@ -58,7 +62,7 @@ const recordingFetch = (respond: Respond) => {
 
 const proxyAnswering = (respond: Respond) => {
   const weatherProvider = recordingFetch(respond);
-  const proxy = createProxy(liveEnvironment, {
+  const proxy = createProxy(environmentWithKey, {
     fetch: weatherProvider.fetch,
   });
   return { proxy, requestedUrls: weatherProvider.requestedUrls };
@@ -428,7 +432,7 @@ describe("the forecast route", () => {
   it.each(FORECAST_ENDPOINTS)(
     "fails only the Forecast parts that need the Weather provider's %s endpoint when it doesn't answer in time",
     async (_, pathname, expectedParts) => {
-      const proxy = createProxy(liveEnvironment, {
+      const proxy = createProxy(environmentWithKey, {
         fetch: timingOut(pathname),
         weatherProviderTimeoutMs: 10,
       });
@@ -445,7 +449,7 @@ describe("the forecast route", () => {
   );
 
   it("answers without a Location name when reverse geocoding doesn't answer in time", async () => {
-    const proxy = createProxy(liveEnvironment, {
+    const proxy = createProxy(environmentWithKey, {
       fetch: timingOut(REVERSE_GEOCODING_PATH),
       weatherProviderTimeoutMs: 10,
     });
@@ -538,7 +542,7 @@ describe("the forecast route", () => {
     );
 
     it("logs a Weather provider call that doesn't answer in time", async () => {
-      const proxy = createProxy(liveEnvironment, {
+      const proxy = createProxy(environmentWithKey, {
         fetch: timingOut(DAILY_PATH),
         weatherProviderTimeoutMs: 10,
       });
@@ -828,15 +832,9 @@ describe("day or night", () => {
   });
 });
 
-describe("the Proxy in fixture mode", () => {
-  it("answers from recorded Weather provider responses without a key or a network call", async () => {
-    const weatherProvider = recordingFetch(() =>
-      Promise.reject(new Error("the network must not be used")),
-    );
-    const proxy = createProxy(
-      { PROVIDER_MODE: "fixtures" },
-      { fetch: weatherProvider.fetch },
-    );
+describe("the Proxy with the recorded fetch", () => {
+  it("answers from the recorded Weather provider responses", async () => {
+    const proxy = createProxy(environmentWithKey, { fetch: recordedFetch });
 
     const response = await proxy.request(
       "/api/forecast?latitude=52.03&longitude=5.08",
@@ -845,15 +843,5 @@ describe("the Proxy in fixture mode", () => {
     expect(v.parse(ForecastResponseSchema, await response.json())).toEqual(
       RECORDED_NIEUWEGEIN_FORECAST,
     );
-    expect(weatherProvider.requestedUrls).toHaveLength(0);
-  });
-
-  it("refuses to start in an unknown provider mode", () => {
-    expect(() =>
-      createProxy({
-        PROVIDER_MODE: "recorded",
-        OPENWEATHER_API_KEY: TEST_KEY,
-      }),
-    ).toThrow("PROVIDER_MODE");
   });
 });

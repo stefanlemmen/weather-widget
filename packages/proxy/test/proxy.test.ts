@@ -5,6 +5,7 @@ import {
 } from "@weather-widget/contract";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
+import { MISSING_WEATHER_PROVIDER_KEY_MESSAGE } from "../src/environment.ts";
 import { createProxy } from "../src/index.ts";
 
 const environmentWithKey = { OPENWEATHER_API_KEY: "test-key" };
@@ -44,7 +45,7 @@ describe("the Proxy", () => {
     "refuses to start when the Weather provider key is %s",
     (_, environment) => {
       expect(() => createProxy(environment)).toThrow(
-        "OPENWEATHER_API_KEY is not set. Add it to .env for local development, or to the Vercel project's environment variables.",
+        MISSING_WEATHER_PROVIDER_KEY_MESSAGE,
       );
     },
   );

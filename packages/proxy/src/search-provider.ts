@@ -6,8 +6,6 @@ import {
   type Result,
 } from "@weather-widget/contract";
 import * as v from "valibot";
-import { recordedSearch } from "../fixtures/recorded-responses.ts";
-import { PROVIDER_MODES, type Environment } from "./environment.ts";
 import { fetchParsedWith, type ProviderCall } from "./provider-call.ts";
 
 const SEARCH_PROVIDER = "Search provider";
@@ -45,7 +43,7 @@ const SearchResponseSchema = v.pipe(
   })),
 );
 
-const SEARCH_CALL = {
+export const SEARCH_CALL = {
   name: "search",
   url: "https://geocoding-api.open-meteo.com/v1/search",
   schema: SearchResponseSchema,
@@ -61,15 +59,11 @@ export interface SearchProviderDependencies {
 }
 
 export const createSearchProvider = (
-  environment: Environment,
   dependencies: SearchProviderDependencies,
 ): FindLocations => {
   const fetchParsed = fetchParsedWith({
     provider: SEARCH_PROVIDER,
-    fetch:
-      environment.mode === PROVIDER_MODES.fixtures
-        ? recordedSearch
-        : dependencies.fetch,
+    fetch: dependencies.fetch,
     timeoutMs:
       dependencies.searchProviderTimeoutMs ?? SEARCH_PROVIDER_TIMEOUT_MS,
   });
