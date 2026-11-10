@@ -264,13 +264,14 @@ OpenWeather's One Call API 4.0 is free for 1,000 calls a day. A new subscription
 
 Set up the workspace as in the [Quick start](#quick-start).
 
-| Command                                            | What it checks                                                                                 |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm typecheck`, `pnpm lint`, `pnpm format:check` | Types, lint rules and formatting                                                               |
-| `pnpm test`                                        | Unit tests, the Proxy over HTTP, and the components in a real browser with Vitest browser mode |
-| `pnpm build && pnpm test:e2e`                      | All three Example hosts end to end with Playwright and axe, against the Proxy in fixture mode  |
-| `pnpm build && pnpm lighthouse`                    | Performance, accessibility, best practices and SEO, and the script size budget per page        |
-| `pnpm build && pnpm preview`                       | Serves the production build and the Proxy on <http://localhost:4173>                           |
+| Command                                            | What it checks                                                                                          |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`, `pnpm lint`, `pnpm format:check` | Types, lint rules and formatting                                                                        |
+| `pnpm diagrams:check`                              | That every Mermaid diagram in the Markdown files renders, and writes each one as an SVG to `.diagrams/` |
+| `pnpm test`                                        | Unit tests, the Proxy over HTTP, and the components in a real browser with Vitest browser mode          |
+| `pnpm build && pnpm test:e2e`                      | All three Example hosts end to end with Playwright and axe, against the Proxy in fixture mode           |
+| `pnpm build && pnpm lighthouse`                    | Performance, accessibility, best practices and SEO, and the script size budget per page                 |
+| `pnpm build && pnpm preview`                       | Serves the production build and the Proxy on <http://localhost:4173>                                    |
 
 Browser tests need Chromium: `pnpm exec playwright install chromium`. [TESTING.md](TESTING.md) says which kind of test owns which behaviour.
 
