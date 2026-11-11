@@ -86,6 +86,7 @@ Load the standalone module once and add as many Widgets as you like:
 The module is served at a stable URL, `/widget/weather-widget.js`, and the Location picker at `/location-picker/weather-location-picker.js`. To connect the picker to a Widget, listen for its event and set the Widget's properties:
 
 ```html
+<script type="module" src="/widget/weather-widget.js"></script>
 <script
   type="module"
   src="/location-picker/weather-location-picker.js"
