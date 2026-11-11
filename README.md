@@ -8,9 +8,11 @@ The words used here (Widget, Host page, Location, Forecast part, Proxy and so on
 
 ## Quick start
 
-You need Node 26 and pnpm 11. You don't need an OpenWeather key: `.env.example` puts the Proxy in fixture mode, so it answers from recorded responses.
+You need Node 26. Corepack installs the pnpm version that `package.json` pins, so the first two commands are only needed once per machine. You don't need an OpenWeather key: `.env.example` puts the Proxy in fixture mode, so it answers from the recorded responses in [`packages/proxy/fixtures/`](packages/proxy/fixtures/).
 
 ```sh
+npm install --global corepack@0.35.0
+corepack enable
 pnpm install
 cp .env.example .env
 pnpm dev
