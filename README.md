@@ -277,6 +277,16 @@ Browser tests need Chromium: `pnpm exec playwright install chromium`. [TESTING.m
 
 CI runs every command above except `pnpm preview` on each pull request and each push to `main`. To deploy, connect the repository to a Vercel project and set `OPENWEATHER_API_KEY` in its environment variables. Vercel runs `pnpm build`, which writes the whole site and the Proxy function to `.vercel/output` ([ADR 0003](docs/adr/0003-our-build-writes-the-vercel-build-output.md)).
 
+## How this was built
+
+I built this project with Claude Code, an AI coding agent. It wrote code from tickets I defined, and the architecture decisions are mine.
+
+- Features started as specs in GitHub Issues, split into tickets. Each ticket got its own branch and pull request.
+- The agent did a first code review and ran the checks in `scripts/check.ts`. Then I reviewed the pull request, tried it on its preview build and decided when to merge.
+- The ADRs in `docs/adr/` and the terms in [GLOSSARY.md](GLOSSARY.md) guide the agent and me alike. [AGENTS.md](AGENTS.md) and `docs/agents/` hold the rest of its instructions: where issues live, the triage labels, and how to name and test modules.
+- `.out-of-scope/` records the proposals I turned down, for example a shared theme styles package.
+- CI checks every pull request the same way, whoever wrote the code: types, lint, unit and browser tests, the Example hosts end to end with axe, and the Lighthouse budgets.
+
 ## Next steps
 
 - Rate limiting on the Proxy. It answers any origin, so another site can point its Widgets at our Proxy and use up our 1,000 free OpenWeather calls a day. After that, Forecasts that aren't cached fail until the next day. The CDN cache absorbs repeat requests, but every Forecast that isn't cached yet still costs calls.
