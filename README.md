@@ -291,5 +291,8 @@ I built this project with Claude Code, an AI coding agent. It wrote code from ti
 ## Next steps
 
 - Rate limiting on the Proxy. It answers any origin, so another site can point its Widgets at our Proxy and use up our 1,000 free OpenWeather calls a day. After that, Forecasts that aren't cached fail until the next day. The CDN cache absorbs repeat requests, but every Forecast that isn't cached yet still costs calls.
+- A combobox in the Location picker. Today the search results push the Widget down the page. A combobox shows them in a popup while the Visitor types.
+- Publishing the Widget and the Location picker to npm. Today a Host page outside this repository can only load the standalone modules from our domain. Publishing needs a licence, an npm scope we own, the private contract package bundled in, and a build with JavaScript and types, because the packages now export their TypeScript source.
 - Widget events such as `forecast-load` and `forecast-error`, so a Host page can react when a Forecast arrives or fails.
-- More locales. Every text lives in one messages module per package, and dates and numbers already go through `Intl`, so a locale is mostly a translation.
+- The Location's current time in the Widget. The Forecast already carries the Location's time zone, so the Proxy stays as it is. The Widget needs a timer that renders it again every minute.
+- More locales. Every text lives in one messages module per package, and dates and numbers already go through `Intl`, so a locale is mostly a translation. Another option is to let the Host page pass its own translations to the Widget and the Location picker, so a new language needs no new release.
